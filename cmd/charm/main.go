@@ -24,14 +24,14 @@ type CharmClient struct {
 	AgentClient *ssh.Client
 }
 
-func NewCharmClient() *CharmClient {
+func ConnectCharm() (*CharmClient, error) {
 	var cfg Config
 	if err := babyenv.Parse(&cfg); err != nil {
-		log.Fatalf("could not get environment vars: %v", err)
+		return nil, err
 	}
 	u, err := gouser.Current()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	var sshCfg *ssh.ClientConfig
 	am, err := agentAuthMethod()
@@ -47,7 +47,7 @@ func NewCharmClient() *CharmClient {
 		if err != nil {
 			pkam, err = publicKeyAuthMethod("~/.ssh/id_rsa")
 			if err != nil {
-				log.Fatalf("Missing ssh keys. Run `ssh-keygen` to make one or specify a key with the `-i` flag")
+				return nil, fmt.Errorf("Missing ssh keys. Run `ssh-keygen` to make one or specify a key with the `-i` flag")
 			}
 		}
 		sshCfg = &ssh.ClientConfig{
@@ -58,12 +58,12 @@ func NewCharmClient() *CharmClient {
 	}
 	sshc, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cfg.Host, cfg.Port), sshCfg)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	return &CharmClient{
 		AgentClient: sshc,
 		Config:      &cfg,
-	}
+	}, nil
 }
 
 func (cc *CharmClient) Close() {
@@ -73,7 +73,7 @@ func (cc *CharmClient) Close() {
 func (cc *CharmClient) JWT() (string, error) {
 	s, err := cc.AgentClient.NewSession()
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 	defer s.Close()
 	id, err := s.Output("jwt")
@@ -121,7 +121,10 @@ func agentAuthMethod() (ssh.AuthMethod, error) {
 }
 
 func main() {
-	cc := NewCharmClient()
+	cc, err := ConnectCharm()
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer cc.Close()
 	jwt, err := cc.JWT()
 	if err != nil {
