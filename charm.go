@@ -21,10 +21,8 @@ type Config struct {
 }
 
 type CharmClient struct {
-	Config      *Config
-	AgentClient *ssh.Client
-	AuthMethod  ssh.AuthMethod
-	SSHKeyPath  string
+	config      *Config
+	agentClient *ssh.Client
 }
 
 func ConnectCharm(cfg Config) (*CharmClient, error) {
@@ -56,17 +54,17 @@ func ConnectCharm(cfg Config) (*CharmClient, error) {
 		return nil, err
 	}
 	return &CharmClient{
-		AgentClient: sshc,
-		Config:      &cfg,
+		agentClient: sshc,
+		config:      &cfg,
 	}, nil
 }
 
 func (cc *CharmClient) Close() {
-	cc.AgentClient.Close()
+	cc.agentClient.Close()
 }
 
 func (cc *CharmClient) JWT() (string, error) {
-	s, err := cc.AgentClient.NewSession()
+	s, err := cc.agentClient.NewSession()
 	if err != nil {
 		return "", err
 	}
