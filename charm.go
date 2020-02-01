@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 
+	"github.com/meowgorithm/babyenv"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -25,7 +26,15 @@ type CharmClient struct {
 	agentClient *ssh.Client
 }
 
-func ConnectCharm(cfg Config) (*CharmClient, error) {
+func ConfigFromEnv() (*Config, error) {
+	var cfg Config
+	if err := babyenv.Parse(&cfg); err != nil {
+		return nil, err
+	}
+	return &cfg, nil
+}
+
+func ConnectCharm(cfg *Config) (*CharmClient, error) {
 	var sshCfg *ssh.ClientConfig
 	am, err := agentAuthMethod()
 	if err == nil {
@@ -55,7 +64,7 @@ func ConnectCharm(cfg Config) (*CharmClient, error) {
 	}
 	return &CharmClient{
 		agentClient: sshc,
-		config:      &cfg,
+		config:      cfg,
 	}, nil
 }
 

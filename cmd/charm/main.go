@@ -4,12 +4,11 @@ import (
 	"log"
 
 	"github.com/charmbracelet/charm"
-	"github.com/meowgorithm/babyenv"
 )
 
 func main() {
-	var cfg charm.Config
-	if err := babyenv.Parse(&cfg); err != nil {
+	cfg, err := charm.ConfigFromEnv()
+	if err != nil {
 		log.Fatal(err)
 	}
 	cc, err := charm.ConnectCharm(cfg)
