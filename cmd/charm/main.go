@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
 	gouser "os/user"
 
 	"github.com/meowgorithm/babyenv"
+	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 )
@@ -20,14 +22,16 @@ type Config struct {
 type CharmClient struct {
 	Config      *Config
 	AgentClient *ssh.Client
-	Agent       agent.Agent
-	KeyPath     string
 }
 
-type AccountKey struct {
-	CharmID   string
-	PublicKey ssh.PublicKey
-	Agent     bool
+func agentAuthMethod() (ssh.AuthMethod, error) {
+	socket := os.Getenv("SSH_AUTH_SOCK")
+	conn, err := net.Dial("unix", socket)
+	if err != nil {
+		return nil, err
+	}
+	agentClient := agent.NewClient(conn)
+	return ssh.PublicKeysCallback(agentClient.Signers), nil
 }
 
 func NewCharmClient() *CharmClient {
@@ -35,47 +39,39 @@ func NewCharmClient() *CharmClient {
 	if err := babyenv.Parse(&cfg); err != nil {
 		log.Fatalf("could not get environment vars: %v", err)
 	}
-	socket := os.Getenv("SSH_AUTH_SOCK")
-	conn, err := net.Dial("unix", socket)
-	if err != nil {
-		log.Fatal(err)
-	}
-	agentClient := agent.NewClient(conn)
-
-	ud, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatal(err)
-	}
-	kp := fmt.Sprintf("%s/.ssh", ud)
-	e, err := fileExists(kp)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if !e {
-		log.Fatal("missing ssh directory at ~/.ssh")
-	}
-
 	u, err := gouser.Current()
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	sshCfg := &ssh.ClientConfig{
-		User: u.Name,
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeysCallback(agentClient.Signers),
-		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	var sshCfg *ssh.ClientConfig
+	am, err := agentAuthMethod()
+	if err == nil {
+		sshCfg = &ssh.ClientConfig{
+			User:            u.Name,
+			Auth:            []ssh.AuthMethod{am},
+			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		}
+	} else {
+		var pkam ssh.AuthMethod
+		pkam, err = publicKeyAuthFunc("~/.ssh/id_dsa")
+		if err != nil {
+			pkam, err = publicKeyAuthFunc("~/.ssh/id_rsa")
+			if err != nil {
+				log.Fatalf("Missing ssh keys. Run `ssh-keygen` to make one or specify a key with the `-i` flag")
+			}
+		}
+		sshCfg = &ssh.ClientConfig{
+			User:            u.Name,
+			Auth:            []ssh.AuthMethod{pkam},
+			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		}
 	}
 	sshc, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cfg.Host, cfg.Port), sshCfg)
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	return &CharmClient{
 		AgentClient: sshc,
-		Agent:       agentClient,
-		KeyPath:     kp,
 		Config:      &cfg,
 	}
 }
@@ -84,21 +80,17 @@ func (cc *CharmClient) Close() {
 	cc.AgentClient.Close()
 }
 
-func (cc *CharmClient) AgentKeys() ([]*AccountKey, error) {
-	var acs []*AccountKey
-	ks, err := cc.Agent.List()
+func (cc *CharmClient) JWT() (string, error) {
+	s, err := cc.AgentClient.NewSession()
 	if err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
-	for _, k := range ks {
-		ak := &AccountKey{
-			PublicKey: k,
-			Agent:     true,
-		}
-		acs = append(acs, ak)
+	defer s.Close()
+	id, err := s.Output("jwt")
+	if err != nil {
+		return "", err
 	}
-	return acs, nil
-
+	return string(id), nil
 }
 
 func fileExists(path string) (bool, error) {
@@ -112,14 +104,28 @@ func fileExists(path string) (bool, error) {
 	return true, err
 }
 
+func publicKeyAuthFunc(kp string) (ssh.AuthMethod, error) {
+	keyPath, err := homedir.Expand(kp)
+	if err != nil {
+		return nil, err
+	}
+	key, err := ioutil.ReadFile(keyPath)
+	if err != nil {
+		return nil, err
+	}
+	signer, err := ssh.ParsePrivateKey(key)
+	if err != nil {
+		return nil, err
+	}
+	return ssh.PublicKeys(signer), nil
+}
+
 func main() {
 	cc := NewCharmClient()
 	defer cc.Close()
-	s, err := cc.AgentClient.NewSession()
+	jwt, err := cc.JWT()
 	if err != nil {
 		log.Fatal(err)
 	}
-	id, err := s.Output("id")
-	s.Close()
-	log.Printf("ID: %s", string(id))
+	log.Printf("JWT: %s", jwt)
 }
