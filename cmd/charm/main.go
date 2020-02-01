@@ -24,16 +24,6 @@ type CharmClient struct {
 	AgentClient *ssh.Client
 }
 
-func agentAuthMethod() (ssh.AuthMethod, error) {
-	socket := os.Getenv("SSH_AUTH_SOCK")
-	conn, err := net.Dial("unix", socket)
-	if err != nil {
-		return nil, err
-	}
-	agentClient := agent.NewClient(conn)
-	return ssh.PublicKeysCallback(agentClient.Signers), nil
-}
-
 func NewCharmClient() *CharmClient {
 	var cfg Config
 	if err := babyenv.Parse(&cfg); err != nil {
@@ -53,9 +43,9 @@ func NewCharmClient() *CharmClient {
 		}
 	} else {
 		var pkam ssh.AuthMethod
-		pkam, err = publicKeyAuthFunc("~/.ssh/id_dsa")
+		pkam, err = publicKeyAuthMethod("~/.ssh/id_dsa")
 		if err != nil {
-			pkam, err = publicKeyAuthFunc("~/.ssh/id_rsa")
+			pkam, err = publicKeyAuthMethod("~/.ssh/id_rsa")
 			if err != nil {
 				log.Fatalf("Missing ssh keys. Run `ssh-keygen` to make one or specify a key with the `-i` flag")
 			}
@@ -104,7 +94,7 @@ func fileExists(path string) (bool, error) {
 	return true, err
 }
 
-func publicKeyAuthFunc(kp string) (ssh.AuthMethod, error) {
+func publicKeyAuthMethod(kp string) (ssh.AuthMethod, error) {
 	keyPath, err := homedir.Expand(kp)
 	if err != nil {
 		return nil, err
@@ -118,6 +108,16 @@ func publicKeyAuthFunc(kp string) (ssh.AuthMethod, error) {
 		return nil, err
 	}
 	return ssh.PublicKeys(signer), nil
+}
+
+func agentAuthMethod() (ssh.AuthMethod, error) {
+	socket := os.Getenv("SSH_AUTH_SOCK")
+	conn, err := net.Dial("unix", socket)
+	if err != nil {
+		return nil, err
+	}
+	agentClient := agent.NewClient(conn)
+	return ssh.PublicKeysCallback(agentClient.Signers), nil
 }
 
 func main() {
