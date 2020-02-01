@@ -1,15 +1,21 @@
 package main
 
 import (
+	"flag"
 	"log"
 
 	"github.com/charmbracelet/charm"
 )
 
 func main() {
+	i := flag.String("i", "", "identity file (ssh key) path")
+	flag.Parse()
 	cfg, err := charm.ConfigFromEnv()
 	if err != nil {
 		log.Fatal(err)
+	}
+	if *i != "" {
+		cfg.SSHKeyPath = *i
 	}
 	cc, err := charm.ConnectCharm(cfg)
 	if err == charm.ErrMissingSSHAuth {
