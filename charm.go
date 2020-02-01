@@ -78,7 +78,20 @@ func (cc *CharmClient) JWT() (string, error) {
 		return "", err
 	}
 	defer s.Close()
-	id, err := s.Output("jwt")
+	jwt, err := s.Output("jwt")
+	if err != nil {
+		return "", err
+	}
+	return string(jwt), nil
+}
+
+func (cc *CharmClient) ID() (string, error) {
+	s, err := cc.agentClient.NewSession()
+	if err != nil {
+		return "", err
+	}
+	defer s.Close()
+	id, err := s.Output("id")
 	if err != nil {
 		return "", err
 	}
