@@ -30,27 +30,27 @@ func main() {
 	args := flag.Args()
 	if len(args) == 0 {
 		flag.Usage()
-	} else {
-		switch args[0] {
-		case "jwt":
-			jwt, err := cc.JWT()
-			if err != nil {
-				log.Fatal(err)
-			}
-			fmt.Printf("%s", jwt)
-		case "id":
-			id, err := cc.ID()
-			if err != nil {
-				log.Fatal(err)
-			}
-			fmt.Printf("%s", id)
-		case "keys":
-			log.Fatalf("not implemented yet")
-		case "link":
-			log.Fatalf("not implemented yet")
-		default:
-			fmt.Printf("'%s' is not a valid command", args[0])
-			os.Exit(1)
+		return
+	}
+	switch args[0] {
+	case "jwt":
+		jwt, err := cc.JWT()
+		if err != nil {
+			log.Fatal(err)
 		}
+		fmt.Printf("%s", jwt)
+	case "id":
+		id, err := cc.ID()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("%s", id)
+	case "keys":
+		log.Fatalf("not implemented yet")
+	case "link":
+		log.Fatalf("not implemented yet")
+	default:
+		fmt.Printf("'%s' is not a valid command", args[0])
+		os.Exit(1)
 	}
 }
