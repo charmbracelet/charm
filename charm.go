@@ -44,7 +44,7 @@ func ConfigFromEnv() (*Config, error) {
 	return &cfg, nil
 }
 
-func ConnectCharm(cfg *Config) (*CharmClient, error) {
+func NewClient(cfg *Config) (*CharmClient, error) {
 	cc := &CharmClient{config: cfg}
 	am, err := agentAuthMethod()
 	if err == nil {
@@ -108,6 +108,19 @@ func (cc *CharmClient) ID() (string, error) {
 		return "", err
 	}
 	return string(id), nil
+}
+
+func (cc *CharmClient) AuthorizedKeys() (string, error) {
+	s, err := cc.sshSession()
+	if err != nil {
+		return "", err
+	}
+	defer s.Close()
+	jwt, err := s.session.Output("keys")
+	if err != nil {
+		return "", err
+	}
+	return string(jwt), nil
 }
 
 func (ses *sshSession) Close() {

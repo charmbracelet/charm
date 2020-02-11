@@ -19,7 +19,7 @@ func main() {
 	if *i != "" {
 		cfg.SSHKeyPath = *i
 	}
-	cc, err := charm.ConnectCharm(cfg)
+	cc, err := charm.NewClient(cfg)
 	if err == charm.ErrMissingSSHAuth {
 		log.Fatal("Missing ssh key. Run `ssh-keygen` to make one or set the `CHARM_SSH_KEY_PATH` env var to your private key path.")
 	}
@@ -45,7 +45,11 @@ func main() {
 		}
 		fmt.Printf("%s", id)
 	case "keys":
-		log.Fatalf("not implemented yet")
+		ak, err := cc.AuthorizedKeys()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("%s", ak)
 	case "link":
 		log.Fatalf("not implemented yet")
 	default:
