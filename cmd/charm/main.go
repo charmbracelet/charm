@@ -26,7 +26,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer cc.Close()
 	args := flag.Args()
 	if len(args) == 0 {
 		flag.Usage()

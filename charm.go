@@ -15,15 +15,25 @@ import (
 
 var ErrMissingSSHAuth = errors.New("missing ssh auth")
 
+var ErrNameTaken = errors.New("name already taken")
+
 type Config struct {
-	Host       string `env:"CHARM_ID_HOST" default:"id.dev.charm.sh"`
-	Port       int    `env:"CHARM_ID_PORT" default:"5555"`
-	SSHKeyPath string `env:"CHARM_SSH_KEY_PATH" default:"~/.ssh/id_dsa"`
+	IDHost      string `env:"CHARM_ID_HOST" default:"id.dev.charm.sh"`
+	IDPort      int    `env:"CHARM_ID_PORT" default:"5555"`
+	BioHost     string `env:"CHARM_ID_HOST" default:"bio.dev.charm.sh"`
+	BioPort     int    `env:"CHARM_ID_PORT" default:"80"`
+	UseSSHAgent bool   `env:"CHARM_USE_SSH_AGENT" default:"true"`
+	SSHKeyPath  string `env:"CHARM_SSH_KEY_PATH" default:"~/.ssh/id_dsa"`
 }
 
 type CharmClient struct {
-	config      *Config
-	agentClient *ssh.Client
+	config    *Config
+	sshConfig *ssh.ClientConfig
+}
+
+type sshSession struct {
+	client  *ssh.Client
+	session *ssh.Session
 }
 
 func ConfigFromEnv() (*Config, error) {
@@ -35,50 +45,52 @@ func ConfigFromEnv() (*Config, error) {
 }
 
 func ConnectCharm(cfg *Config) (*CharmClient, error) {
-	var sshCfg *ssh.ClientConfig
+	cc := &CharmClient{config: cfg}
 	am, err := agentAuthMethod()
 	if err == nil {
-		sshCfg = &ssh.ClientConfig{
+		cc.sshConfig = &ssh.ClientConfig{
 			User:            "charm",
 			Auth:            []ssh.AuthMethod{am},
 			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		}
-	} else {
-		var pkam ssh.AuthMethod
-		pkam, err = publicKeyAuthMethod(cfg.SSHKeyPath)
+		return cc, nil
+	}
+
+	var pkam ssh.AuthMethod
+	pkam, err = publicKeyAuthMethod(cfg.SSHKeyPath)
+	if err != nil {
+		pkam, err = publicKeyAuthMethod("~/.ssh/id_rsa")
 		if err != nil {
-			pkam, err = publicKeyAuthMethod("~/.ssh/id_rsa")
-			if err != nil {
-				return nil, ErrMissingSSHAuth
-			}
-		}
-		sshCfg = &ssh.ClientConfig{
-			User:            "charm",
-			Auth:            []ssh.AuthMethod{pkam},
-			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+			return nil, ErrMissingSSHAuth
 		}
 	}
-	sshc, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cfg.Host, cfg.Port), sshCfg)
+	cc.sshConfig = &ssh.ClientConfig{
+		User:            "charm",
+		Auth:            []ssh.AuthMethod{pkam},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+	return cc, nil
+}
+
+func (cc *CharmClient) sshSession() (*sshSession, error) {
+	c, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cc.config.IDHost, cc.config.IDPort), cc.sshConfig)
 	if err != nil {
 		return nil, err
 	}
-	return &CharmClient{
-		agentClient: sshc,
-		config:      cfg,
-	}, nil
-}
-
-func (cc *CharmClient) Close() {
-	cc.agentClient.Close()
+	s, err := c.NewSession()
+	if err != nil {
+		return nil, err
+	}
+	return &sshSession{client: c, session: s}, nil
 }
 
 func (cc *CharmClient) JWT() (string, error) {
-	s, err := cc.agentClient.NewSession()
+	s, err := cc.sshSession()
 	if err != nil {
 		return "", err
 	}
 	defer s.Close()
-	jwt, err := s.Output("jwt")
+	jwt, err := s.session.Output("jwt")
 	if err != nil {
 		return "", err
 	}
@@ -86,16 +98,21 @@ func (cc *CharmClient) JWT() (string, error) {
 }
 
 func (cc *CharmClient) ID() (string, error) {
-	s, err := cc.agentClient.NewSession()
+	s, err := cc.sshSession()
 	if err != nil {
 		return "", err
 	}
 	defer s.Close()
-	id, err := s.Output("id")
+	id, err := s.session.Output("id")
 	if err != nil {
 		return "", err
 	}
 	return string(id), nil
+}
+
+func (ses *sshSession) Close() {
+	ses.session.Close()
+	ses.client.Close()
 }
 
 func fileExists(path string) (bool, error) {
