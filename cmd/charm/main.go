@@ -32,6 +32,20 @@ func main() {
 		return
 	}
 	switch args[0] {
+	case "name":
+		if len(args) != 2 {
+			log.Fatal("Usage: charm name USERNAME")
+		}
+		n := args[1]
+		u, err := cc.SetName(n)
+		if err == charm.ErrNameTaken {
+			fmt.Printf("User name '%s' is already taken. Try another!\n", n)
+			os.Exit(1)
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("@%s ID: %s\n", u.Name, u.CharmID)
 	case "jwt":
 		jwt, err := cc.JWT()
 		if err != nil {
