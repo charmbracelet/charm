@@ -65,7 +65,20 @@ func main() {
 		}
 		fmt.Printf("%s", ak)
 	case "link":
-		log.Fatalf("not implemented yet")
+		switch len(args) {
+		case 1:
+			err := cc.LinkGen()
+			if err != nil {
+				log.Fatal(err)
+			}
+		case 2:
+			err := cc.Link(args[1])
+			if err != nil {
+				log.Fatal(err)
+			}
+		default:
+			log.Fatal("Bad link command")
+		}
 	default:
 		fmt.Printf("'%s' is not a valid command", args[0])
 		os.Exit(1)

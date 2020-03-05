@@ -32,6 +32,7 @@ type Config struct {
 type Client struct {
 	config    *Config
 	sshConfig *ssh.ClientConfig
+	User      *User
 }
 
 type User struct {
@@ -113,6 +114,32 @@ func (cc *Client) AuthorizedKeys() (string, error) {
 	}
 	defer s.Close()
 	jwt, err := s.session.Output("keys")
+	if err != nil {
+		return "", err
+	}
+	return string(jwt), nil
+}
+
+func (cc *Client) Link(code string) error {
+	s, err := cc.sshSession()
+	if err != nil {
+		return "", err
+	}
+	defer s.Close()
+	jwt, err := s.session.Output(fmt.Sprintf("api-link %s", code))
+	if err != nil {
+		return "", err
+	}
+	return string(jwt), nil
+}
+
+func (cc *Client) LinkGen() error {
+	s, err := cc.sshSession()
+	if err != nil {
+		return "", err
+	}
+	defer s.Close()
+	jwt, err := s.session.Output("api-link")
 	if err != nil {
 		return "", err
 	}
