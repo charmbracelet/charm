@@ -154,18 +154,50 @@ func (cc *Client) LinkGen() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	in, err := s.session.StdinPipe()
+	if err != nil {
+		return "", err
+	}
 
 	err = s.session.Start("api-link")
 	if err != nil {
 		return "", err
 	}
+
 	var lr Link
 	dec := json.NewDecoder(out)
 	err = dec.Decode(&lr)
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%v", lr), nil
+	fmt.Printf("link code: %s\n", lr.Token)
+
+	// waiting for link request, do we want to approve it?
+	var lr2 Link
+	dec = json.NewDecoder(out)
+	err = dec.Decode(&lr2)
+	if err != nil {
+		return "", err
+	}
+	fmt.Printf("got link request: %v\n", lr2)
+
+	// send "yes" response
+	lm := LinkerMessage{"no"}
+	enc := json.NewEncoder(in)
+	err = enc.Encode(lm)
+	if err != nil {
+		return "", err
+	}
+
+	// get server response
+	var lr3 Link
+	dec = json.NewDecoder(out)
+	err = dec.Decode(&lr3)
+	if err != nil {
+		return "", err
+	}
+	fmt.Printf("final status: %d\n", lr3.Status)
+	return fmt.Sprintf("%v", lr3), nil
 }
 
 func (cc *Client) SetName(name string) (*User, error) {

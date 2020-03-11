@@ -24,3 +24,7 @@ type Link struct {
 	Port          int        `json:"port"`
 	Status        LinkStatus `json:"status"`
 }
+
+type LinkerMessage struct {
+	Message string `json:"message"`
+}
