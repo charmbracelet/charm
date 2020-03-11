@@ -67,15 +67,17 @@ func main() {
 	case "link":
 		switch len(args) {
 		case 1:
-			err := cc.LinkGen()
+			lr, err := cc.LinkGen()
 			if err != nil {
 				log.Fatal(err)
 			}
+			fmt.Println(lr)
 		case 2:
-			err := cc.Link(args[1])
+			lr, err := cc.Link(args[1])
 			if err != nil {
 				log.Fatal(err)
 			}
+			fmt.Println(lr)
 		default:
 			log.Fatal("Bad link command")
 		}

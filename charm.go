@@ -23,8 +23,8 @@ var ErrNameTaken = errors.New("name already taken")
 type Config struct {
 	IDHost      string `env:"CHARM_ID_HOST" default:"id.dev.charm.sh"`
 	IDPort      int    `env:"CHARM_ID_PORT" default:"5555"`
-	BioHost     string `env:"CHARM_ID_HOST" default:"http://bio.dev.charm.sh"`
-	BioPort     int    `env:"CHARM_ID_PORT" default:"80"`
+	BioHost     string `env:"CHARM_BIO_HOST" default:"http://bio.dev.charm.sh"`
+	BioPort     int    `env:"CHARM_BIO_PORT" default:"80"`
 	UseSSHAgent bool   `env:"CHARM_USE_SSH_AGENT" default:"true"`
 	SSHKeyPath  string `env:"CHARM_SSH_KEY_PATH" default:"~/.ssh/id_dsa"`
 }
@@ -120,30 +120,52 @@ func (cc *Client) AuthorizedKeys() (string, error) {
 	return string(jwt), nil
 }
 
-func (cc *Client) Link(code string) error {
+func (cc *Client) Link(code string) (string, error) {
 	s, err := cc.sshSession()
 	if err != nil {
 		return "", err
 	}
 	defer s.Close()
-	jwt, err := s.session.Output(fmt.Sprintf("api-link %s", code))
+	out, err := s.session.StdoutPipe()
 	if err != nil {
 		return "", err
 	}
-	return string(jwt), nil
+
+	err = s.session.Start(fmt.Sprintf("api-link %s", code))
+	if err != nil {
+		return "", err
+	}
+	var lr Link
+	dec := json.NewDecoder(out)
+	err = dec.Decode(&lr)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%v", lr), nil
 }
 
-func (cc *Client) LinkGen() error {
+func (cc *Client) LinkGen() (string, error) {
 	s, err := cc.sshSession()
 	if err != nil {
 		return "", err
 	}
 	defer s.Close()
-	jwt, err := s.session.Output("api-link")
+	out, err := s.session.StdoutPipe()
 	if err != nil {
 		return "", err
 	}
-	return string(jwt), nil
+
+	err = s.session.Start("api-link")
+	if err != nil {
+		return "", err
+	}
+	var lr Link
+	dec := json.NewDecoder(out)
+	err = dec.Decode(&lr)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%v", lr), nil
 }
 
 func (cc *Client) SetName(name string) (*User, error) {
