@@ -28,3 +28,9 @@ type Link struct {
 type LinkerMessage struct {
 	Message string `json:"message"`
 }
+
+type LinkHandler interface {
+	DisplayCode(*Link)
+	ConfirmRequest(*Link) bool
+	DisplayFinalStatus(*Link)
+}

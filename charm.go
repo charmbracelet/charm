@@ -120,73 +120,79 @@ func (cc *Client) AuthorizedKeys() (string, error) {
 	return string(jwt), nil
 }
 
-func (cc *Client) Link(code string) (string, error) {
+func (cc *Client) Link(lh LinkHandler, code string) error {
 	s, err := cc.sshSession()
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer s.Close()
 	out, err := s.session.StdoutPipe()
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	err = s.session.Start(fmt.Sprintf("api-link %s", code))
 	if err != nil {
-		return "", err
+		return err
 	}
 	var lr Link
 	dec := json.NewDecoder(out)
 	err = dec.Decode(&lr)
 	if err != nil {
-		return "", err
+		return err
 	}
-	return fmt.Sprintf("%v", lr), nil
+	lh.DisplayFinalStatus(&lr)
+	return nil
 }
 
-func (cc *Client) LinkGen() (string, error) {
+func (cc *Client) LinkGen(lh LinkHandler) error {
 	s, err := cc.sshSession()
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer s.Close()
 	out, err := s.session.StdoutPipe()
 	if err != nil {
-		return "", err
+		return err
 	}
 	in, err := s.session.StdinPipe()
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	err = s.session.Start("api-link")
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	var lr Link
 	dec := json.NewDecoder(out)
 	err = dec.Decode(&lr)
 	if err != nil {
-		return "", err
+		return err
 	}
-	fmt.Printf("link code: %s\n", lr.Token)
+	lh.DisplayCode(&lr)
 
 	// waiting for link request, do we want to approve it?
 	var lr2 Link
 	dec = json.NewDecoder(out)
 	err = dec.Decode(&lr2)
 	if err != nil {
-		return "", err
+		return err
 	}
-	fmt.Printf("got link request: %v\n", lr2)
 
-	// send "yes" response
-	lm := LinkerMessage{"no"}
+	var lm LinkerMessage
+	confirmed := lh.ConfirmRequest(&lr2)
+	if confirmed {
+		lm = LinkerMessage{"yes"}
+	} else {
+		lm = LinkerMessage{"no"}
+	}
+	// send approval response
 	enc := json.NewEncoder(in)
 	err = enc.Encode(lm)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	// get server response
@@ -194,10 +200,10 @@ func (cc *Client) LinkGen() (string, error) {
 	dec = json.NewDecoder(out)
 	err = dec.Decode(&lr3)
 	if err != nil {
-		return "", err
+		return err
 	}
-	fmt.Printf("final status: %d\n", lr3.Status)
-	return fmt.Sprintf("%v", lr3), nil
+	lh.DisplayFinalStatus(&lr3)
+	return nil
 }
 
 func (cc *Client) SetName(name string) (*User, error) {

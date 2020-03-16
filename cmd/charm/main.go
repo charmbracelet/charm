@@ -1,13 +1,39 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/charmbracelet/charm"
 )
+
+type TermLinkHandler struct{}
+
+func (th *TermLinkHandler) DisplayCode(l *charm.Link) {
+	fmt.Printf("To link a machine, run: \n\n> charm link %s", l.Token)
+}
+
+func (th *TermLinkHandler) ConfirmRequest(l *charm.Link) bool {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Printf("Does this look right? (yes/no)\n\n%s\nIP: %s\n", l.RequestPubKey, l.RequestAddr)
+	conf, _ := reader.ReadString('\n')
+	if strings.ToLower(conf) == "yes" {
+		return true
+	}
+	return false
+}
+
+func (th *TermLinkHandler) DisplayFinalStatus(l *charm.Link) {
+	if l.Status == charm.LinkStatusSuccess {
+		fmt.Println("Linked!")
+	} else {
+		fmt.Println("Not Linked :(")
+	}
+}
 
 func main() {
 	i := flag.String("i", "", "identity file (ssh key) path")
@@ -65,19 +91,18 @@ func main() {
 		}
 		fmt.Printf("%s", ak)
 	case "link":
+		lh := &TermLinkHandler{}
 		switch len(args) {
 		case 1:
-			lr, err := cc.LinkGen()
+			err := cc.LinkGen(lh)
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Println(lr)
 		case 2:
-			lr, err := cc.Link(args[1])
+			err := cc.Link(lh, args[1])
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Println(lr)
 		default:
 			log.Fatal("Bad link command")
 		}
