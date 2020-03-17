@@ -33,7 +33,7 @@ func (th *TermLinkHandler) Request(l *charm.Link) bool {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Printf("Does this look right? (yes/no)\n\n%s\nIP: %s\n", l.RequestPubKey, l.RequestAddr)
 	conf, _ := reader.ReadString('\n')
-	if strings.ToLower(conf) == "yes" {
+	if strings.ToLower(conf) == "yes\n" {
 		return true
 	}
 	return false

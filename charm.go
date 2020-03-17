@@ -141,7 +141,27 @@ func (cc *Client) Link(lh LinkHandler, code string) error {
 	if err != nil {
 		return err
 	}
-	checkLinkStatus(lh, &lr)
+	if !checkLinkStatus(lh, &lr) {
+		return nil
+	}
+
+	var lr2 Link
+	err = dec.Decode(&lr2)
+	if err != nil {
+		return err
+	}
+	if !checkLinkStatus(lh, &lr2) {
+		return nil
+	}
+
+	var lr3 Link
+	err = dec.Decode(&lr3)
+	if err != nil {
+		return err
+	}
+	if !checkLinkStatus(lh, &lr3) {
+		return nil
+	}
 	return nil
 }
 
@@ -177,7 +197,6 @@ func (cc *Client) LinkGen(lh LinkHandler) error {
 
 	// waiting for link request, do we want to approve it?
 	var lr2 Link
-	dec = json.NewDecoder(out)
 	err = dec.Decode(&lr2)
 	if err != nil {
 		return err
@@ -186,23 +205,24 @@ func (cc *Client) LinkGen(lh LinkHandler) error {
 		return nil
 	}
 
+	// send approval response
 	var lm LinkerMessage
-	confirmed := lh.Request(&lr2)
-	if confirmed {
+	enc := json.NewEncoder(in)
+	if lh.Request(&lr2) {
 		lm = LinkerMessage{"yes"}
 	} else {
 		lm = LinkerMessage{"no"}
 	}
-	// send approval response
-	enc := json.NewEncoder(in)
 	err = enc.Encode(lm)
 	if err != nil {
 		return err
 	}
+	if lm.Message == "no" {
+		return nil
+	}
 
 	// get server response
 	var lr3 Link
-	dec = json.NewDecoder(out)
 	err = dec.Decode(&lr3)
 	if err != nil {
 		return err
