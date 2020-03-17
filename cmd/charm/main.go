@@ -13,11 +13,23 @@ import (
 
 type TermLinkHandler struct{}
 
-func (th *TermLinkHandler) DisplayCode(l *charm.Link) {
-	fmt.Printf("To link a machine, run: \n\n> charm link %s", l.Token)
+func (th *TermLinkHandler) TokenCreated(l *charm.Link) {
+	fmt.Printf("To link a machine, run: \n\n> charm link %s\n", l.Token)
 }
 
-func (th *TermLinkHandler) ConfirmRequest(l *charm.Link) bool {
+func (th *TermLinkHandler) TokenSent(l *charm.Link) {
+	fmt.Println("Linking...")
+}
+
+func (th *TermLinkHandler) ValidToken(l *charm.Link) {
+	fmt.Println("Valid token")
+}
+
+func (th *TermLinkHandler) InvalidToken(l *charm.Link) {
+	fmt.Println("That token looks invalid.")
+}
+
+func (th *TermLinkHandler) Request(l *charm.Link) bool {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Printf("Does this look right? (yes/no)\n\n%s\nIP: %s\n", l.RequestPubKey, l.RequestAddr)
 	conf, _ := reader.ReadString('\n')
@@ -27,12 +39,24 @@ func (th *TermLinkHandler) ConfirmRequest(l *charm.Link) bool {
 	return false
 }
 
-func (th *TermLinkHandler) DisplayFinalStatus(l *charm.Link) {
-	if l.Status == charm.LinkStatusSuccess {
-		fmt.Println("Linked!")
-	} else {
-		fmt.Println("Not Linked :(")
-	}
+func (th *TermLinkHandler) RequestDenied(l *charm.Link) {
+	fmt.Println("Not Linked :(")
+}
+
+func (th *TermLinkHandler) SameAccount(l *charm.Link) {
+	fmt.Println("Linked! You already linked this key btw.")
+}
+
+func (th *TermLinkHandler) Success(l *charm.Link) {
+	fmt.Println("Linked!")
+}
+
+func (th *TermLinkHandler) Timeout(l *charm.Link) {
+	fmt.Println("Timed out. Sorry.")
+}
+
+func (th *TermLinkHandler) Error(l *charm.Link) {
+	fmt.Println("Error, something's wrong.")
 }
 
 func main() {

@@ -141,7 +141,7 @@ func (cc *Client) Link(lh LinkHandler, code string) error {
 	if err != nil {
 		return err
 	}
-	lh.DisplayFinalStatus(&lr)
+	checkLinkStatus(lh, &lr)
 	return nil
 }
 
@@ -171,7 +171,9 @@ func (cc *Client) LinkGen(lh LinkHandler) error {
 	if err != nil {
 		return err
 	}
-	lh.DisplayCode(&lr)
+	if !checkLinkStatus(lh, &lr) {
+		return nil
+	}
 
 	// waiting for link request, do we want to approve it?
 	var lr2 Link
@@ -180,9 +182,12 @@ func (cc *Client) LinkGen(lh LinkHandler) error {
 	if err != nil {
 		return err
 	}
+	if !checkLinkStatus(lh, &lr2) {
+		return nil
+	}
 
 	var lm LinkerMessage
-	confirmed := lh.ConfirmRequest(&lr2)
+	confirmed := lh.Request(&lr2)
 	if confirmed {
 		lm = LinkerMessage{"yes"}
 	} else {
@@ -202,7 +207,7 @@ func (cc *Client) LinkGen(lh LinkHandler) error {
 	if err != nil {
 		return err
 	}
-	lh.DisplayFinalStatus(&lr3)
+	checkLinkStatus(lh, &lr3)
 	return nil
 }
 
