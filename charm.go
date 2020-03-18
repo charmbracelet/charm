@@ -69,10 +69,10 @@ func NewClient(cfg *Config) (*Client, error) {
 	}
 
 	var pkam ssh.AuthMethod
-	fmt.Printf("Using SSH key %s\n", cfg.SSHKeyPath)
+	// fmt.Printf("Using SSH key %s\n", cfg.SSHKeyPath)
 	pkam, err := publicKeyAuthMethod(cfg.SSHKeyPath)
 	if err != nil {
-		fmt.Printf("Couldn't find SSH key %s, trying ~/.ssh/id_rsa\n", cfg.SSHKeyPath)
+		// fmt.Printf("Couldn't find SSH key %s, trying ~/.ssh/id_rsa\n", cfg.SSHKeyPath)
 		pkam, err = publicKeyAuthMethod("~/.ssh/id_rsa")
 		if err != nil {
 			return nil, ErrMissingSSHAuth
@@ -321,12 +321,12 @@ func publicKeyAuthMethod(kp string) (ssh.AuthMethod, error) {
 func agentAuthMethod() (ssh.AuthMethod, error) {
 	socket := os.Getenv("SSH_AUTH_SOCK")
 	if socket == "" {
-		fmt.Println("No SSH_AUTH_SOCK set, not using ssh-agent")
+		// fmt.Println("No SSH_AUTH_SOCK set, not using ssh-agent")
 		return nil, fmt.Errorf("Missing socket env var")
 	}
 	conn, err := net.Dial("unix", socket)
 	if err != nil {
-		fmt.Printf("SSH agent dial error: %s\n", err)
+		// fmt.Printf("SSH agent dial error: %s\n", err)
 		return nil, err
 	}
 	agentClient := agent.NewClient(conn)
