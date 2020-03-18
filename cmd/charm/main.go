@@ -68,6 +68,7 @@ func main() {
 	}
 	if *i != "" {
 		cfg.SSHKeyPath = *i
+		cfg.ForceKey = true
 	}
 	cc, err := charm.NewClient(cfg)
 	if err == charm.ErrMissingSSHAuth {

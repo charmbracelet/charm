@@ -27,6 +27,7 @@ type Config struct {
 	BioPort     int    `env:"CHARM_BIO_PORT" default:"80"`
 	UseSSHAgent bool   `env:"CHARM_USE_SSH_AGENT" default:"true"`
 	SSHKeyPath  string `env:"CHARM_SSH_KEY_PATH" default:"~/.ssh/id_dsa"`
+	ForceKey    bool
 }
 
 type Client struct {
@@ -55,19 +56,21 @@ func ConfigFromEnv() (*Config, error) {
 
 func NewClient(cfg *Config) (*Client, error) {
 	cc := &Client{config: cfg}
-	am, err := agentAuthMethod()
-	if err == nil {
-		cc.sshConfig = &ssh.ClientConfig{
-			User:            "charm",
-			Auth:            []ssh.AuthMethod{am},
-			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	if !cfg.ForceKey {
+		am, err := agentAuthMethod()
+		if err == nil {
+			cc.sshConfig = &ssh.ClientConfig{
+				User:            "charm",
+				Auth:            []ssh.AuthMethod{am},
+				HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+			}
+			return cc, nil
 		}
-		return cc, nil
 	}
 
 	var pkam ssh.AuthMethod
 	fmt.Printf("Using SSH key %s\n", cfg.SSHKeyPath)
-	pkam, err = publicKeyAuthMethod(cfg.SSHKeyPath)
+	pkam, err := publicKeyAuthMethod(cfg.SSHKeyPath)
 	if err != nil {
 		fmt.Printf("Couldn't find SSH key %s, trying ~/.ssh/id_rsa\n", cfg.SSHKeyPath)
 		pkam, err = publicKeyAuthMethod("~/.ssh/id_rsa")
@@ -323,6 +326,7 @@ func agentAuthMethod() (ssh.AuthMethod, error) {
 	}
 	conn, err := net.Dial("unix", socket)
 	if err != nil {
+		fmt.Printf("SSH agent dial error: %s\n", err)
 		return nil, err
 	}
 	agentClient := agent.NewClient(conn)
