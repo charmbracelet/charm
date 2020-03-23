@@ -33,6 +33,7 @@ type Config struct {
 type Client struct {
 	config    *Config
 	sshConfig *ssh.ClientConfig
+	session   *ssh.Session
 	User      *User
 }
 
@@ -42,7 +43,6 @@ type User struct {
 }
 
 type sshSession struct {
-	client  *ssh.Client
 	session *ssh.Session
 }
 
@@ -64,7 +64,10 @@ func NewClient(cfg *Config) (*Client, error) {
 				Auth:            []ssh.AuthMethod{am},
 				HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 			}
-			return cc, nil
+			cc.session, err = cc.sshSession()
+			if err == nil {
+				return cc, nil
+			}
 		}
 	}
 
@@ -83,16 +86,16 @@ func NewClient(cfg *Config) (*Client, error) {
 		Auth:            []ssh.AuthMethod{pkam},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
+	cc.session, err = cc.sshSession()
+	if err != nil {
+		return nil, err
+	}
 	return cc, nil
 }
 
 func (cc *Client) JWT() (string, error) {
-	s, err := cc.sshSession()
-	if err != nil {
-		return "", err
-	}
-	defer s.Close()
-	jwt, err := s.session.Output("jwt")
+	defer cc.session.Close()
+	jwt, err := cc.session.Output("jwt")
 	if err != nil {
 		return "", err
 	}
@@ -100,12 +103,8 @@ func (cc *Client) JWT() (string, error) {
 }
 
 func (cc *Client) ID() (string, error) {
-	s, err := cc.sshSession()
-	if err != nil {
-		return "", err
-	}
-	defer s.Close()
-	id, err := s.session.Output("id")
+	defer cc.session.Close()
+	id, err := cc.session.Output("id")
 	if err != nil {
 		return "", err
 	}
@@ -113,12 +112,8 @@ func (cc *Client) ID() (string, error) {
 }
 
 func (cc *Client) AuthorizedKeys() (string, error) {
-	s, err := cc.sshSession()
-	if err != nil {
-		return "", err
-	}
-	defer s.Close()
-	jwt, err := s.session.Output("keys")
+	defer cc.session.Close()
+	jwt, err := cc.session.Output("keys")
 	if err != nil {
 		return "", err
 	}
@@ -126,17 +121,13 @@ func (cc *Client) AuthorizedKeys() (string, error) {
 }
 
 func (cc *Client) Link(lh LinkHandler, code string) error {
-	s, err := cc.sshSession()
-	if err != nil {
-		return err
-	}
-	defer s.Close()
-	out, err := s.session.StdoutPipe()
+	defer cc.session.Close()
+	out, err := cc.session.StdoutPipe()
 	if err != nil {
 		return err
 	}
 
-	err = s.session.Start(fmt.Sprintf("api-link %s", code))
+	err = cc.session.Start(fmt.Sprintf("api-link %s", code))
 	if err != nil {
 		return err
 	}
@@ -171,21 +162,17 @@ func (cc *Client) Link(lh LinkHandler, code string) error {
 }
 
 func (cc *Client) LinkGen(lh LinkHandler) error {
-	s, err := cc.sshSession()
+	defer cc.session.Close()
+	out, err := cc.session.StdoutPipe()
 	if err != nil {
 		return err
 	}
-	defer s.Close()
-	out, err := s.session.StdoutPipe()
-	if err != nil {
-		return err
-	}
-	in, err := s.session.StdinPipe()
+	in, err := cc.session.StdinPipe()
 	if err != nil {
 		return err
 	}
 
-	err = s.session.Start("api-link")
+	err = cc.session.Start("api-link")
 	if err != nil {
 		return err
 	}
@@ -274,7 +261,7 @@ func (cc *Client) SetName(name string) (*User, error) {
 	return u, nil
 }
 
-func (cc *Client) sshSession() (*sshSession, error) {
+func (cc *Client) sshSession() (*ssh.Session, error) {
 	c, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cc.config.IDHost, cc.config.IDPort), cc.sshConfig)
 	if err != nil {
 		return nil, err
@@ -283,12 +270,7 @@ func (cc *Client) sshSession() (*sshSession, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &sshSession{client: c, session: s}, nil
-}
-
-func (ses *sshSession) Close() {
-	ses.session.Close()
-	ses.client.Close()
+	return s, nil
 }
 
 func fileExists(path string) (bool, error) {
