@@ -93,12 +93,6 @@ func NewClient(cfg *Config) (*Client, error) {
 	return cc, nil
 }
 
-func (cc *Client) renewSession() error {
-	var err error
-	cc.session, err = cc.sshSession()
-	return err
-}
-
 func (cc *Client) JWT() (string, error) {
 	defer cc.session.Close()
 	jwt, err := cc.session.Output("jwt")
@@ -310,6 +304,12 @@ func (cc *Client) Bio() (*User, error) {
 		return nil, err
 	}
 	return u, nil
+}
+
+func (cc *Client) renewSession() error {
+	var err error
+	cc.session, err = cc.sshSession()
+	return err
 }
 
 func (cc *Client) sshSession() (*ssh.Session, error) {
