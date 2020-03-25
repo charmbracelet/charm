@@ -93,6 +93,12 @@ func NewClient(cfg *Config) (*Client, error) {
 	return cc, nil
 }
 
+func (cc *Client) renewSession() error {
+	var err error
+	cc.session, err = cc.sshSession()
+	return err
+}
+
 func (cc *Client) JWT() (string, error) {
 	defer cc.session.Close()
 	jwt, err := cc.session.Output("jwt")
@@ -237,6 +243,51 @@ func (cc *Client) SetName(name string) (*User, error) {
 		return nil, err
 	}
 	jwt, err := cc.JWT()
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", fmt.Sprintf("bearer %s", jwt))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode == 409 {
+		return nil, ErrNameTaken
+	}
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("server error")
+	}
+	defer resp.Body.Close()
+	dec := json.NewDecoder(resp.Body)
+	err = dec.Decode(&u)
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
+func (cc *Client) Bio() (*User, error) {
+	u := &User{}
+	client := &http.Client{}
+	buf := &bytes.Buffer{}
+	err := json.NewEncoder(buf).Encode(u)
+	if err != nil {
+		return nil, err
+	}
+	id, err := cc.ID()
+	if err != nil {
+		return nil, err
+	}
+	err = cc.renewSession()
+	if err != nil {
+		return nil, err
+	}
+	jwt, err := cc.JWT()
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s:%d/id/%s", cc.config.BioHost, cc.config.BioPort, id), buf)
 	if err != nil {
 		return nil, err
 	}

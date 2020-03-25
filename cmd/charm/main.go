@@ -109,6 +109,12 @@ func main() {
 			log.Fatal(err)
 		}
 		fmt.Printf("%s", id)
+	case "bio":
+		u, err := cc.Bio()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("%v", u)
 	case "keys":
 		ak, err := cc.AuthorizedKeys()
 		if err != nil {
