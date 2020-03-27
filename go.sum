@@ -17,6 +17,8 @@ github.com/charmbracelet/glamour v0.1.0 h1:BHCtc+YJjoBjNUnFKBtXyyM4Bp9u7L2kf49qV
 github.com/charmbracelet/glamour v0.1.0/go.mod h1:Z1C2JkVGBom/RYfoKcPBZ81lHMR3xp3W6OCLNWWEIMc=
 github.com/charmbracelet/tea v0.0.0-20200220032354-23432f30dd46 h1:ZRxnZ9WA8+DX7IpIrUjaAzue12wCA8bHgDWSrqARvGY=
 github.com/charmbracelet/tea v0.0.0-20200220032354-23432f30dd46/go.mod h1:96S8RyGdd7HfPcgDC8XqPKe+eH/1etFkw6lfhQCesgU=
+github.com/charmbracelet/teaparty v0.0.0-20200225035933-9225516bf4b0 h1:lUWlstOnFPRXm7lWhScEV2drkqWgzkxeiIm4McHdV8Q=
+github.com/charmbracelet/teaparty v0.0.0-20200225035933-9225516bf4b0/go.mod h1:bFUJzt73yZYHsuRP/uR/8dCPyjtFWhfiR8NZiTes+EY=
 github.com/charmbracelet/wish v0.0.0-20200109231010-79b57a1c8314/go.mod h1:WhwvT/f6Af3m77zA9++YGbEcMQfI/YxMZtlsV072h90=
 github.com/charmbracelet/wish v0.0.0-20200117212234-86331d0d07ac h1:lfnzjG/+DRcgAmknF/9cSI89MOrwpHf93BVKe7MnMI0=
 github.com/charmbracelet/wish v0.0.0-20200117212234-86331d0d07ac/go.mod h1:WhwvT/f6Af3m77zA9++YGbEcMQfI/YxMZtlsV072h90=

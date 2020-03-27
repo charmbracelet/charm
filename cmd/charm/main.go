@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/charm"
+	"github.com/charmbracelet/tea"
 )
 
 type TermLinkHandler struct{}
@@ -60,6 +61,12 @@ func (th *TermLinkHandler) Error(l *charm.Link) {
 }
 
 func main() {
+	// TEMP
+	p := tea.NewProgram(initialize, update, view, subscriptions)
+	if err := p.Start(); err != nil {
+		log.Fatal("Could not start program: ", err)
+	}
+
 	i := flag.String("i", "", "identity file (ssh key) path")
 	flag.Parse()
 	cfg, err := charm.ConfigFromEnv()
