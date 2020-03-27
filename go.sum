@@ -17,8 +17,14 @@ github.com/charmbracelet/glamour v0.1.0 h1:BHCtc+YJjoBjNUnFKBtXyyM4Bp9u7L2kf49qV
 github.com/charmbracelet/glamour v0.1.0/go.mod h1:Z1C2JkVGBom/RYfoKcPBZ81lHMR3xp3W6OCLNWWEIMc=
 github.com/charmbracelet/tea v0.0.0-20200220032354-23432f30dd46 h1:ZRxnZ9WA8+DX7IpIrUjaAzue12wCA8bHgDWSrqARvGY=
 github.com/charmbracelet/tea v0.0.0-20200220032354-23432f30dd46/go.mod h1:96S8RyGdd7HfPcgDC8XqPKe+eH/1etFkw6lfhQCesgU=
+github.com/charmbracelet/tea v0.0.0-20200327161423-87ff36e3456d h1:EC8pUGGcVTHlpso9ZNMBt+3xC4qytZsWHpyPRWNfiRM=
+github.com/charmbracelet/tea v0.0.0-20200327161423-87ff36e3456d/go.mod h1:JjMimWJPs31+qYfneGek89vxCkaEMyWUDeZIa/ohsBA=
 github.com/charmbracelet/teaparty v0.0.0-20200225035933-9225516bf4b0 h1:lUWlstOnFPRXm7lWhScEV2drkqWgzkxeiIm4McHdV8Q=
 github.com/charmbracelet/teaparty v0.0.0-20200225035933-9225516bf4b0/go.mod h1:bFUJzt73yZYHsuRP/uR/8dCPyjtFWhfiR8NZiTes+EY=
+github.com/charmbracelet/teaparty v0.0.0-20200327160651-fb1336fa0450 h1:D68CY+y2oxJ3R0TQyBryWc+hppSz3C2b0asere2Bj3k=
+github.com/charmbracelet/teaparty v0.0.0-20200327160651-fb1336fa0450/go.mod h1:FHMU1epdyoAAy5H8DiZIExDo/kszlZL3EeRjcQ7x/dc=
+github.com/charmbracelet/teaparty v0.0.0-20200327161528-c9aefb244887 h1:EeWyv7gGbt69A8+aLsiIjShuZxpEBfIX+S1+xNQz140=
+github.com/charmbracelet/teaparty v0.0.0-20200327161528-c9aefb244887/go.mod h1:J74WU9pFTdFSkvDmsk5VVchndjTDpgQxi4lKUw6VMy4=
 github.com/charmbracelet/wish v0.0.0-20200109231010-79b57a1c8314/go.mod h1:WhwvT/f6Af3m77zA9++YGbEcMQfI/YxMZtlsV072h90=
 github.com/charmbracelet/wish v0.0.0-20200117212234-86331d0d07ac h1:lfnzjG/+DRcgAmknF/9cSI89MOrwpHf93BVKe7MnMI0=
 github.com/charmbracelet/wish v0.0.0-20200117212234-86331d0d07ac/go.mod h1:WhwvT/f6Af3m77zA9++YGbEcMQfI/YxMZtlsV072h90=
@@ -80,6 +86,8 @@ github.com/muesli/reflow v0.0.0-20191216070243-e5efeac4e302 h1:jOh3Kh03uOFkRPV3P
 github.com/muesli/reflow v0.0.0-20191216070243-e5efeac4e302/go.mod h1:I9bWAt7QTg/que/qmUCJBGlj7wEq8OAFBjPNjc6xK4I=
 github.com/muesli/termenv v0.4.1-0.20200131124310-936567584c3e h1:6exaizu60WAeTP998SgBox6eaSs6rT36fR/0ebsrnOQ=
 github.com/muesli/termenv v0.4.1-0.20200131124310-936567584c3e/go.mod h1:O1/I6sw+6KcrgAmcs6uiUVr7Lui+DNVbHTzt9Lm/PlI=
+github.com/muesli/termenv v0.4.1-0.20200225030536-aeb2025df636 h1:E8Ak48QMa0KO1r/IaPrpUxD+mEcOXB+4Q1ySBx04P6k=
+github.com/muesli/termenv v0.4.1-0.20200225030536-aeb2025df636/go.mod h1:O1/I6sw+6KcrgAmcs6uiUVr7Lui+DNVbHTzt9Lm/PlI=
 github.com/muesli/toktok v0.0.0-20190807045336-ad6126d20b16 h1:ttuz4GFB3hBQSfM7qOSOtmnXxGseR8oDUSbzreJZRUo=
 github.com/muesli/toktok v0.0.0-20190807045336-ad6126d20b16/go.mod h1:d8HTLNpy1JgNv20TmtBSaqKDtm8bfxUY5YJttu8a88Q=
 github.com/nkovacs/streamquote v0.0.0-20170412213628-49af9bddb229/go.mod h1:0aYXnNPJ8l7uZxf45rWW1a/uME32OF0rhiYGNQ2oF2E=
