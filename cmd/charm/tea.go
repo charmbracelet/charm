@@ -175,11 +175,10 @@ func fgBg(s, fgColor, bgColor string) termenv.Style {
 func pad(s string) string {
 	var r string
 	for _, v := range strings.Split(s, "\n") {
-		if v == "" {
-			r += "\n"
-		} else {
-			r += "  " + v + "\n"
+		if v != "" {
+			r += "  " + v
 		}
+		r += "\n"
 	}
 	return r
 }
