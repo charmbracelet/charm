@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"strings"
 
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/tea"
@@ -11,7 +12,10 @@ import (
 )
 
 var (
-	color = termenv.ColorProfile()
+	color    = termenv.ColorProfile().Color
+	purpleBg = "#5A56E0"
+	purpleFg = "#7571F9"
+	cream    = "#FFFDF5"
 )
 
 type GotBioMsg *charm.User
@@ -52,6 +56,7 @@ func newCharmClient() *charm.Client {
 func initialize() (tea.Model, tea.Cmd) {
 	s := spinner.NewModel()
 	s.Type = spinner.Dot
+	s.ForegroundColor = "244"
 
 	m := Model{
 		client:  newCharmClient(),
@@ -81,7 +86,7 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 	case GotBioMsg:
 		m.user = msg
-		return m, nil
+		return m, tea.Quit
 
 	case spinner.TickMsg:
 		var cmd tea.Cmd
@@ -101,22 +106,53 @@ func view(model tea.Model) string {
 
 	// TODO render error if error
 
-	s := "\nCharm "
-	s += "\n\n"
+	s := charmLogoView()
 	if m.user == nil {
-		s += termenv.String(spinner.View(m.spinner)).
-			Foreground(color.Color("205")).
-			String()
-		s += " Fetching ur info..."
+		s += spinner.View(m.spinner) + " Fetching your information...\n"
 	} else {
 		s += bioView(*m.user)
 	}
 
-	return s
+	return pad(s)
+}
+
+func pad(s string) string {
+	var r string
+	for _, v := range strings.Split(s, "\n") {
+		if v == "" {
+			r += "\n"
+		} else {
+			r += "  " + v + "\n"
+		}
+	}
+	return r
+}
+
+func charmLogoView() string {
+	return "\n" + fgBg(" Charm ", cream, purpleBg) + "\n\n"
 }
 
 func bioView(u charm.User) string {
-	return "Hi, " + u.Name + ". Your Charm ID number is:\n\n" + u.CharmID
+	bar := fg("│ ", "241")
+	username := fg("not set", "214")
+	if u.Name != "" {
+		username = fg(u.Name, purpleFg)
+	}
+	return bar + "Charm ID " + fg(u.CharmID, purpleFg) + "\n" +
+		bar + "Username " + username
+}
+
+func fg(s string, fgColor string) string {
+	return termenv.String(s).
+		Foreground(color(fgColor)).
+		String()
+}
+
+func fgBg(s, fgColor, bgColor string) string {
+	return termenv.String(s).
+		Foreground(color(fgColor)).
+		Background(color(bgColor)).
+		String()
 }
 
 func subscriptions(model tea.Model) tea.Subs {
