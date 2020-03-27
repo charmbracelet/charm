@@ -25,6 +25,8 @@ github.com/charmbracelet/teaparty v0.0.0-20200327160651-fb1336fa0450 h1:D68CY+y2
 github.com/charmbracelet/teaparty v0.0.0-20200327160651-fb1336fa0450/go.mod h1:FHMU1epdyoAAy5H8DiZIExDo/kszlZL3EeRjcQ7x/dc=
 github.com/charmbracelet/teaparty v0.0.0-20200327161528-c9aefb244887 h1:EeWyv7gGbt69A8+aLsiIjShuZxpEBfIX+S1+xNQz140=
 github.com/charmbracelet/teaparty v0.0.0-20200327161528-c9aefb244887/go.mod h1:J74WU9pFTdFSkvDmsk5VVchndjTDpgQxi4lKUw6VMy4=
+github.com/charmbracelet/teaparty v0.0.0-20200327181402-eea5c2a32a46 h1:BJ8qnc8j3Sg/Jz6Gujg8VWJuIZYG6CfebJfovtTqt94=
+github.com/charmbracelet/teaparty v0.0.0-20200327181402-eea5c2a32a46/go.mod h1:J74WU9pFTdFSkvDmsk5VVchndjTDpgQxi4lKUw6VMy4=
 github.com/charmbracelet/wish v0.0.0-20200109231010-79b57a1c8314/go.mod h1:WhwvT/f6Af3m77zA9++YGbEcMQfI/YxMZtlsV072h90=
 github.com/charmbracelet/wish v0.0.0-20200117212234-86331d0d07ac h1:lfnzjG/+DRcgAmknF/9cSI89MOrwpHf93BVKe7MnMI0=
 github.com/charmbracelet/wish v0.0.0-20200117212234-86331d0d07ac/go.mod h1:WhwvT/f6Af3m77zA9++YGbEcMQfI/YxMZtlsV072h90=
