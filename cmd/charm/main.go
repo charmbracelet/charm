@@ -60,6 +60,31 @@ func (th *TermLinkHandler) Error(l *charm.Link) {
 	fmt.Println("Error, something's wrong.")
 }
 
+func newCharmClient() *charm.Client {
+	i := flag.String("i", "", "identity file (ssh key) path")
+	flag.Parse()
+
+	cfg, err := charm.ConfigFromEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if *i != "" {
+		cfg.SSHKeyPath = *i
+		cfg.ForceKey = true
+	}
+
+	cc, err := charm.NewClient(cfg)
+	if err == charm.ErrMissingSSHAuth {
+		log.Fatal("Missing ssh key. Run `ssh-keygen` to make one or set the `CHARM_SSH_KEY_PATH` env var to your private key path.")
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return cc
+}
+
 func main() {
 	// TEMP
 	p := tea.NewProgram(initialize, update, view, subscriptions)

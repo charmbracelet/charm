@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"log"
 	"strings"
 
@@ -17,32 +16,6 @@ var (
 	purpleFg = "#7571F9"
 	cream    = "#FFFDF5"
 )
-
-// Create a new Charm client
-func newCharmClient() *charm.Client {
-	i := flag.String("i", "", "identity file (ssh key) path")
-	flag.Parse()
-
-	cfg, err := charm.ConfigFromEnv()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if *i != "" {
-		cfg.SSHKeyPath = *i
-		cfg.ForceKey = true
-	}
-
-	cc, err := charm.NewClient(cfg)
-	if err == charm.ErrMissingSSHAuth {
-		log.Fatal("Missing ssh key. Run `ssh-keygen` to make one or set the `CHARM_SSH_KEY_PATH` env var to your private key path.")
-	}
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return cc
-}
 
 // MSG
 
@@ -114,7 +87,9 @@ func view(model tea.Model) string {
 		m.err = tea.ModelAssertionErr
 	}
 
-	// TODO render error if error
+	if m.err != nil {
+		return errorView(m.err)
+	}
 
 	s := charmLogoView()
 	if m.user == nil {
@@ -140,11 +115,18 @@ func bioView(u charm.User) string {
 		bar + "Username " + username
 }
 
+func errorView(err error) string {
+	return pad("\n" + fgBg("ERROR", "230", "203").String() + " " + err.Error())
+}
+
 // SUBSCRIPTIONS
 
 func subscriptions(model tea.Model) tea.Subs {
-	// TODO: check for error
-	m, _ := model.(Model)
+	m, ok := model.(Model)
+	if !ok {
+		// TODO: is there a more graceful way to handle this?
+		log.Fatal("could not corerce model in main subscriptions function")
+	}
 
 	return tea.Subs{
 		"tick": func(model tea.Model) tea.Msg {
