@@ -18,15 +18,6 @@ var (
 	cream    = "#FFFDF5"
 )
 
-type GotBioMsg *charm.User
-
-type Model struct {
-	client  *charm.Client
-	user    *charm.User
-	spinner spinner.Model
-	err     error
-}
-
 // Create a new Charm client
 func newCharmClient() *charm.Client {
 	i := flag.String("i", "", "identity file (ssh key) path")
@@ -53,6 +44,21 @@ func newCharmClient() *charm.Client {
 	return cc
 }
 
+// MSG
+
+type GotBioMsg *charm.User
+
+// MODEL
+
+type Model struct {
+	client  *charm.Client
+	user    *charm.User
+	spinner spinner.Model
+	err     error
+}
+
+// INIT
+
 func initialize() (tea.Model, tea.Cmd) {
 	s := spinner.NewModel()
 	s.Type = spinner.Dot
@@ -64,6 +70,8 @@ func initialize() (tea.Model, tea.Cmd) {
 	}
 	return m, getBio
 }
+
+// UPDATE
 
 func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	m, ok := model.(Model)
@@ -98,6 +106,8 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	}
 }
 
+// VIEW
+
 func view(model tea.Model) string {
 	m, ok := model.(Model)
 	if !ok {
@@ -116,18 +126,6 @@ func view(model tea.Model) string {
 	return pad(s)
 }
 
-func pad(s string) string {
-	var r string
-	for _, v := range strings.Split(s, "\n") {
-		if v == "" {
-			r += "\n"
-		} else {
-			r += "  " + v + "\n"
-		}
-	}
-	return r
-}
-
 func charmLogoView() string {
 	return "\n" + fgBg(" Charm ", cream, purpleBg) + "\n\n"
 }
@@ -142,18 +140,7 @@ func bioView(u charm.User) string {
 		bar + "Username " + username
 }
 
-func fg(s string, fgColor string) string {
-	return termenv.String(s).
-		Foreground(color(fgColor)).
-		String()
-}
-
-func fgBg(s, fgColor, bgColor string) string {
-	return termenv.String(s).
-		Foreground(color(fgColor)).
-		Background(color(bgColor)).
-		String()
-}
+// SUBSCRIPTIONS
 
 func subscriptions(model tea.Model) tea.Subs {
 	// TODO: check for error
@@ -181,4 +168,31 @@ func getBio(model tea.Model) tea.Msg {
 	}
 
 	return GotBioMsg(user)
+}
+
+// HELPERS
+
+func fg(s string, fgColor string) string {
+	return termenv.String(s).
+		Foreground(color(fgColor)).
+		String()
+}
+
+func fgBg(s, fgColor, bgColor string) string {
+	return termenv.String(s).
+		Foreground(color(fgColor)).
+		Background(color(bgColor)).
+		String()
+}
+
+func pad(s string) string {
+	var r string
+	for _, v := range strings.Split(s, "\n") {
+		if v == "" {
+			r += "\n"
+		} else {
+			r += "  " + v + "\n"
+		}
+	}
+	return r
 }
