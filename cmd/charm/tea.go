@@ -6,14 +6,21 @@ import (
 
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/tea"
+	"github.com/charmbracelet/teaparty/spinner"
+	"github.com/muesli/termenv"
+)
+
+var (
+	color = termenv.ColorProfile()
 )
 
 type GotBioMsg *charm.User
 
 type Model struct {
-	client *charm.Client
-	user   *charm.User
-	err    error
+	client  *charm.Client
+	user    *charm.User
+	spinner spinner.Model
+	err     error
 }
 
 // Create a new Charm client
@@ -43,8 +50,12 @@ func newCharmClient() *charm.Client {
 }
 
 func initialize() (tea.Model, tea.Cmd) {
+	s := spinner.NewModel()
+	s.Type = spinner.Dot
+
 	m := Model{
-		client: newCharmClient(),
+		client:  newCharmClient(),
+		spinner: s,
 	}
 	return m, getBio
 }
@@ -70,7 +81,12 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 	case GotBioMsg:
 		m.user = msg
-		return m, tea.Quit
+		return m, nil
+
+	case spinner.TickMsg:
+		var cmd tea.Cmd
+		m.spinner, cmd = spinner.Update(msg, m.spinner)
+		return m, cmd
 
 	default:
 		return m, nil
@@ -85,9 +101,13 @@ func view(model tea.Model) string {
 
 	// TODO render error if error
 
-	s := "Charm\n\n"
+	s := "\nCharm "
+	s += "\n\n"
 	if m.user == nil {
-		s += "Fetching ur info..."
+		s += termenv.String(spinner.View(m.spinner)).
+			Foreground(color.Color("205")).
+			String()
+		s += " Fetching ur info..."
 	} else {
 		s += bioView(*m.user)
 	}
@@ -100,7 +120,15 @@ func bioView(u charm.User) string {
 }
 
 func subscriptions(model tea.Model) tea.Subs {
-	return nil
+	// TODO: check for error
+	m, _ := model.(Model)
+
+	return tea.Subs{
+		"tick": func(model tea.Model) tea.Msg {
+			return spinner.Sub(m.spinner)
+		},
+	}
+
 }
 
 // COMMANDS
