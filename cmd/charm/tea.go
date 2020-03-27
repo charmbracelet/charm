@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/charm"
-	"github.com/charmbracelet/charm/ui/menu"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/spinner"
 	"github.com/muesli/termenv"
@@ -16,6 +15,8 @@ var (
 	purpleBg = "#5A56E0"
 	purpleFg = "#7571F9"
 	cream    = "#FFFDF5"
+
+	menu = Menu{}
 )
 
 // MSG
@@ -28,7 +29,7 @@ type Model struct {
 	client  *charm.Client
 	user    *charm.User
 	spinner spinner.Model
-	menu    menu.Model
+	menu    MenuModel
 	err     error
 }
 
@@ -42,7 +43,7 @@ func initialize() (tea.Model, tea.Cmd) {
 	m := Model{
 		client:  newCharmClient(),
 		spinner: s,
-		menu:    menu.NewModel(),
+		menu:    MenuModel{},
 	}
 	return m, getBio
 }
