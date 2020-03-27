@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/charm"
+	"github.com/charmbracelet/charm/ui/menu"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/spinner"
 	"github.com/muesli/termenv"
@@ -27,6 +28,7 @@ type Model struct {
 	client  *charm.Client
 	user    *charm.User
 	spinner spinner.Model
+	menu    menu.Model
 	err     error
 }
 
@@ -40,6 +42,7 @@ func initialize() (tea.Model, tea.Cmd) {
 	m := Model{
 		client:  newCharmClient(),
 		spinner: s,
+		menu:    menu.NewModel(),
 	}
 	return m, getBio
 }
@@ -62,12 +65,13 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		default:
+			m.menu, _ = menu.Update(msg, m.menu)
 			return m, nil
 		}
 
 	case GotBioMsg:
 		m.user = msg
-		return m, tea.Quit
+		return m, nil
 
 	case spinner.TickMsg:
 		var cmd tea.Cmd
@@ -97,6 +101,8 @@ func view(model tea.Model) string {
 	} else {
 		s += bioView(*m.user)
 	}
+
+	s += menu.View(m.menu)
 
 	return pad(s)
 }
