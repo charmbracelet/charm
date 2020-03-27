@@ -127,16 +127,16 @@ func view(model tea.Model) string {
 }
 
 func charmLogoView() string {
-	return "\n" + fgBg(" Charm ", cream, purpleBg) + "\n\n"
+	return "\n" + fgBg(" Charm ", cream, purpleBg).Bold().String() + "\n\n"
 }
 
 func bioView(u charm.User) string {
-	bar := fg("│ ", "241")
-	username := fg("not set", "214")
+	bar := fg("│ ", "241").String()
+	username := fg("not set", "214").String()
 	if u.Name != "" {
-		username = fg(u.Name, purpleFg)
+		username = fg(u.Name, purpleFg).String()
 	}
-	return bar + "Charm ID " + fg(u.CharmID, purpleFg) + "\n" +
+	return bar + "Charm ID " + fg(u.CharmID, purpleFg).String() + "\n" +
 		bar + "Username " + username
 }
 
@@ -172,17 +172,15 @@ func getBio(model tea.Model) tea.Msg {
 
 // HELPERS
 
-func fg(s string, fgColor string) string {
+func fg(s string, fgColor string) termenv.Style {
 	return termenv.String(s).
-		Foreground(color(fgColor)).
-		String()
+		Foreground(color(fgColor))
 }
 
-func fgBg(s, fgColor, bgColor string) string {
+func fgBg(s, fgColor, bgColor string) termenv.Style {
 	return termenv.String(s).
 		Foreground(color(fgColor)).
-		Background(color(bgColor)).
-		String()
+		Background(color(bgColor))
 }
 
 func pad(s string) string {
