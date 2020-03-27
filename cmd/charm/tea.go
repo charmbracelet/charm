@@ -1,67 +1,120 @@
 package main
 
 import (
+	"flag"
+	"log"
+
+	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/tea"
-	"github.com/charmbracelet/teaparty/input"
 )
 
+type GotBioMsg *charm.User
+
 type Model struct {
-	usernameInput input.Model
+	client *charm.Client
+	user   *charm.User
+	err    error
+}
+
+// Create a new Charm client
+func newCharmClient() *charm.Client {
+	i := flag.String("i", "", "identity file (ssh key) path")
+	flag.Parse()
+
+	cfg, err := charm.ConfigFromEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if *i != "" {
+		cfg.SSHKeyPath = *i
+		cfg.ForceKey = true
+	}
+
+	cc, err := charm.NewClient(cfg)
+	if err == charm.ErrMissingSSHAuth {
+		log.Fatal("Missing ssh key. Run `ssh-keygen` to make one or set the `CHARM_SSH_KEY_PATH` env var to your private key path.")
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return cc
 }
 
 func initialize() (tea.Model, tea.Cmd) {
-	usernameInput := input.DefaultModel()
-	usernameInput.Placeholder = "Fran"
-	usernameInput.Focus()
-
 	m := Model{
-		usernameInput: usernameInput,
+		client: newCharmClient(),
 	}
-	return m, nil
+	return m, getBio
 }
 
 func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
-
-	// TODO: handle this
-	m, _ := model.(Model)
+	m, ok := model.(Model)
+	if !ok {
+		m.err = tea.ModelAssertionErr
+		return m, nil
+	}
 
 	switch msg := msg.(type) {
 
 	case tea.KeyMsg:
 		switch msg.Type {
+
 		case tea.KeyCtrlC:
 			return m, tea.Quit
+
 		default:
-			var cmd tea.Cmd
-			m.usernameInput, cmd = input.Update(msg, m.usernameInput)
-			return m, cmd
+			return m, nil
 		}
 
-	default:
-		var cmd tea.Cmd
-		m.usernameInput, cmd = input.Update(msg, m.usernameInput)
-		return m, cmd
+	case GotBioMsg:
+		m.user = msg
+		return m, tea.Quit
 
+	default:
+		return m, nil
 	}
 }
 
 func view(model tea.Model) string {
 	m, ok := model.(Model)
 	if !ok {
-		return tea.ModelAssertionErr.Error()
+		m.err = tea.ModelAssertionErr
 	}
 
-	return input.View(m.usernameInput)
+	// TODO render error if error
+
+	s := "Charm\n\n"
+	if m.user == nil {
+		s += "Fetching ur info..."
+	} else {
+		s += bioView(*m.user)
+	}
+
+	return s
+}
+
+func bioView(u charm.User) string {
+	return "Hi, " + u.Name + ". Your Charm ID number is:\n\n" + u.CharmID
 }
 
 func subscriptions(model tea.Model) tea.Subs {
-	return tea.Subs{
-		"blink": func(mdl tea.Model) tea.Msg {
-			m, ok := mdl.(Model)
-			if !ok {
-				return tea.ModelAssertionErr
-			}
-			return input.Blink(m.usernameInput)
-		},
+	return nil
+}
+
+// COMMANDS
+
+func getBio(model tea.Model) tea.Msg {
+	m, ok := model.(Model)
+	if !ok {
+		return tea.NewErrMsgFromErr(tea.ModelAssertionErr)
 	}
+
+	user, err := m.client.Bio()
+	if err != nil {
+		return tea.NewErrMsgFromErr(err)
+	}
+
+	return GotBioMsg(user)
 }

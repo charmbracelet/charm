@@ -66,6 +66,7 @@ func main() {
 	if err := p.Start(); err != nil {
 		log.Fatal("Could not start program: ", err)
 	}
+	return
 
 	i := flag.String("i", "", "identity file (ssh key) path")
 	flag.Parse()
