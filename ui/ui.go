@@ -25,6 +25,14 @@ func NewProgram(cc *charm.Client) *tea.Program {
 	return tea.NewProgram(initialize(cc), update, view, subscriptions)
 }
 
+type State int
+
+const (
+	fetching State = iota
+	fetched
+	quitting
+)
+
 // MSG
 
 type GotBioMsg *charm.User
@@ -37,6 +45,7 @@ type Model struct {
 	spinner spinner.Model
 	menu    menu.Model
 	err     error
+	state   State
 }
 
 // INIT
@@ -51,6 +60,7 @@ func initialize(cc *charm.Client) func() (tea.Model, tea.Cmd) {
 			client:  cc,
 			spinner: s,
 			menu:    menu.Model{},
+			state:   fetching,
 		}
 		return m, getBio
 	}
@@ -68,9 +78,12 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case tea.KeyMsg:
-		switch msg.Type {
+		switch msg.String() {
 
-		case tea.KeyCtrlC:
+		case "q":
+			fallthrough
+		case "ctrl+c":
+			m.state = quitting
 			return m, tea.Quit
 
 		default:
@@ -80,6 +93,7 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 	case GotBioMsg:
 		m.user = msg
+		m.state = fetched
 		return m, nil
 
 	case spinner.TickMsg:
@@ -105,13 +119,16 @@ func view(model tea.Model) string {
 	}
 
 	s := charmLogoView()
-	if m.user == nil {
-		s += spinner.View(m.spinner) + " Fetching your information...\n"
-	} else {
-		s += bioView(*m.user)
-	}
 
-	s += menu.View(m.menu)
+	switch m.state {
+	case fetching:
+		s += spinner.View(m.spinner) + " Fetching your information...\n"
+	case fetched:
+		s += bioView(*m.user)
+		s += menu.View(m.menu)
+	case quitting:
+		s += quitView()
+	}
 
 	return indent.String(s, padding)
 }
@@ -128,6 +145,10 @@ func bioView(u charm.User) string {
 	}
 	return bar + "Charm ID " + fg(u.CharmID, purpleFg).String() + "\n" +
 		bar + "Username " + username
+}
+
+func quitView() string {
+	return "Thanks for using Charm!\n"
 }
 
 func errorView(err error) string {
