@@ -1,25 +1,25 @@
-package main
+package menu
 
 import "github.com/charmbracelet/tea"
 
-type MenuModel struct {
-	Choice MenuChoice // user's chosen menu item
-	Index  int        // cursor index
+type Model struct {
+	Choice Choice // user's chosen menu item
+	Index  int    // cursor index
 }
 
 // Choice represents a menu item choice
-type MenuChoice int
+type Choice int
 
 // Choices
 const (
-	Link MenuChoice = iota
+	Link Choice = iota
 	Keys
 	CopyID
 	JWT
 	Username
 )
 
-var menuChoices = map[MenuChoice]string{
+var choices = map[Choice]string{
 	Link:     "Link this Computer",
 	Keys:     "List Keys",
 	CopyID:   "Copy Charm ID",
@@ -27,9 +27,7 @@ var menuChoices = map[MenuChoice]string{
 	Username: "Change Username",
 }
 
-type Menu struct{}
-
-func (menu Menu) Update(msg tea.Msg, m MenuModel) (MenuModel, tea.Cmd) {
+func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -42,7 +40,7 @@ func (menu Menu) Update(msg tea.Msg, m MenuModel) (MenuModel, tea.Cmd) {
 		case "k":
 			m.Index--
 			if m.Index < 0 {
-				m.Index = len(menuChoices) - 1
+				m.Index = len(choices) - 1
 			}
 			return m, nil
 
@@ -51,14 +49,14 @@ func (menu Menu) Update(msg tea.Msg, m MenuModel) (MenuModel, tea.Cmd) {
 			fallthrough
 		case "j":
 			m.Index++
-			if m.Index >= len(menuChoices) {
+			if m.Index >= len(choices) {
 				m.Index = 0
 			}
 			return m, nil
 
 		// Choose menu item
 		case "enter":
-			m.Choice = MenuChoice(m.Index)
+			m.Choice = Choice(m.Index)
 			return m, nil
 
 		default:
@@ -72,16 +70,16 @@ func (menu Menu) Update(msg tea.Msg, m MenuModel) (MenuModel, tea.Cmd) {
 }
 
 // View renders the menu
-func (menu *Menu) View(m MenuModel) string {
+func View(m Model) string {
 
 	s := "\n\nWhat do you want to do?\n\n"
 
-	for i := 0; i < len(menuChoices); i++ {
+	for i := 0; i < len(choices); i++ {
 		e := "  "
 		if i == m.Index {
 			e = "> "
 		}
-		e += menuChoices[MenuChoice(i)] + "\n"
+		e += choices[Choice(i)] + "\n"
 		s += e
 	}
 

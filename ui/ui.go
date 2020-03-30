@@ -1,23 +1,29 @@
-package main
+package ui
 
 import (
 	"log"
 
 	"github.com/charmbracelet/charm"
+	"github.com/charmbracelet/charm/ui/menu"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/spinner"
 	"github.com/muesli/reflow/indent"
 	"github.com/muesli/termenv"
 )
 
+const padding = 2
+
 var (
 	color    = termenv.ColorProfile().Color
 	purpleBg = "#5A56E0"
 	purpleFg = "#7571F9"
 	cream    = "#FFFDF5"
-
-	menu = Menu{}
 )
+
+// New Program returns a new tea program
+func NewProgram(cc *charm.Client) *tea.Program {
+	return tea.NewProgram(initialize(cc), update, view, subscriptions)
+}
 
 // MSG
 
@@ -29,23 +35,25 @@ type Model struct {
 	client  *charm.Client
 	user    *charm.User
 	spinner spinner.Model
-	menu    MenuModel
+	menu    menu.Model
 	err     error
 }
 
 // INIT
 
-func initialize() (tea.Model, tea.Cmd) {
-	s := spinner.NewModel()
-	s.Type = spinner.Dot
-	s.ForegroundColor = "244"
+func initialize(cc *charm.Client) func() (tea.Model, tea.Cmd) {
+	return func() (tea.Model, tea.Cmd) {
+		s := spinner.NewModel()
+		s.Type = spinner.Dot
+		s.ForegroundColor = "244"
 
-	m := Model{
-		client:  newCharmClient(),
-		spinner: s,
-		menu:    MenuModel{},
+		m := Model{
+			client:  cc,
+			spinner: s,
+			menu:    menu.Model{},
+		}
+		return m, getBio
 	}
-	return m, getBio
 }
 
 // UPDATE
@@ -105,7 +113,7 @@ func view(model tea.Model) string {
 
 	s += menu.View(m.menu)
 
-	return indent.String(s, 2)
+	return indent.String(s, padding)
 }
 
 func charmLogoView() string {
@@ -123,7 +131,7 @@ func bioView(u charm.User) string {
 }
 
 func errorView(err error) string {
-	return indent.String("\n"+fgBg("ERROR", "230", "203").String()+" "+err.Error(), 2)
+	return indent.String("\n"+fgBg("ERROR", "230", "203").String()+" "+err.Error(), padding)
 }
 
 // SUBSCRIPTIONS
