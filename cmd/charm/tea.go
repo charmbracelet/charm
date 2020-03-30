@@ -2,11 +2,11 @@ package main
 
 import (
 	"log"
-	"strings"
 
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/spinner"
+	"github.com/muesli/reflow/indent"
 	"github.com/muesli/termenv"
 )
 
@@ -105,7 +105,7 @@ func view(model tea.Model) string {
 
 	s += menu.View(m.menu)
 
-	return pad(s)
+	return indent.String(s, 2)
 }
 
 func charmLogoView() string {
@@ -123,7 +123,7 @@ func bioView(u charm.User) string {
 }
 
 func errorView(err error) string {
-	return pad("\n" + fgBg("ERROR", "230", "203").String() + " " + err.Error())
+	return indent.String("\n"+fgBg("ERROR", "230", "203").String()+" "+err.Error(), 2)
 }
 
 // SUBSCRIPTIONS
@@ -170,15 +170,4 @@ func fgBg(s, fgColor, bgColor string) termenv.Style {
 	return termenv.String(s).
 		Foreground(color(fgColor)).
 		Background(color(bgColor))
-}
-
-func pad(s string) string {
-	var r string
-	for _, v := range strings.Split(s, "\n") {
-		if v != "" {
-			r += "  " + v
-		}
-		r += "\n"
-	}
-	return r
 }
