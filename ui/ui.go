@@ -109,8 +109,6 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 }
 
 func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
-	var cmd tea.Cmd
-
 	switch m.state {
 	case fetching:
 		m.info, _ = info.Update(msg, m.info)
@@ -118,12 +116,13 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 	switch m.menu.Choice {
 	case menu.SetUsername:
+		var cmd tea.Cmd
 		m.username, cmd = username.Update(msg, m.username)
+		return m, cmd
 	default:
 		m.menu, _ = menu.Update(msg, m.menu)
+		return m, nil
 	}
-
-	return m, cmd
 }
 
 // VIEW

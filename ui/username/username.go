@@ -1,8 +1,6 @@
 package username
 
 import (
-	"log"
-
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/input"
@@ -126,8 +124,8 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 				m.input.Prompt = prompt
 				return m, nil
 			case okButton:
-				return m, setName
-			default: // Cancel: exit
+				return m, tea.CmdMap(setName, m)
+			default: // cancel/exit
 				return m.reset(), exit
 			}
 
@@ -223,16 +221,13 @@ func Blink(model tea.Model) tea.Sub {
 func setName(model tea.Model) tea.Msg {
 	m, ok := model.(Model)
 	if !ok {
-		log.Println("blah")
 		return tea.ModelAssertionErr
 	}
 
 	_, err := m.cc.SetName(m.newName)
 	if err != nil {
-		log.Println(err)
 		return tea.NewErrMsgFromErr(err)
 	}
-	log.Println("usetname changed OK!")
 	return NameSetMsg{}
 }
 
