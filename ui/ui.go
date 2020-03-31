@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/info"
 	"github.com/charmbracelet/charm/ui/menu"
+	"github.com/charmbracelet/charm/ui/username"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/spinner"
 	"github.com/muesli/reflow/indent"
@@ -31,6 +32,7 @@ type state int
 const (
 	fetching state = iota
 	ready
+	editUsername
 	quitting
 )
 
@@ -42,8 +44,9 @@ type Model struct {
 	err   error
 	state state
 
-	info info.Model
-	menu menu.Model
+	info     info.Model
+	menu     menu.Model
+	username username.Model
 }
 
 // INIT
@@ -64,15 +67,14 @@ func initialize(cc *charm.Client) func() (tea.Model, tea.Cmd) {
 		s.ForegroundColor = "244"
 
 		m := Model{
-			cc:    cc,
-			state: fetching,
-			info:  info.NewModel(cc),
-			menu:  menu.NewModel(),
+			cc:       cc,
+			state:    fetching,
+			info:     info.NewModel(cc),
+			menu:     menu.NewModel(),
+			username: username.NewModel(cc),
 		}
 
-		cmd := CmdMap(info.GetBio, m.info)
-
-		return m, cmd
+		return m, CmdMap(info.GetBio, m.info)
 	}
 }
 
@@ -98,6 +100,12 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 		default:
 			m.menu, _ = menu.Update(msg, m.menu)
+			switch m.menu.Choice {
+			case menu.Username:
+				m.state = editUsername
+			default:
+				m.state = ready
+			}
 			return m, nil
 		}
 
@@ -133,6 +141,8 @@ func view(model tea.Model) string {
 	case ready:
 		s += info.View(m.info)
 		s += menu.View(m.menu)
+	case editUsername:
+		s += username.View(m.username)
 	case quitting:
 		s += quitView()
 	}

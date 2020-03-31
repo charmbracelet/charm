@@ -54,6 +54,7 @@ type Model struct {
 
 func NewModel(cc *charm.Client) Model {
 	inputModel := input.DefaultModel()
+	inputModel.Placeholder = "divagurl2000"
 
 	return Model{
 		cc:      cc,
@@ -138,15 +139,15 @@ func View(m Model) string {
 }
 
 func setNameView(m Model) string {
-	s := "Enter a new username:\n\n"
-	s += input.View(m.input) + "\n"
+	s := "Enter a new username\n\n"
+	s += input.View(m.input) + "\n\n"
 	s += buttonView("OK", m.index == 1) + " " + buttonView("Cancel", m.index == 2)
 	return s
 }
 
 func buttonView(label string, active bool) string {
 	s := "  " + label + "  "
-	c := "241"
+	c := "240"
 	if active {
 		c = "200"
 	}
