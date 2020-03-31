@@ -46,12 +46,6 @@ type Model struct {
 
 // INIT
 
-func compose(f func(string, string) string, g string) func(string) string {
-	return func(x string) string {
-		return f(g, x)
-	}
-}
-
 // CmdMap applies a given model to a command
 // NOTE: if this makes sense, which it likely does, it should be moved to Tea
 // core
