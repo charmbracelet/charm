@@ -10,6 +10,7 @@ import (
 
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui"
+	"github.com/charmbracelet/tea"
 )
 
 type TermLinkHandler struct{}
@@ -79,6 +80,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	tea.UseSysLog("charm-tea")
 	if err := ui.NewProgram(cc).Start(); err != nil {
 		log.Fatal(err)
 	}

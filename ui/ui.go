@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/charmbracelet/charm"
-	"github.com/charmbracelet/charm/ui/menu"
+	"github.com/charmbracelet/charm/ui/info"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/spinner"
 	"github.com/muesli/reflow/indent"
@@ -25,27 +25,23 @@ func NewProgram(cc *charm.Client) *tea.Program {
 	return tea.NewProgram(initialize(cc), update, view, subscriptions)
 }
 
-type State int
+type state int
 
 const (
-	fetching State = iota
-	fetched
+	fetching state = iota
+	ready
 	quitting
 )
-
-// MSG
-
-type GotBioMsg *charm.User
 
 // MODEL
 
 type Model struct {
-	client  *charm.Client
-	user    *charm.User
-	spinner spinner.Model
-	menu    menu.Model
-	err     error
-	state   State
+	cc    *charm.Client
+	user  *charm.User
+	err   error
+	state state
+
+	info info.Model
 }
 
 // INIT
@@ -57,12 +53,22 @@ func initialize(cc *charm.Client) func() (tea.Model, tea.Cmd) {
 		s.ForegroundColor = "244"
 
 		m := Model{
-			client:  cc,
-			spinner: s,
-			menu:    menu.Model{},
-			state:   fetching,
+			cc:    cc,
+			info:  info.NewModel(cc),
+			state: fetching,
 		}
-		return m, getBio
+
+		// NOTE: We're doing this weird monadic Cmd.map thing here which
+		// doesn't feel right. This should probably get fixed in Tea core.
+		cmd := func(model tea.Model) tea.Msg {
+			m, ok := model.(Model)
+			if !ok {
+				log.Fatal("oof")
+			}
+			return info.GetBio(m.info)
+		}
+
+		return m, cmd
 	}
 }
 
@@ -87,22 +93,20 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		default:
-			m.menu, _ = menu.Update(msg, m.menu)
 			return m, nil
 		}
 
-	case GotBioMsg:
-		m.user = msg
-		m.state = fetched
-		return m, nil
-
-	case spinner.TickMsg:
+	case info.GotBioMsg:
 		var cmd tea.Cmd
-		m.spinner, cmd = spinner.Update(msg, m.spinner)
+		m.state = ready
+		m.info, cmd = info.Update(msg, m.info)
 		return m, cmd
 
 	default:
-		return m, nil
+		var cmd tea.Cmd
+		m.info, cmd = info.Update(msg, m.info)
+		// TODO: add command batching in main tea library
+		return m, cmd
 	}
 }
 
@@ -122,10 +126,9 @@ func view(model tea.Model) string {
 
 	switch m.state {
 	case fetching:
-		s += spinner.View(m.spinner) + " Fetching your information...\n"
-	case fetched:
-		s += bioView(*m.user)
-		s += menu.View(m.menu)
+		fallthrough
+	case ready:
+		s += info.View(m.info)
 	case quitting:
 		s += quitView()
 	}
@@ -135,16 +138,6 @@ func view(model tea.Model) string {
 
 func charmLogoView() string {
 	return "\n" + fgBg(" Charm ", cream, purpleBg).Bold().String() + "\n\n"
-}
-
-func bioView(u charm.User) string {
-	bar := fg("│ ", "241").String()
-	username := fg("not set", "214").String()
-	if u.Name != "" {
-		username = fg(u.Name, purpleFg).String()
-	}
-	return bar + "Charm ID " + fg(u.CharmID, purpleFg).String() + "\n" +
-		bar + "Username " + username
 }
 
 func quitView() string {
@@ -157,35 +150,17 @@ func errorView(err error) string {
 
 // SUBSCRIPTIONS
 
-func subscriptions(model tea.Model) tea.Subs {
+func subscriptions(model tea.Model) (subs tea.Subs) {
 	m, ok := model.(Model)
 	if !ok {
 		// TODO: is there a more graceful way to handle this?
 		log.Fatal("could not corerce model in main subscriptions function")
 	}
 
-	return tea.Subs{
-		"tick": func(model tea.Model) tea.Msg {
-			return spinner.Sub(m.spinner)
-		},
-	}
-
-}
-
-// COMMANDS
-
-func getBio(model tea.Model) tea.Msg {
-	m, ok := model.(Model)
-	if !ok {
-		return tea.NewErrMsgFromErr(tea.ModelAssertionErr)
-	}
-
-	user, err := m.client.Bio()
-	if err != nil {
-		return tea.NewErrMsgFromErr(err)
-	}
-
-	return GotBioMsg(user)
+	// NOTE: Eventually, we'll need to append sub maps together here. Something
+	// like that should probably go into Tea core.
+	subs = info.Subscriptions(m.info)
+	return subs
 }
 
 // HELPERS
