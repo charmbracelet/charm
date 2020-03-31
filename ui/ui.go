@@ -109,9 +109,9 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 }
 
 func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
-	switch m.state {
-	case fetching:
+	if m.state == fetching {
 		m.info, _ = info.Update(msg, m.info)
+		return m, nil
 	}
 
 	switch m.menu.Choice {

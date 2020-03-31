@@ -87,7 +87,10 @@ func View(m Model) string {
 		if i == m.Index {
 			e = "> "
 		}
-		e += choices[Choice(i)] + "\n"
+		e += choices[Choice(i)]
+		if i < len(choices)-1 {
+			e += "\n"
+		}
 		s += e
 	}
 
