@@ -1,6 +1,8 @@
 package username
 
 import (
+	"log"
+
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/input"
@@ -82,6 +84,10 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case tea.KeyMsg:
+		if m.state == unknownError {
+			return m.reset(), exit
+		}
+
 		switch key := msg.Type; key {
 
 		case tea.KeyTab:
@@ -138,13 +144,17 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		}
 
 	case tea.ErrMsg:
+		m.err = msg
+
 		switch msg {
+		case tea.ModelAssertionErr:
+			m.state = unknownError
+			return m, nil
 		case charm.ErrNameTaken:
 			m.state = nameTaken
 			return m, nil
 		default:
 			m.state = unknownError
-			m.err = msg
 			return m, nil
 		}
 
@@ -164,6 +174,10 @@ func View(m Model) string {
 	switch m.state {
 	case nameNotChosen:
 		return setNameView(m)
+	case unknownError:
+		// TODO: eventually use Mues's reflow to wrap these lines properly
+		return "Welp, there’s been an error:\n" + m.err.Error() + "\n\n" +
+			"Press any key to go back."
 	default:
 		return ""
 	}
@@ -209,13 +223,16 @@ func Blink(model tea.Model) tea.Sub {
 func setName(model tea.Model) tea.Msg {
 	m, ok := model.(Model)
 	if !ok {
+		log.Println("blah")
 		return tea.ModelAssertionErr
 	}
 
 	_, err := m.cc.SetName(m.newName)
 	if err != nil {
+		log.Println(err)
 		return tea.NewErrMsgFromErr(err)
 	}
+	log.Println("usetname changed OK!")
 	return NameSetMsg{}
 }
 
