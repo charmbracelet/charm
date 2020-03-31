@@ -5,6 +5,7 @@ import (
 
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/info"
+	"github.com/charmbracelet/charm/ui/menu"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/spinner"
 	"github.com/muesli/reflow/indent"
@@ -42,6 +43,7 @@ type Model struct {
 	state state
 
 	info info.Model
+	menu menu.Model
 }
 
 // INIT
@@ -63,8 +65,9 @@ func initialize(cc *charm.Client) func() (tea.Model, tea.Cmd) {
 
 		m := Model{
 			cc:    cc,
-			info:  info.NewModel(cc),
 			state: fetching,
+			info:  info.NewModel(cc),
+			menu:  menu.NewModel(),
 		}
 
 		cmd := CmdMap(info.GetBio, m.info)
@@ -94,6 +97,7 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		default:
+			m.menu, _ = menu.Update(msg, m.menu)
 			return m, nil
 		}
 
@@ -104,10 +108,8 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	default:
-		var cmd tea.Cmd
-		m.info, cmd = info.Update(msg, m.info)
-		// TODO: add command batching in main tea library
-		return m, cmd
+		m.info, _ = info.Update(msg, m.info)
+		return m, nil
 	}
 }
 
@@ -127,9 +129,10 @@ func view(model tea.Model) string {
 
 	switch m.state {
 	case fetching:
-		fallthrough
+		s += info.View(m.info)
 	case ready:
 		s += info.View(m.info)
+		s += menu.View(m.menu)
 	case quitting:
 		s += quitView()
 	}

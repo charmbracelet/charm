@@ -2,11 +2,6 @@ package menu
 
 import "github.com/charmbracelet/tea"
 
-type Model struct {
-	Choice Choice // user's chosen menu item
-	Index  int    // cursor index
-}
-
 // Choice represents a menu item choice
 type Choice int
 
@@ -25,6 +20,15 @@ var choices = map[Choice]string{
 	CopyID:   "Copy Charm ID",
 	JWT:      "Get Token",
 	Username: "Change Username",
+}
+
+type Model struct {
+	Choice Choice // user's chosen menu item
+	Index  int    // cursor index
+}
+
+func NewModel() Model {
+	return Model{}
 }
 
 func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
