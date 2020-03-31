@@ -55,6 +55,7 @@ type Model struct {
 func NewModel(cc *charm.Client) Model {
 	inputModel := input.DefaultModel()
 	inputModel.Placeholder = "divagurl2000"
+	inputModel.Focus()
 
 	return Model{
 		cc:      cc,
@@ -123,6 +124,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		return m, nil
 
 	default:
+		m.input, _ = input.Update(msg, m.input)
 		return m, nil
 	}
 }
@@ -157,6 +159,35 @@ func buttonView(label string, active bool) string {
 func nameSetView(m Model) string {
 	return "OK! Your new username is " + m.newName
 }
+
+// SUBSCRIPTIONS
+
+func Blink(model tea.Model) tea.Sub {
+	m, ok := model.(Model)
+	if !ok {
+		// TODO: handle this error properly
+		return nil
+	}
+	return func(_ tea.Model) tea.Msg {
+		return input.Blink(m.input)
+	}
+}
+
+/*
+func Subscriptions(model tea.Model) tea.Subs {
+	return tea.Subs{
+		"username-input-blink": func(mdl tea.Model) tea.Msg {
+			m, ok := mdl.(Model)
+			if !ok {
+				// TODO: handle this error properly
+				//log.Println("wtf")
+				return nil
+			}
+			return input.Blink(m.input)
+		},
+	}
+}
+*/
 
 // COMMANDS
 

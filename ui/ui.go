@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"log"
-
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/info"
 	"github.com/charmbracelet/charm/ui/menu"
@@ -32,7 +30,6 @@ type state int
 const (
 	fetching state = iota
 	ready
-	editUsername
 	quitting
 )
 
@@ -57,6 +54,15 @@ type Model struct {
 func CmdMap(cmd tea.Cmd, model tea.Model) tea.Cmd {
 	return func(_ tea.Model) tea.Msg {
 		return cmd(model)
+	}
+}
+
+// SubMap applies a given model to a subscription
+// NOTE: if this makes sense, which it likely does, it should be moved to Tea
+// core
+func SubMap(sub tea.Sub, model tea.Model) tea.Sub {
+	return func(_ tea.Model) tea.Msg {
+		return sub(model)
 	}
 }
 
@@ -90,35 +96,46 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case tea.KeyMsg:
-		switch msg.String() {
 
+		switch msg.String() {
 		case "q":
-			fallthrough
+			if m.menu.Choice != menu.SetUsername {
+				m.state = quitting
+				return m, tea.Quit
+			}
+			return m, nil
 		case "ctrl+c":
 			m.state = quitting
 			return m, tea.Quit
-
 		default:
-			m.menu, _ = menu.Update(msg, m.menu)
-			switch m.menu.Choice {
-			case menu.Username:
-				m.state = editUsername
-			default:
-				m.state = ready
-			}
-			return m, nil
+			return updateChilden(msg, m), nil
 		}
 
 	case info.GotBioMsg:
-		var cmd tea.Cmd
 		m.state = ready
-		m.info, cmd = info.Update(msg, m.info)
-		return m, cmd
-
-	default:
 		m.info, _ = info.Update(msg, m.info)
 		return m, nil
+
+	default:
+		return updateChilden(msg, m), nil
+
 	}
+}
+
+func updateChilden(msg tea.Msg, m Model) Model {
+	switch m.state {
+	case fetching:
+		m.info, _ = info.Update(msg, m.info)
+	}
+
+	switch m.menu.Choice {
+	case menu.SetUsername:
+		m.username, _ = username.Update(msg, m.username)
+	default:
+		m.menu, _ = menu.Update(msg, m.menu)
+	}
+
+	return m
 }
 
 // VIEW
@@ -139,10 +156,13 @@ func view(model tea.Model) string {
 	case fetching:
 		s += info.View(m.info)
 	case ready:
-		s += info.View(m.info)
-		s += menu.View(m.menu)
-	case editUsername:
-		s += username.View(m.username)
+		switch m.menu.Choice {
+		case menu.SetUsername:
+			s += username.View(m.username)
+		default:
+			s += info.View(m.info)
+			s += "\n\n" + menu.View(m.menu)
+		}
 	case quitting:
 		s += quitView()
 	}
@@ -164,17 +184,45 @@ func errorView(err error) string {
 
 // SUBSCRIPTIONS
 
-func subscriptions(model tea.Model) (subs tea.Subs) {
+func subscriptions(model tea.Model) tea.Subs {
 	m, ok := model.(Model)
 	if !ok {
-		// TODO: is there a more graceful way to handle this?
-		log.Fatal("could not corerce model in main subscriptions function")
+		// TODO: how can we handle this more gracefully?
+		return nil
 	}
 
-	// NOTE: Eventually, we'll need to append sub maps together here. Something
-	// like that should probably go into Tea core.
-	subs = info.Subscriptions(m.info)
+	subs := tea.Subs{}
+
+	switch m.state {
+	case fetching:
+		subs = AppendSubs(info.Subscriptions(m.info), subs)
+	case ready:
+		switch m.menu.Choice {
+		case menu.SetUsername:
+			subs["username-input-blink"] = username.Blink(m.username)
+		}
+	}
+
 	return subs
+}
+
+// AppendSubs merges two groups of subs. Node that subs with idential key names
+// will replace existing subs with the same name.
+//
+// TODO: Move this into Tea core
+// TODO: Warn on sub name conflicts and maybe cancel current subs before adding
+// new ones
+func AppendSubs(newSubs tea.Subs, currentSubs tea.Subs) tea.Subs {
+	if len(newSubs) == 0 {
+		return currentSubs
+	}
+	if len(currentSubs) == 0 {
+		return newSubs
+	}
+	for k, v := range newSubs {
+		currentSubs[k] = v
+	}
+	return currentSubs
 }
 
 // HELPERS

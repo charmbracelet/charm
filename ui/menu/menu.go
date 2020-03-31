@@ -1,6 +1,8 @@
 package menu
 
-import "github.com/charmbracelet/tea"
+import (
+	"github.com/charmbracelet/tea"
+)
 
 // Choice represents a menu item choice
 type Choice int
@@ -11,15 +13,17 @@ const (
 	Keys
 	CopyID
 	JWT
-	Username
+	SetUsername
+
+	Unset = -1
 )
 
 var choices = map[Choice]string{
-	Link:     "Link this Computer",
-	Keys:     "List Keys",
-	CopyID:   "Copy Charm ID",
-	JWT:      "Get Token",
-	Username: "Change Username",
+	Link:        "Link this Computer",
+	Keys:        "List Keys",
+	CopyID:      "Copy Charm ID",
+	JWT:         "Get Token",
+	SetUsername: "Change Username",
 }
 
 type Model struct {
@@ -28,7 +32,7 @@ type Model struct {
 }
 
 func NewModel() Model {
-	return Model{}
+	return Model{Choice: Unset}
 }
 
 func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
@@ -76,7 +80,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 // View renders the menu
 func View(m Model) string {
 
-	s := "\n\nWhat do you want to do?\n\n"
+	s := "What do you want to do?\n\n"
 
 	for i := 0; i < len(choices); i++ {
 		e := "  "

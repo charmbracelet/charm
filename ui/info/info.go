@@ -3,8 +3,6 @@ package info
 // Fetch a user's basic Charm account info
 
 import (
-	"log"
-
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/spinner"
@@ -89,12 +87,11 @@ func Subscriptions(model tea.Model) tea.Subs {
 		// TODO: handle this error properly
 		return nil
 	} else if m.User != nil {
-		log.Println("user")
 		return nil
 	}
 
 	return tea.Subs{
-		"loading-spinner-tick": func(model tea.Model) tea.Msg {
+		"loading-spinner-tick": func(_ tea.Model) tea.Msg {
 			return spinner.Sub(m.spinner)
 		},
 	}
