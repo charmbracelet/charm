@@ -52,6 +52,11 @@ type Model struct {
 	err     error
 }
 
+// Reset the model to its default state
+func (m *Model) reset() Model {
+	return NewModel(m.cc)
+}
+
 // INIT
 
 func NewModel(cc *charm.Client) Model {
@@ -116,8 +121,8 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 				return m, nil
 			case okButton:
 				return m, setName
-			default:
-				return m, exit
+			default: // Cancel: exit
+				return m.reset(), exit
 			}
 
 		default:

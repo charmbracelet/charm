@@ -90,7 +90,7 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 			m.state = quitting
 			return m, tea.Quit
 		default:
-			return updateChilden(msg, m), nil
+			return updateChilden(msg, m)
 		}
 
 	case info.GotBioMsg:
@@ -98,13 +98,19 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		m.info, _ = info.Update(msg, m.info)
 		return m, nil
 
+	case username.ExitMsg:
+		m.menu.Choice = menu.Unset
+		return m, nil
+
 	default:
-		return updateChilden(msg, m), nil
+		return updateChilden(msg, m)
 
 	}
 }
 
-func updateChilden(msg tea.Msg, m Model) Model {
+func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch m.state {
 	case fetching:
 		m.info, _ = info.Update(msg, m.info)
@@ -112,12 +118,12 @@ func updateChilden(msg tea.Msg, m Model) Model {
 
 	switch m.menu.Choice {
 	case menu.SetUsername:
-		m.username, _ = username.Update(msg, m.username)
+		m.username, cmd = username.Update(msg, m.username)
 	default:
 		m.menu, _ = menu.Update(msg, m.menu)
 	}
 
-	return m
+	return m, cmd
 }
 
 // VIEW
