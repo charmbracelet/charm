@@ -1,8 +1,6 @@
 package username
 
 import (
-	"errors"
-
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/input"
@@ -40,8 +38,6 @@ const (
 // MSG
 
 type NameSetMsg struct{}
-
-type ErrorMsg error
 
 type ExitMsg struct{}
 
@@ -86,6 +82,8 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		case tea.KeyTab:
 			fallthrough
 		case tea.KeyShiftTab:
+
+			// Set focus index
 			if key == tea.KeyTab {
 				m.index++
 				if m.index > cancelButton {
@@ -98,16 +96,29 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 				}
 			}
 
+			// Set focus/blur on input field
 			if m.index == textInput && !m.input.Focused() {
 				m.input.Focus()
 				m.input.Prompt = focusedPrompt
-
 			} else if m.index != textInput && m.input.Focused() {
 				m.input.Blur()
 				m.input.Prompt = prompt
 			}
 
 			return m, nil
+
+		case tea.KeyEnter:
+			switch m.index {
+			case textInput:
+				m.index++
+				m.input.Blur()
+				m.input.Prompt = prompt
+				return m, nil
+			case okButton:
+				return m, setName
+			default:
+				return m, exit
+			}
 
 		default:
 			if m.index == textInput {
@@ -118,18 +129,14 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 			return m, nil
 		}
 
-	case ErrorMsg:
+	case tea.ErrMsg:
 		switch msg {
 		case charm.ErrNameTaken:
 			m.state = nameTaken
 			return m, nil
 		default:
 			m.state = unknownError
-			err, ok := msg.(error)
-			if !ok {
-				m.err = errors.New("very, very unknown error")
-			}
-			m.err = err
+			m.err = msg
 			return m, nil
 		}
 
@@ -190,6 +197,7 @@ func Blink(model tea.Model) tea.Sub {
 
 // COMMANDS
 
+// Attempt to update the username on the server
 func setName(model tea.Model) tea.Msg {
 	m, ok := model.(Model)
 	if !ok {
@@ -198,7 +206,12 @@ func setName(model tea.Model) tea.Msg {
 
 	_, err := m.cc.SetName(m.newName)
 	if err != nil {
-		return ErrorMsg(err)
+		return tea.NewErrMsgFromErr(err)
 	}
 	return NameSetMsg{}
+}
+
+// A command to exit this view
+func exit(_ tea.Model) tea.Msg {
+	return ExitMsg{}
 }
