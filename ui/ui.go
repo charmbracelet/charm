@@ -8,13 +8,13 @@ import (
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/spinner"
 	"github.com/muesli/reflow/indent"
-	"github.com/muesli/termenv"
+	te "github.com/muesli/termenv"
 )
 
 const padding = 2
 
 var (
-	color    = termenv.ColorProfile().Color
+	color    = te.ColorProfile().Color
 	purpleBg = "#5A56E0"
 	purpleFg = "#7571F9"
 	cream    = "#FFFDF5"
@@ -171,7 +171,8 @@ func view(model tea.Model) string {
 }
 
 func charmLogoView() string {
-	return "\n" + fgBg(" Charm ", cream, purpleBg).Bold().String() + "\n\n"
+	title := te.String(" Charm ").Foreground(color(cream)).Background(color(purpleBg)).String()
+	return "\n" + title + "\n\n"
 }
 
 func quitView() string {
@@ -179,7 +180,8 @@ func quitView() string {
 }
 
 func errorView(err error) string {
-	return indent.String("\n"+fgBg("ERROR", "230", "203").String()+" "+err.Error(), padding)
+	head := te.String("ERROR").Foreground(color("230")).Background(color("203")).String()
+	return indent.String("\n"+head+" "+err.Error(), padding)
 }
 
 // SUBSCRIPTIONS
@@ -223,17 +225,4 @@ func AppendSubs(newSubs tea.Subs, currentSubs tea.Subs) tea.Subs {
 		currentSubs[k] = v
 	}
 	return currentSubs
-}
-
-// HELPERS
-
-func fg(s string, fgColor string) termenv.Style {
-	return termenv.String(s).
-		Foreground(color(fgColor))
-}
-
-func fgBg(s, fgColor, bgColor string) termenv.Style {
-	return termenv.String(s).
-		Foreground(color(fgColor)).
-		Background(color(bgColor))
 }
