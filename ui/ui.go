@@ -46,6 +46,21 @@ type Model struct {
 
 // INIT
 
+func compose(f func(string, string) string, g string) func(string) string {
+	return func(x string) string {
+		return f(g, x)
+	}
+}
+
+// CmdMap applies a given model to a command
+// NOTE: if this makes sense, which it likely does, it should be moved to Tea
+// core
+func CmdMap(cmd tea.Cmd, model tea.Model) tea.Cmd {
+	return func(_ tea.Model) tea.Msg {
+		return cmd(model)
+	}
+}
+
 func initialize(cc *charm.Client) func() (tea.Model, tea.Cmd) {
 	return func() (tea.Model, tea.Cmd) {
 		s := spinner.NewModel()
@@ -58,15 +73,7 @@ func initialize(cc *charm.Client) func() (tea.Model, tea.Cmd) {
 			state: fetching,
 		}
 
-		// NOTE: We're doing this weird monadic Cmd.map thing here which
-		// doesn't feel right. This should probably get fixed in Tea core.
-		cmd := func(model tea.Model) tea.Msg {
-			m, ok := model.(Model)
-			if !ok {
-				log.Fatal("oof")
-			}
-			return info.GetBio(m.info)
-		}
+		cmd := CmdMap(info.GetBio, m.info)
 
 		return m, cmd
 	}
