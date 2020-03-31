@@ -122,7 +122,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 				m.index++
 				m.input.Blur()
 				m.input.Prompt = prompt
-				return m, nil
+				return m, tea.CmdMap(setName, m) // also fire off the command
 			case okButton:
 				return m, tea.CmdMap(setName, m)
 			default: // cancel/exit
@@ -184,17 +184,21 @@ func View(m Model) string {
 func setNameView(m Model) string {
 	s := "Enter a new username\n\n"
 	s += input.View(m.input) + "\n\n"
-	s += buttonView("  OK  ", m.index == 1) + " " + buttonView("Cancel", m.index == 2)
+	s += buttonView("OK", m.index == 1, true) + " " + buttonView("Cancel", m.index == 2, false)
 	return s
 }
 
-func buttonView(label string, active bool) string {
-	s := "  " + label + "  "
+func buttonView(label string, active bool, signalDefault bool) string {
 	c := "238"
 	if active {
 		c = magenta
 	}
-	return te.String(s).Background(color(c)).String()
+	text := te.String(label).Background(color(c))
+	if signalDefault {
+		text = text.Underline()
+	}
+	padding := te.String("  ").Background(color(c)).String()
+	return padding + text.String() + padding
 }
 
 func nameSetView(m Model) string {
