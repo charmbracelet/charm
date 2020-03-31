@@ -48,24 +48,6 @@ type Model struct {
 
 // INIT
 
-// CmdMap applies a given model to a command
-// NOTE: if this makes sense, which it likely does, it should be moved to Tea
-// core
-func CmdMap(cmd tea.Cmd, model tea.Model) tea.Cmd {
-	return func(_ tea.Model) tea.Msg {
-		return cmd(model)
-	}
-}
-
-// SubMap applies a given model to a subscription
-// NOTE: if this makes sense, which it likely does, it should be moved to Tea
-// core
-func SubMap(sub tea.Sub, model tea.Model) tea.Sub {
-	return func(_ tea.Model) tea.Msg {
-		return sub(model)
-	}
-}
-
 func initialize(cc *charm.Client) func() (tea.Model, tea.Cmd) {
 	return func() (tea.Model, tea.Cmd) {
 		s := spinner.NewModel()
@@ -80,7 +62,7 @@ func initialize(cc *charm.Client) func() (tea.Model, tea.Cmd) {
 			username: username.NewModel(cc),
 		}
 
-		return m, CmdMap(info.GetBio, m.info)
+		return m, tea.CmdMap(info.GetBio, m.info)
 	}
 }
 
