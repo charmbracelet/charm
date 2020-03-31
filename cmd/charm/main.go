@@ -80,10 +80,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	tea.UseSysLog("charm-tea")
+	if err := tea.UseSysLog("charm-tea"); err != nil {
+		log.Fatal(err)
+	}
 	if err := ui.NewProgram(cc).Start(); err != nil {
 		log.Fatal(err)
 	}
+	return
 
 	args := flag.Args()
 	if len(args) == 0 {

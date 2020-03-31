@@ -6,11 +6,17 @@ import (
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/input"
-	"github.com/muesli/termenv"
+	te "github.com/muesli/termenv"
+)
+
+const (
+	prompt = "> "
 )
 
 var (
-	color = termenv.ColorProfile().Color
+	color         = te.ColorProfile().Color
+	magenta       = "#EE6FF8"
+	focusedPrompt = te.String(prompt).Foreground(color(magenta)).String()
 )
 
 type state int
@@ -54,8 +60,10 @@ type Model struct {
 
 func NewModel(cc *charm.Client) Model {
 	inputModel := input.DefaultModel()
+	inputModel.CursorColor = magenta
 	inputModel.Placeholder = "divagurl2000"
 	inputModel.Focus()
+	inputModel.Prompt = focusedPrompt
 
 	return Model{
 		cc:      cc,
@@ -73,26 +81,32 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case tea.KeyMsg:
-		switch msg.Type {
+		switch key := msg.Type; key {
 
 		case tea.KeyTab:
-			m.index++
-			if m.index > cancelButton {
-				m.index = textInput
-			}
-			if m.index == textInput {
-				m.input.Focus()
-			}
-			return m, nil
-
+			fallthrough
 		case tea.KeyShiftTab:
-			m.index--
-			if m.index < textInput {
-				m.index = cancelButton
+			if key == tea.KeyTab {
+				m.index++
+				if m.index > cancelButton {
+					m.index = textInput
+				}
+			} else {
+				m.index--
+				if m.index < textInput {
+					m.index = cancelButton
+				}
 			}
-			if m.index != textInput && m.input.Focused() {
+
+			if m.index == textInput && !m.input.Focused() {
+				m.input.Focus()
+				m.input.Prompt = focusedPrompt
+
+			} else if m.index != textInput && m.input.Focused() {
 				m.input.Blur()
+				m.input.Prompt = prompt
 			}
+
 			return m, nil
 
 		default:
@@ -143,17 +157,17 @@ func View(m Model) string {
 func setNameView(m Model) string {
 	s := "Enter a new username\n\n"
 	s += input.View(m.input) + "\n\n"
-	s += buttonView("OK", m.index == 1) + " " + buttonView("Cancel", m.index == 2)
+	s += buttonView("  OK  ", m.index == 1) + " " + buttonView("Cancel", m.index == 2)
 	return s
 }
 
 func buttonView(label string, active bool) string {
 	s := "  " + label + "  "
-	c := "240"
+	c := "238"
 	if active {
-		c = "200"
+		c = magenta
 	}
-	return termenv.String(s).Background(color(c)).String()
+	return te.String(s).Background(color(c)).String()
 }
 
 func nameSetView(m Model) string {
@@ -162,6 +176,7 @@ func nameSetView(m Model) string {
 
 // SUBSCRIPTIONS
 
+// Blink wraps input's Blink subscription
 func Blink(model tea.Model) tea.Sub {
 	m, ok := model.(Model)
 	if !ok {
@@ -172,22 +187,6 @@ func Blink(model tea.Model) tea.Sub {
 		return input.Blink(m.input)
 	}
 }
-
-/*
-func Subscriptions(model tea.Model) tea.Subs {
-	return tea.Subs{
-		"username-input-blink": func(mdl tea.Model) tea.Msg {
-			m, ok := mdl.(Model)
-			if !ok {
-				// TODO: handle this error properly
-				//log.Println("wtf")
-				return nil
-			}
-			return input.Blink(m.input)
-		},
-	}
-}
-*/
 
 // COMMANDS
 
