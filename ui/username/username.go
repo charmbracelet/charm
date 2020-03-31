@@ -125,6 +125,9 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 				return m.reset(), exit
 			}
 
+		case tea.KeyEscape:
+			return m.reset(), exit
+
 		default:
 			if m.index == textInput {
 				var cmd tea.Cmd
