@@ -34,7 +34,7 @@ func TestNameValidation(t *testing.T) {
 		t.Error("validated an emoji, which should have failed")
 	}
 	if !validateName(strings.Repeat("x", 64)) {
-		t.Error("falied validating an 64-character-string, which should have passed")
+		t.Error("falied validating a 64-character-string, which should have passed")
 	}
 	if validateName(strings.Repeat("x", 65)) {
 		t.Error("validated a 65-character-string, which should have failed")

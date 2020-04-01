@@ -19,14 +19,6 @@ var (
 	focusedPrompt = te.String(prompt).Foreground(color(fuschia)).String()
 )
 
-type state int
-
-const (
-	nameNotChosen state = iota
-	nameSet
-	unknownError
-)
-
 type index int
 
 const (
@@ -49,7 +41,6 @@ type ExitMsg struct{}
 
 type Model struct {
 	cc      *charm.Client
-	state   state
 	newName string
 	input   input.Model
 	index   index
@@ -72,7 +63,6 @@ func NewModel(cc *charm.Client) Model {
 
 	return Model{
 		cc:      cc,
-		state:   nameNotChosen,
 		newName: "",
 		input:   inputModel,
 		index:   textInput,
@@ -86,10 +76,6 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case tea.KeyMsg:
-		if m.state == unknownError {
-			return m.reset(), exit
-		}
-
 		switch key := msg.Type; key {
 
 		case tea.KeyTab:
@@ -154,19 +140,22 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		return m, nil
 
 	case NameInvalidMsg:
-		m.errMsg = wordwrap.String(
+		m.errMsg = te.String(wordwrap.String(
 			"Oh. That's an invalid username. Usernames can only contain plain letters and numbers and must be less than 64 characters. And no emojis, kid!",
 			50,
-		)
+		)).Foreground(color("203")).String()
 		return m, nil
 
 	case tea.ErrMsg:
-		m.state = unknownError
-		m.errMsg = msg.String()
+		errMsg := wordwrap.String(
+			"Oh, what? There was a curious error we were not expecting. ["+msg.String()+"]",
+			50,
+		)
+		m.errMsg = te.String(errMsg).Foreground(color("203")).String()
 		return m, nil
 
 	case NameSetMsg:
-		m.state = nameSet
+		// TODO: something. anything.
 		return m, nil
 
 	default:
@@ -178,17 +167,6 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 // VIEWS
 
 func View(m Model) string {
-	switch m.state {
-	case unknownError:
-		// TODO: eventually use Mues's reflow to wrap these lines properly
-		return "Welp, there’s been an error:\n" + m.errMsg + "\n\n" +
-			"Press any key to go back..."
-	default:
-		return setNameView(m)
-	}
-}
-
-func setNameView(m Model) string {
 	s := "Enter a new username\n\n"
 	s += input.View(m.input) + "\n\n"
 	s += buttonView("OK", m.index == 1, true) + " " + buttonView("Cancel", m.index == 2, false)
