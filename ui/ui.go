@@ -242,7 +242,7 @@ func charmLogoView() string {
 }
 
 func menuView(currentIndex int) string {
-	s := "What do you want to do?\n\n"
+	var s string
 	for i := 0; i < len(menuChoices); i++ {
 		e := "  "
 		if i == currentIndex {
