@@ -6,7 +6,6 @@ import (
 	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/info"
-	"github.com/charmbracelet/charm/ui/menu"
 	"github.com/charmbracelet/charm/ui/username"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/spinner"
@@ -18,9 +17,10 @@ const padding = 2
 
 var (
 	color    = te.ColorProfile().Color
+	cream    = "#FFFDF5"
 	purpleBg = "#5A56E0"
 	purpleFg = "#7571F9"
-	cream    = "#FFFDF5"
+	magenta  = "#EE6FF8"
 )
 
 // NewProgram returns a new tea program
@@ -33,8 +33,22 @@ type state int
 const (
 	fetching state = iota
 	ready
+	setUsername
 	quitting
 )
+
+type menuChoice int
+
+const (
+	copyCharmIDChoice menuChoice = iota
+	setUsernameChoice
+	unsetChoice
+)
+
+var menuChoices = map[menuChoice]string{
+	copyCharmIDChoice: "Copy Charm ID",
+	setUsernameChoice: "Set Username",
+}
 
 // MSG
 
@@ -50,9 +64,10 @@ type Model struct {
 	err           error
 	statusMessage string
 	state         state
+	menuIndex     int
+	menuChoice    menuChoice
 
 	info     info.Model
-	menu     menu.Model
 	username username.Model
 }
 
@@ -65,11 +80,15 @@ func initialize(cc *charm.Client) func() (tea.Model, tea.Cmd) {
 		s.ForegroundColor = "244"
 
 		m := Model{
-			cc:       cc,
-			state:    fetching,
-			info:     info.NewModel(cc),
-			menu:     menu.NewModel(),
-			username: username.NewModel(cc),
+			cc:            cc,
+			user:          nil,
+			err:           nil,
+			statusMessage: "",
+			state:         fetching,
+			menuIndex:     0,
+			menuChoice:    unsetChoice,
+			info:          info.NewModel(cc),
+			username:      username.NewModel(cc),
 		}
 
 		return m, tea.CmdMap(info.GetBio, m.info)
@@ -85,78 +104,99 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	var (
+		cmds []tea.Cmd
+		cmd  tea.Cmd
+	)
+
 	switch msg := msg.(type) {
 
 	case tea.KeyMsg:
 
-		switch msg.String() {
-		case "q":
-			if m.menu.Choice == menu.SetUsername {
-				var cmd tea.Cmd
-				m.username, cmd = username.Update(msg, m.username)
-				return m, cmd
+		if m.menuChoice == unsetChoice { // Process keys for the menu
+
+			switch msg.String() {
+
+			// Quit
+			case "q":
+				fallthrough
+			case "ctrl+c":
+				m.state = quitting
+				return m, tea.Quit
+
+			// Prev menu item
+			case "up":
+				fallthrough
+			case "k":
+				m.menuIndex--
+				if m.menuIndex < 0 {
+					m.menuIndex = len(menuChoices) - 1
+				}
+
+				// Select menu item
+			case "enter":
+				m.menuChoice = menuChoice(m.menuIndex)
+
+			// Next menu item
+			case "down":
+				fallthrough
+			case "j":
+				m.menuIndex++
+				if m.menuIndex >= len(menuChoices) {
+					m.menuIndex = 0
+				}
 			}
-			m.state = quitting
-			return m, tea.Quit
-		case "ctrl+c":
-			m.state = quitting
-			return m, tea.Quit
-		default:
-			m.statusMessage = ""
-			return updateChilden(msg, m)
 		}
 
 	case copiedCharmIDMsg:
-		m.statusMessage = "Copied Charm ID"
+		m.statusMessage = "Copied Charm ID!"
 		return m, nil
 
 	case copyCharmIDErrMsg:
 		m.err = msg
-		return m, nil
 
 	case info.GotBioMsg:
 		m.state = ready
 		m.info, _ = info.Update(msg, m.info)
 		m.user = m.info.User
-		return m, nil
 
+	// TODO: this shouldn't be a message since there's no IO happening
 	case username.ExitMsg:
-		m.menu.Choice = menu.Unset
-		return m, nil
-
-	default:
-		m.statusMessage = ""
-		return updateChilden(msg, m)
+		m.menuChoice = unsetChoice
+		m.state = ready
 
 	}
+
+	m.statusMessage = ""
+	m, cmd = updateChilden(msg, m)
+	if cmd != nil {
+		cmds = append(cmds, cmd)
+	}
+
+	return m, tea.Batch(cmds...)
 }
 
 func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
-	if m.state == fetching {
+	var cmd tea.Cmd
+
+	switch m.state {
+	case fetching:
 		m.info, _ = info.Update(msg, m.info)
 		return m, nil
+	case setUsername:
+		m.username, cmd = username.Update(msg, m.username)
 	}
 
-	prevChoice := m.menu.Choice
-	m.menu, _ = menu.Update(msg, m.menu)
-
-	switch m.menu.Choice {
-	case menu.SetUsername:
-		// If the user is navigating to the username component, don't let user
-		// input in this update pass through, otherwise the enter key we're
-		// using to navigate in will also submit the form
-		if prevChoice == menu.SetUsername {
-			var cmd tea.Cmd
-			m.username, cmd = username.Update(msg, m.username)
-			return m, cmd
-		}
-		return m, nil
-	case menu.CopyCharmID:
-		m.menu.Choice = menu.Unset
-		return m, copyCharmID
-	default:
-		return m, nil
+	switch m.menuChoice {
+	case setUsernameChoice:
+		m.state = setUsername
+		m.menuChoice = unsetChoice
+	case copyCharmIDChoice:
+		cmd = copyCharmIDCmd
+		m.menuChoice = unsetChoice
 	}
+
+	return m, cmd
 }
 
 // VIEW
@@ -172,13 +212,13 @@ func view(model tea.Model) string {
 	switch m.state {
 	case fetching:
 		s += info.View(m.info)
+	case setUsername:
+		s += username.View(m.username)
 	case ready:
-		switch m.menu.Choice {
-		case menu.SetUsername:
-			s += username.View(m.username)
+		switch m.menuChoice {
 		default:
 			s += info.View(m.info)
-			s += "\n\n" + menu.View(m.menu)
+			s += "\n\n" + menuView(m.menuIndex)
 			s += footerView(m)
 		}
 	case quitting:
@@ -191,6 +231,22 @@ func view(model tea.Model) string {
 func charmLogoView() string {
 	title := te.String(" Charm ").Foreground(color(cream)).Background(color(purpleBg)).String()
 	return "\n" + title + "\n\n"
+}
+
+func menuView(currentIndex int) string {
+	s := "What do you want to do?\n\n"
+	for i := 0; i < len(menuChoices); i++ {
+		e := "  "
+		if i == currentIndex {
+			e = "> "
+		}
+		e += menuChoices[menuChoice(i)]
+		if i < len(menuChoices)-1 {
+			e += "\n"
+		}
+		s += e
+	}
+	return s
 }
 
 func quitView() string {
@@ -214,7 +270,7 @@ func helpView() string {
 }
 
 func statusMessageView(s string) string {
-	return te.String(s).Foreground(color(purpleFg)).String()
+	return te.String(s).Foreground(color(magenta)).String()
 }
 
 func errorView(err error) string {
@@ -237,8 +293,8 @@ func subscriptions(model tea.Model) tea.Subs {
 	case fetching:
 		subs = AppendSubs(info.Subscriptions(m.info), subs)
 	case ready:
-		switch m.menu.Choice {
-		case menu.SetUsername:
+		switch m.menuChoice {
+		case setUsernameChoice:
 			subs["username-input-blink"] = username.Blink(m.username)
 		}
 	}
@@ -267,7 +323,7 @@ func AppendSubs(newSubs tea.Subs, currentSubs tea.Subs) tea.Subs {
 
 // COMMANDS
 
-func copyCharmID(model tea.Model) tea.Msg {
+func copyCharmIDCmd(model tea.Model) tea.Msg {
 	m, ok := model.(Model)
 	if !ok {
 		return tea.ModelAssertionErr

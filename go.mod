@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/atotto/clipboard v0.1.2
-	github.com/charmbracelet/tea v0.0.0-20200331202816-1bf93b1ccf65
+	github.com/charmbracelet/tea v0.0.0-20200401160505-2e509ad32c12
 	github.com/charmbracelet/teaparty v0.0.0-20200327181402-eea5c2a32a46
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/meowgorithm/babyenv v1.2.1
