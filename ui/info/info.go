@@ -13,7 +13,6 @@ var (
 	color    = te.ColorProfile().Color
 	purpleBg = "#5A56E0"
 	purpleFg = "#7571F9"
-	cream    = "#FFFDF5"
 )
 
 // MSG

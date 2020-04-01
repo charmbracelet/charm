@@ -16,11 +16,12 @@ import (
 const padding = 2
 
 var (
-	color    = te.ColorProfile().Color
-	cream    = "#FFFDF5"
-	purpleBg = "#5A56E0"
-	purpleFg = "#7571F9"
-	magenta  = "#EE6FF8"
+	color       = te.ColorProfile().Color
+	cream       = "#FFFDF5"
+	purpleBg    = "#5A56E0"
+	purpleFg    = "#7571F9"
+	fuschia     = "#EE6FF8"
+	yellowGreen = "#ECFD65"
 )
 
 // NewProgram returns a new tea program
@@ -42,12 +43,14 @@ type menuChoice int
 const (
 	copyCharmIDChoice menuChoice = iota
 	setUsernameChoice
+	exitChoice
 	unsetChoice
 )
 
 var menuChoices = map[menuChoice]string{
 	copyCharmIDChoice: "Copy Charm ID",
 	setUsernameChoice: "Set Username",
+	exitChoice:        "Exit",
 }
 
 // MSG
@@ -194,6 +197,9 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	case copyCharmIDChoice:
 		cmd = copyCharmIDCmd
 		m.menuChoice = unsetChoice
+	case exitChoice:
+		m.state = quitting
+		cmd = tea.Quit
 	}
 
 	return m, cmd
@@ -238,7 +244,7 @@ func menuView(currentIndex int) string {
 	for i := 0; i < len(menuChoices); i++ {
 		e := "  "
 		if i == currentIndex {
-			e = "> "
+			e = te.String("> ").Foreground(color(fuschia)).String()
 		}
 		e += menuChoices[menuChoice(i)]
 		if i < len(menuChoices)-1 {
@@ -265,12 +271,12 @@ func footerView(m Model) string {
 }
 
 func helpView() string {
-	s := "j/k, up/down: choose • enter: select • q: exit"
+	s := "j/k, up/down: choose • enter: select"
 	return te.String(s).Foreground(color("241")).String()
 }
 
 func statusMessageView(s string) string {
-	return te.String(s).Foreground(color(magenta)).String()
+	return te.String(s).Foreground(color(fuschia)).String()
 }
 
 func errorView(err error) string {
