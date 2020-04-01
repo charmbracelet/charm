@@ -244,9 +244,11 @@ func menuView(currentIndex int) string {
 	for i := 0; i < len(menuChoices); i++ {
 		e := "  "
 		if i == currentIndex {
-			e = te.String("> ").Foreground(color(fuschia)).String()
+			e = te.String("> ").Foreground(color(purpleBg)).String()
+			e += te.String(menuChoices[menuChoice(i)]).Foreground(color(purpleFg)).String()
+		} else {
+			e += menuChoices[menuChoice(i)]
 		}
-		e += menuChoices[menuChoice(i)]
 		if i < len(menuChoices)-1 {
 			e += "\n"
 		}
