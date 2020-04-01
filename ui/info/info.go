@@ -102,7 +102,7 @@ func Subscriptions(model tea.Model) tea.Subs {
 func GetBio(model tea.Model) tea.Msg {
 	m, ok := model.(Model)
 	if !ok {
-		return tea.NewErrMsgFromErr(tea.ModelAssertionErr)
+		return tea.ModelAssertionErr
 	}
 
 	user, err := m.cc.Bio()

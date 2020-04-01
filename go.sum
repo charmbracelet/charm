@@ -1,3 +1,5 @@
+github.com/atotto/clipboard v0.1.2 h1:YZCtFu5Ie8qX2VmVTBnrqLSiU9XOWwqNRmdT3gIQzbY=
+github.com/atotto/clipboard v0.1.2/go.mod h1:ZY9tmq7sm5xIbd9bOK4onWV4S6X0u6GY7Vn0Yu86PYI=
 github.com/charmbracelet/tea v0.0.0-20200220032354-23432f30dd46 h1:ZRxnZ9WA8+DX7IpIrUjaAzue12wCA8bHgDWSrqARvGY=
 github.com/charmbracelet/tea v0.0.0-20200220032354-23432f30dd46/go.mod h1:96S8RyGdd7HfPcgDC8XqPKe+eH/1etFkw6lfhQCesgU=
 github.com/charmbracelet/tea v0.0.0-20200331202816-1bf93b1ccf65 h1:eXdBkDKvvA1JHcOsmYBEEP0MkgIFFX5B74kVnvPqTLE=

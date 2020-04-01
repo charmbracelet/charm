@@ -1,6 +1,9 @@
 package ui
 
 import (
+	"errors"
+
+	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/info"
 	"github.com/charmbracelet/charm/ui/menu"
@@ -20,7 +23,7 @@ var (
 	cream    = "#FFFDF5"
 )
 
-// New Program returns a new tea program
+// NewProgram returns a new tea program
 func NewProgram(cc *charm.Client) *tea.Program {
 	return tea.NewProgram(initialize(cc), update, view, subscriptions)
 }
@@ -33,13 +36,20 @@ const (
 	quitting
 )
 
+// MSG
+
+type copiedCharmIDMsg struct{}
+
+type copyCharmIDErrMsg struct{ error }
+
 // MODEL
 
 type Model struct {
-	cc    *charm.Client
-	user  *charm.User
-	err   error
-	state state
+	cc            *charm.Client
+	user          *charm.User
+	err           error
+	statusMessage string
+	state         state
 
 	info     info.Model
 	menu     menu.Model
@@ -81,21 +91,33 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 		switch msg.String() {
 		case "q":
-			if m.menu.Choice != menu.SetUsername {
-				m.state = quitting
-				return m, tea.Quit
+			if m.menu.Choice == menu.SetUsername {
+				var cmd tea.Cmd
+				m.username, cmd = username.Update(msg, m.username)
+				return m, cmd
 			}
-			return m, nil
+			m.state = quitting
+			return m, tea.Quit
 		case "ctrl+c":
 			m.state = quitting
 			return m, tea.Quit
 		default:
+			m.statusMessage = ""
 			return updateChilden(msg, m)
 		}
+
+	case copiedCharmIDMsg:
+		m.statusMessage = "Copied Charm ID"
+		return m, nil
+
+	case copyCharmIDErrMsg:
+		m.err = msg
+		return m, nil
 
 	case info.GotBioMsg:
 		m.state = ready
 		m.info, _ = info.Update(msg, m.info)
+		m.user = m.info.User
 		return m, nil
 
 	case username.ExitMsg:
@@ -103,6 +125,7 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	default:
+		m.statusMessage = ""
 		return updateChilden(msg, m)
 
 	}
@@ -114,13 +137,24 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		return m, nil
 	}
 
+	prevChoice := m.menu.Choice
+	m.menu, _ = menu.Update(msg, m.menu)
+
 	switch m.menu.Choice {
 	case menu.SetUsername:
-		var cmd tea.Cmd
-		m.username, cmd = username.Update(msg, m.username)
-		return m, cmd
+		// If the user is navigating to the username component, don't let user
+		// input in this update pass through, otherwise the enter key we're
+		// using to navigate in will also submit the form
+		if prevChoice == menu.SetUsername {
+			var cmd tea.Cmd
+			m.username, cmd = username.Update(msg, m.username)
+			return m, cmd
+		}
+		return m, nil
+	case menu.CopyCharmID:
+		m.menu.Choice = menu.Unset
+		return m, copyCharmID
 	default:
-		m.menu, _ = menu.Update(msg, m.menu)
 		return m, nil
 	}
 }
@@ -131,10 +165,6 @@ func view(model tea.Model) string {
 	m, ok := model.(Model)
 	if !ok {
 		m.err = tea.ModelAssertionErr
-	}
-
-	if m.err != nil {
-		return errorView(m.err)
 	}
 
 	s := charmLogoView()
@@ -149,6 +179,7 @@ func view(model tea.Model) string {
 		default:
 			s += info.View(m.info)
 			s += "\n\n" + menu.View(m.menu)
+			s += footerView(m)
 		}
 	case quitting:
 		s += quitView()
@@ -166,9 +197,29 @@ func quitView() string {
 	return "Thanks for using Charm!\n"
 }
 
+func footerView(m Model) string {
+	s := "\n\n"
+	if m.err != nil {
+		return s + errorView(m.err)
+	}
+	if m.statusMessage != "" {
+		return s + statusMessageView(m.statusMessage)
+	}
+	return s + helpView()
+}
+
+func helpView() string {
+	s := "j/k, up/down: choose • enter: select • q: exit"
+	return te.String(s).Foreground(color("241")).String()
+}
+
+func statusMessageView(s string) string {
+	return te.String(s).Foreground(color(purpleFg)).String()
+}
+
 func errorView(err error) string {
-	head := te.String("ERROR").Foreground(color("230")).Background(color("203")).String()
-	return indent.String("\n"+head+" "+err.Error(), padding)
+	head := te.String(" ERROR ").Foreground(color("230")).Background(color("203")).String()
+	return indent.String(head+" "+err.Error(), padding)
 }
 
 // SUBSCRIPTIONS
@@ -212,4 +263,21 @@ func AppendSubs(newSubs tea.Subs, currentSubs tea.Subs) tea.Subs {
 		currentSubs[k] = v
 	}
 	return currentSubs
+}
+
+// COMMANDS
+
+func copyCharmID(model tea.Model) tea.Msg {
+	m, ok := model.(Model)
+	if !ok {
+		return tea.ModelAssertionErr
+	}
+	if m.user == nil {
+		return copyCharmIDErrMsg{errors.New("we don't have any user info")}
+	}
+
+	if err := clipboard.WriteAll(m.user.CharmID); err != nil {
+		return copyCharmIDErrMsg{err}
+	}
+	return copiedCharmIDMsg{}
 }

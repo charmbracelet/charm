@@ -175,7 +175,7 @@ func View(m Model) string {
 	case unknownError:
 		// TODO: eventually use Mues's reflow to wrap these lines properly
 		return "Welp, there’s been an error:\n" + m.err.Error() + "\n\n" +
-			"Press any key to go back."
+			"Press any key to go back..."
 	default:
 		return ""
 	}

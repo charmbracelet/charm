@@ -9,20 +9,20 @@ type Choice int
 
 // Choices
 const (
-	Link Choice = iota
-	Keys
-	CopyID
-	JWT
+	CopyCharmID Choice = iota
 	SetUsername
+	Link
+	Keys
+	JWT
 
 	Unset = -1
 )
 
 var choices = map[Choice]string{
-	Link:        "Link this Computer",
-	Keys:        "List Keys",
-	CopyID:      "Copy Charm ID",
-	JWT:         "Get Token",
+	//Link:        "Link this Computer",
+	//Keys:        "List Keys",
+	CopyCharmID: "Copy Charm ID",
+	//JWT:         "Get Token",
 	SetUsername: "Change Username",
 }
 
