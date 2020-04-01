@@ -19,6 +19,7 @@ var (
 	focusedPrompt = te.String(prompt).Foreground(color(fuschia)).String()
 )
 
+// index specifies the UI element that's in focus
 type index int
 
 const (
@@ -58,8 +59,8 @@ func NewModel(cc *charm.Client) Model {
 	inputModel := input.DefaultModel()
 	inputModel.CursorColor = fuschia
 	inputModel.Placeholder = "divagurl2000"
-	inputModel.Focus()
 	inputModel.Prompt = focusedPrompt
+	inputModel.Focus()
 
 	return Model{
 		cc:      cc,
@@ -141,17 +142,19 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 	case NameInvalidMsg:
 		m.errMsg = te.String(wordwrap.String(
-			"Oh. That's an invalid username. Usernames can only contain plain letters and numbers and must be less than 64 characters. And no emojis, kid!",
+			te.String("Oh. That's an invalid username. ").Foreground(color("203")).String()+
+				te.String("Usernames can only contain plain letters and numbers and must be less than 64 characters. And no emojis, kiddo.").Foreground(color("241")).String(),
 			50,
 		)).Foreground(color("203")).String()
 		return m, nil
 
 	case tea.ErrMsg:
 		errMsg := wordwrap.String(
-			"Oh, what? There was a curious error we were not expecting. ["+msg.String()+"]",
+			te.String("Oh, what? There was a curious error we were not expecting. ").Foreground(color("203")).String()+
+				te.String(msg.String()).Foreground(color("241")).String(),
 			50,
 		)
-		m.errMsg = te.String(errMsg).Foreground(color("203")).String()
+		m.errMsg = errMsg
 		return m, nil
 
 	case NameSetMsg:
