@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"regexp"
 
 	"github.com/meowgorithm/babyenv"
 	"github.com/mitchellh/go-homedir"
@@ -16,9 +17,13 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 )
 
+var nameValidator = regexp.MustCompile("^[a-zA-Z0-9]{1,64}$")
+
 var ErrMissingSSHAuth = errors.New("missing ssh auth")
 
 var ErrNameTaken = errors.New("name already taken")
+
+var ErrNameInvalid = errors.New("invalid name")
 
 type Config struct {
 	IDHost      string `env:"CHARM_ID_HOST" default:"id.dev.charm.sh"`
@@ -224,6 +229,9 @@ func (cc *Client) LinkGen(lh LinkHandler) error {
 }
 
 func (cc *Client) SetName(name string) (*User, error) {
+	if !validateName(name) {
+		return nil, ErrNameInvalid
+	}
 	u := &User{}
 	u.Name = name
 	client := &http.Client{}
@@ -364,4 +372,8 @@ func agentAuthMethod() (ssh.AuthMethod, error) {
 	}
 	agentClient := agent.NewClient(conn)
 	return ssh.PublicKeysCallback(agentClient.Signers), nil
+}
+
+func validateName(name string) bool {
+	return nameValidator.MatchString(name)
 }
