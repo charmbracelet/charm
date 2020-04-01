@@ -4,6 +4,7 @@ import (
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/input"
+	"github.com/muesli/reflow/wordwrap"
 	te "github.com/muesli/termenv"
 )
 
@@ -13,16 +14,15 @@ const (
 
 var (
 	color         = te.ColorProfile().Color
-	magenta       = "#EE6FF8"
-	focusedPrompt = te.String(prompt).Foreground(color(magenta)).String()
+	fuschia       = "#EE6FF8"
+	yellowGreen   = "#ECFD65"
+	focusedPrompt = te.String(prompt).Foreground(color(fuschia)).String()
 )
 
 type state int
 
 const (
 	nameNotChosen state = iota
-	nameTaken
-	nameInvalid
 	nameSet
 	unknownError
 )
@@ -39,6 +39,10 @@ const (
 
 type NameSetMsg struct{}
 
+type NameTakenMsg struct{}
+
+type NameInvalidMsg struct{}
+
 type ExitMsg struct{}
 
 // MODEL
@@ -49,7 +53,7 @@ type Model struct {
 	newName string
 	input   input.Model
 	index   index
-	err     error
+	errMsg  string
 }
 
 // Reset the model to its default state
@@ -61,7 +65,7 @@ func (m *Model) reset() Model {
 
 func NewModel(cc *charm.Client) Model {
 	inputModel := input.DefaultModel()
-	inputModel.CursorColor = magenta
+	inputModel.CursorColor = fuschia
 	inputModel.Placeholder = "divagurl2000"
 	inputModel.Focus()
 	inputModel.Prompt = focusedPrompt
@@ -72,7 +76,7 @@ func NewModel(cc *charm.Client) Model {
 		newName: "",
 		input:   inputModel,
 		index:   textInput,
-		err:     nil,
+		errMsg:  "",
 	}
 }
 
@@ -119,11 +123,12 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		case tea.KeyEnter:
 			switch m.index {
 			case textInput:
-				m.index++
-				m.input.Blur()
-				m.input.Prompt = prompt
-				return m, tea.CmdMap(setName, m) // also fire off the command
+				m.errMsg = ""
+				m.newName = m.input.Value
+				return m, tea.CmdMap(setName, m) // fire off the command, too
 			case okButton:
+				m.errMsg = ""
+				m.newName = m.input.Value
 				return m, tea.CmdMap(setName, m)
 			default: // cancel/exit
 				return m.reset(), exit
@@ -141,20 +146,24 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 			return m, nil
 		}
 
-	case tea.ErrMsg:
-		m.err = msg
+	case NameTakenMsg:
+		name := te.String(m.newName).Foreground(color(fuschia)).String()
+		m.errMsg = te.String("Sorry,").Foreground(color("203")).String() +
+			name +
+			te.String(" is taken.").Foreground(color("203")).String()
+		return m, nil
 
-		switch msg {
-		case tea.ModelAssertionErr:
-			m.state = unknownError
-			return m, nil
-		case charm.ErrNameTaken:
-			m.state = nameTaken
-			return m, nil
-		default:
-			m.state = unknownError
-			return m, nil
-		}
+	case NameInvalidMsg:
+		m.errMsg = wordwrap.String(
+			"Oh. That's an invalid username. Usernames can only contain plain letters and numbers and must be less than 64 characters. And no emojis, kid!",
+			50,
+		)
+		return m, nil
+
+	case tea.ErrMsg:
+		m.state = unknownError
+		m.errMsg = msg.String()
+		return m, nil
 
 	case NameSetMsg:
 		m.state = nameSet
@@ -170,14 +179,12 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 func View(m Model) string {
 	switch m.state {
-	case nameNotChosen:
-		return setNameView(m)
 	case unknownError:
 		// TODO: eventually use Mues's reflow to wrap these lines properly
-		return "Welp, there’s been an error:\n" + m.err.Error() + "\n\n" +
+		return "Welp, there’s been an error:\n" + m.errMsg + "\n\n" +
 			"Press any key to go back..."
 	default:
-		return ""
+		return setNameView(m)
 	}
 }
 
@@ -185,13 +192,16 @@ func setNameView(m Model) string {
 	s := "Enter a new username\n\n"
 	s += input.View(m.input) + "\n\n"
 	s += buttonView("OK", m.index == 1, true) + " " + buttonView("Cancel", m.index == 2, false)
+	if m.errMsg != "" {
+		s += "\n\n" + m.errMsg
+	}
 	return s
 }
 
 func buttonView(label string, active bool, signalDefault bool) string {
 	c := "238"
 	if active {
-		c = magenta
+		c = fuschia
 	}
 	text := te.String(label).Background(color(c))
 	if signalDefault {
@@ -229,9 +239,14 @@ func setName(model tea.Model) tea.Msg {
 	}
 
 	_, err := m.cc.SetName(m.newName)
-	if err != nil {
+	if err == charm.ErrNameTaken {
+		return NameTakenMsg{}
+	} else if err == charm.ErrNameInvalid {
+		return NameInvalidMsg{}
+	} else if err != nil {
 		return tea.NewErrMsgFromErr(err)
 	}
+
 	return NameSetMsg{}
 }
 
