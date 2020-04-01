@@ -81,7 +81,6 @@ func initialize(cc *charm.Client) func() (tea.Model, tea.Cmd) {
 		s := spinner.NewModel()
 		s.Type = spinner.Dot
 		s.ForegroundColor = "244"
-
 		m := Model{
 			cc:            cc,
 			user:          nil,
@@ -93,7 +92,6 @@ func initialize(cc *charm.Client) func() (tea.Model, tea.Cmd) {
 			info:          info.NewModel(cc),
 			username:      username.NewModel(cc),
 		}
-
 		return m, tea.CmdMap(info.GetBio, m.info)
 	}
 }
@@ -116,7 +114,7 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 
-		if m.menuChoice == unsetChoice { // Process keys for the menu
+		if m.state == ready { // Process keys for the menu
 
 			switch msg.String() {
 
@@ -165,11 +163,6 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		m.info, _ = info.Update(msg, m.info)
 		m.user = m.info.User
 
-	// TODO: this shouldn't be a message since there's no IO happening
-	case username.ExitMsg:
-		m.menuChoice = unsetChoice
-		m.state = ready
-
 	}
 
 	m.statusMessage = ""
@@ -190,6 +183,14 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		return m, nil
 	case setUsername:
 		m.username, cmd = username.Update(msg, m.username)
+		if m.username.Done {
+			m.username = username.Reset(m.username)
+			m.state = ready
+		}
+		if m.username.Quit {
+			m.state = quitting
+			return m, tea.Quit
+		}
 	}
 
 	switch m.menuChoice {

@@ -36,24 +36,18 @@ type NameTakenMsg struct{}
 
 type NameInvalidMsg struct{}
 
-type ExitMsg struct{}
-
 // MODEL
 
 type Model struct {
+	Done bool // true when it's time to exit this view
+	Quit bool // true when the user wants to quit the whole program
+
 	cc      *charm.Client
 	newName string
 	input   input.Model
 	index   index
 	errMsg  string
 }
-
-// Reset the model to its default state
-func (m *Model) reset() Model {
-	return NewModel(m.cc)
-}
-
-// INIT
 
 func NewModel(cc *charm.Client) Model {
 	inputModel := input.DefaultModel()
@@ -63,12 +57,19 @@ func NewModel(cc *charm.Client) Model {
 	inputModel.Focus()
 
 	return Model{
+		Done:    false,
+		Quit:    false,
 		cc:      cc,
 		newName: "",
 		input:   inputModel,
 		index:   textInput,
 		errMsg:  "",
 	}
+}
+
+// Reset the given model to its default state
+func Reset(m Model) Model {
+	return NewModel(m.cc)
 }
 
 // UPDATE
@@ -78,6 +79,10 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch key := msg.Type; key {
+
+		case tea.KeyCtrlC:
+			m.Quit = true
+			return m, nil
 
 		case tea.KeyTab:
 			fallthrough
@@ -117,12 +122,14 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 				m.errMsg = ""
 				m.newName = m.input.Value
 				return m, tea.CmdMap(setName, m)
-			default: // cancel/exit
-				return m.reset(), exit
+			case cancelButton:
+				m.Done = true
+				return m, nil
 			}
 
 		case tea.KeyEscape:
-			return m.reset(), exit
+			m.Done = true
+			return m, nil
 
 		default:
 			if m.index == textInput {
@@ -165,6 +172,8 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		m.input, _ = input.Update(msg, m.input)
 		return m, nil
 	}
+
+	return m, nil
 }
 
 // VIEWS
@@ -229,9 +238,4 @@ func setName(model tea.Model) tea.Msg {
 	}
 
 	return NameSetMsg{}
-}
-
-// A command to exit this view
-func exit(_ tea.Model) tea.Msg {
-	return ExitMsg{}
 }
