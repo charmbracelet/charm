@@ -302,11 +302,8 @@ func subscriptions(model tea.Model) tea.Subs {
 	switch m.state {
 	case fetching:
 		subs = AppendSubs(info.Subscriptions(m.info), subs)
-	case ready:
-		switch m.menuChoice {
-		case setUsernameChoice:
-			subs["username-input-blink"] = username.Blink(m.username)
-		}
+	case setUsername:
+		subs["username-input-blink"] = username.Blink(m.username)
 	}
 
 	return subs
