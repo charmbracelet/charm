@@ -307,7 +307,7 @@ func subscriptions(model tea.Model) tea.Subs {
 
 	switch m.state {
 	case fetching:
-		subs = AppendSubs(info.Subscriptions(m.info), subs)
+		subs["info-spinner-tick"] = info.Tick(m.info)
 	case setUsername:
 		subs["username-input-blink"] = username.Blink(m.username)
 	}

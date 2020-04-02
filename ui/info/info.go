@@ -80,7 +80,8 @@ func bioView(u *charm.User) string {
 
 // SUBSCRIPTIONS
 
-func Subscriptions(model tea.Model) tea.Subs {
+// Tick just wraps the spinner's subscription
+func Tick(model tea.Model) tea.Sub {
 	m, ok := model.(Model)
 	if !ok {
 		// TODO: handle this error properly
@@ -89,11 +90,7 @@ func Subscriptions(model tea.Model) tea.Subs {
 		return nil
 	}
 
-	return tea.Subs{
-		"loading-spinner-tick": func(_ tea.Model) tea.Msg {
-			return spinner.Sub(m.spinner)
-		},
-	}
+	return tea.SubMap(spinner.Sub, m.spinner)
 }
 
 // COMMANDS
