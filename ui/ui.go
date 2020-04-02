@@ -30,6 +30,7 @@ func NewProgram(cc *charm.Client) *tea.Program {
 	return tea.NewProgram(initialize(cc), update, view, subscriptions)
 }
 
+// state is used to indicate a high level application state
 type state int
 
 const (
@@ -39,15 +40,17 @@ const (
 	quitting
 )
 
+// menuChoice represents a chosen menu item
 type menuChoice int
 
 const (
 	copyCharmIDChoice menuChoice = iota
 	setUsernameChoice
 	exitChoice
-	unsetChoice
+	unsetChoice // set when no choice has been made
 )
 
+// menu text corresponding to menu choices. these are presented to the user
 var menuChoices = map[menuChoice]string{
 	copyCharmIDChoice: "Copy Charm ID",
 	setUsernameChoice: "Set Username",
@@ -62,6 +65,7 @@ type copyCharmIDErrMsg struct{ error }
 
 // MODEL
 
+// Model holds the state for this program
 type Model struct {
 	cc            *charm.Client
 	user          *charm.User
@@ -321,27 +325,9 @@ func subscriptions(model tea.Model) tea.Subs {
 	return subs
 }
 
-// AppendSubs merges two groups of subs. Node that subs with idential key names
-// will replace existing subs with the same name.
-//
-// TODO: Move this into Tea core
-// TODO: Warn on sub name conflicts and maybe cancel current subs before adding
-// new ones
-func AppendSubs(newSubs tea.Subs, currentSubs tea.Subs) tea.Subs {
-	if len(newSubs) == 0 {
-		return currentSubs
-	}
-	if len(currentSubs) == 0 {
-		return newSubs
-	}
-	for k, v := range newSubs {
-		currentSubs[k] = v
-	}
-	return currentSubs
-}
-
 // COMMANDS
 
+// copyCharmIDCmd copies the Charm ID to the clipboard
 func copyCharmIDCmd(model tea.Model) tea.Msg {
 	m, ok := model.(Model)
 	if !ok {
