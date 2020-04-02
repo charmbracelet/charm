@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/spinner"
 	"github.com/muesli/reflow/indent"
+	"github.com/muesli/reflow/wordwrap"
 	te "github.com/muesli/termenv"
 )
 
@@ -287,8 +288,11 @@ func statusMessageView(s string) string {
 }
 
 func errorView(err error) string {
-	head := te.String(" ERROR ").Foreground(color("230")).Background(color("203")).String()
-	return indent.String(head+" "+err.Error(), padding)
+	head := te.String("Error: ").Foreground(color("203")).String()
+	msg := te.String(
+		wordwrap.String(err.Error(), 50),
+	).Foreground(color("241")).String()
+	return indent.String(head+msg, 2)
 }
 
 // SUBSCRIPTIONS
