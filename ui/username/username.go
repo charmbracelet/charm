@@ -1,6 +1,8 @@
 package username
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/input"
@@ -119,13 +121,11 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		case tea.KeyEnter:
 			switch m.index {
 			case textInput: // Submit the form
-				m.errMsg = ""
-				m.newName = m.input.Value
-				return m, tea.CmdMap(setName, m) // fire off the command, too
+				fallthrough
 			case okButton: // Submit the form
 				m.errMsg = ""
-				m.newName = m.input.Value
-				return m, tea.CmdMap(setName, m)
+				m.newName = strings.TrimSpace(m.input.Value)
+				return m, tea.CmdMap(setName, m) // fire off the command, too
 			case cancelButton: // Exit this mini-app
 				m.Done = true
 				return m, nil
