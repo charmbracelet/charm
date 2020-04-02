@@ -30,7 +30,9 @@ const (
 
 // MSG
 
-type NameSetMsg struct{}
+// NameSetMsg is sent when a new name has been set successfully. It contains
+// the new name.
+type NameSetMsg string
 
 type NameTakenMsg struct{}
 
@@ -80,10 +82,12 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch key := msg.Type; key {
 
+		// Quit the entire program
 		case tea.KeyCtrlC:
 			m.Quit = true
 			return m, nil
 
+		// Move focus forward
 		case tea.KeyTab:
 			fallthrough
 		case tea.KeyShiftTab:
@@ -114,25 +118,27 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 		case tea.KeyEnter:
 			switch m.index {
-			case textInput:
+			case textInput: // Submit the form
 				m.errMsg = ""
 				m.newName = m.input.Value
 				return m, tea.CmdMap(setName, m) // fire off the command, too
-			case okButton:
+			case okButton: // Submit the form
 				m.errMsg = ""
 				m.newName = m.input.Value
 				return m, tea.CmdMap(setName, m)
-			case cancelButton:
+			case cancelButton: // Exit this mini-app
 				m.Done = true
 				return m, nil
 			}
 
+		// Exit this mini-app
 		case tea.KeyEscape:
 			m.Done = true
 			return m, nil
 
 		default:
 			if m.index == textInput {
+				// Pass messages through to the input element
 				var cmd tea.Cmd
 				m.input, cmd = input.Update(msg, m.input)
 				return m, cmd
@@ -141,10 +147,10 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		}
 
 	case NameTakenMsg:
-		name := te.String(m.newName).Foreground(color(fuschia)).String()
-		m.errMsg = te.String("Sorry,").Foreground(color("203")).String() +
-			name +
-			te.String(" is taken.").Foreground(color("203")).String()
+		name := te.String(m.newName).Foreground(color("203")).String()
+		m.errMsg = te.String("Sorry,").Foreground(color("241")).String() +
+			" " + name + " " +
+			te.String("is taken.").Foreground(color("241")).String()
 		return m, nil
 
 	case NameInvalidMsg:
@@ -164,12 +170,8 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		m.errMsg = errMsg
 		return m, nil
 
-	case NameSetMsg:
-		// TODO: something. anything.
-		return m, nil
-
 	default:
-		m.input, _ = input.Update(msg, m.input)
+		m.input, _ = input.Update(msg, m.input) // Do we still need this?
 		return m, nil
 	}
 
@@ -228,6 +230,12 @@ func setName(model tea.Model) tea.Msg {
 		return tea.ModelAssertionErr
 	}
 
+	// We must renew the session for every subsequent SSH-backed command we
+	// run. In the case below, we request a new JWT when setting the username.
+	if err := m.cc.RenewSession(); err != nil {
+		return tea.NewErrMsgFromErr(err)
+	}
+
 	_, err := m.cc.SetName(m.newName)
 	if err == charm.ErrNameTaken {
 		return NameTakenMsg{}
@@ -237,5 +245,5 @@ func setName(model tea.Model) tea.Msg {
 		return tea.NewErrMsgFromErr(err)
 	}
 
-	return NameSetMsg{}
+	return NameSetMsg(m.newName)
 }

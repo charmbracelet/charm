@@ -163,6 +163,11 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		m.info, _ = info.Update(msg, m.info)
 		m.user = m.info.User
 
+	case username.NameSetMsg:
+		m.state = ready
+		m.username = username.Reset(m.username)
+		m.info.User.Name = string(msg)
+
 	}
 
 	m.statusMessage = ""

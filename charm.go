@@ -281,7 +281,7 @@ func (cc *Client) Bio() (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = cc.renewSession()
+	err = cc.RenewSession()
 	if err != nil {
 		return nil, err
 	}
@@ -314,7 +314,8 @@ func (cc *Client) Bio() (*User, error) {
 	return u, nil
 }
 
-func (cc *Client) renewSession() error {
+// RenewSession resets the session so we can perform another SSH-backed command
+func (cc *Client) RenewSession() error {
 	var err error
 	cc.session, err = cc.sshSession()
 	return err
