@@ -311,6 +311,7 @@ func subscriptions(model tea.Model) tea.Subs {
 		subs["info-spinner-tick"] = info.Tick(m.info)
 	case setUsername:
 		subs["username-input-blink"] = username.Blink(m.username)
+		subs["username-spinner-tick"] = username.Spin(m.username)
 	}
 
 	return subs

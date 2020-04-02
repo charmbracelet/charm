@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/input"
+	"github.com/charmbracelet/teaparty/spinner"
 	"github.com/muesli/reflow/wordwrap"
 	te "github.com/muesli/termenv"
 )
@@ -19,6 +20,13 @@ var (
 	fuschia       = "#EE6FF8"
 	yellowGreen   = "#ECFD65"
 	focusedPrompt = te.String(prompt).Foreground(color(fuschia)).String()
+)
+
+type state int
+
+const (
+	ready state = iota
+	submitting
 )
 
 // index specifies the UI element that's in focus
@@ -47,10 +55,12 @@ type Model struct {
 	Quit bool // true when the user wants to quit the whole program
 
 	cc      *charm.Client
+	state   state
 	newName string
-	input   input.Model
 	index   index
 	errMsg  string
+	input   input.Model
+	spinner spinner.Model
 }
 
 func NewModel(cc *charm.Client) Model {
@@ -61,14 +71,19 @@ func NewModel(cc *charm.Client) Model {
 	inputModel.CharLimit = 64
 	inputModel.Focus()
 
+	spinnerModel := spinner.NewModel()
+	spinnerModel.Type = spinner.Dot
+
 	return Model{
 		Done:    false,
 		Quit:    false,
 		cc:      cc,
+		state:   ready,
 		newName: "",
-		input:   inputModel,
 		index:   textInput,
 		errMsg:  "",
+		input:   inputModel,
+		spinner: spinnerModel,
 	}
 }
 
@@ -124,6 +139,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 			case textInput: // Submit the form
 				fallthrough
 			case okButton: // Submit the form
+				m.state = submitting
 				m.errMsg = ""
 				m.newName = strings.TrimSpace(m.input.Value)
 				return m, tea.CmdMap(setName, m) // fire off the command, too
@@ -148,6 +164,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		}
 
 	case NameTakenMsg:
+		m.state = ready
 		name := te.String(m.newName).Foreground(color("203")).String()
 		m.errMsg = te.String("Sorry,").Foreground(color("241")).String() +
 			" " + name + " " +
@@ -155,6 +172,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		return m, nil
 
 	case NameInvalidMsg:
+		m.state = ready
 		m.errMsg = te.String(wordwrap.String(
 			te.String("Invalid name. ").Foreground(color("203")).String()+
 				te.String("Names can only contain plain letters and numbers and must be less than 64 characters. And no emojis, kiddo.").Foreground(color("241")).String(),
@@ -163,12 +181,17 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		return m, nil
 
 	case tea.ErrMsg:
+		m.state = ready
 		errMsg := wordwrap.String(
 			te.String("Oh, what? There was a curious error we were not expecting. ").Foreground(color("203")).String()+
 				te.String(msg.String()).Foreground(color("241")).String(),
 			50,
 		)
 		m.errMsg = errMsg
+		return m, nil
+
+	case spinner.TickMsg:
+		m.spinner, _ = spinner.Update(msg, m.spinner)
 		return m, nil
 
 	default:
@@ -184,9 +207,13 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 func View(m Model) string {
 	s := "Enter a new username\n\n"
 	s += input.View(m.input) + "\n\n"
-	s += buttonView("OK", m.index == 1, true) + " " + buttonView("Cancel", m.index == 2, false)
-	if m.errMsg != "" {
-		s += "\n\n" + m.errMsg
+	if m.state == submitting {
+		s += spinnerView(m)
+	} else {
+		s += buttonView("OK", m.index == 1, true) + " " + buttonView("Cancel", m.index == 2, false)
+		if m.errMsg != "" {
+			s += "\n\n" + m.errMsg
+		}
 	}
 	return s
 }
@@ -208,18 +235,31 @@ func nameSetView(m Model) string {
 	return "OK! Your new username is " + m.newName
 }
 
+func spinnerView(m Model) string {
+	return te.String(spinner.View(m.spinner)).Foreground(color("241")).String() +
+		" Submitting..."
+}
+
 // SUBSCRIPTIONS
 
 // Blink wraps input's Blink subscription
 func Blink(model tea.Model) tea.Sub {
 	m, ok := model.(Model)
 	if !ok {
-		// TODO: handle this error properly
+		return nil // TODO: handle this error properly
+	}
+	return tea.SubMap(input.Blink, m.input)
+}
+
+func Spin(model tea.Model) tea.Sub {
+	m, ok := model.(Model)
+	if !ok {
 		return nil
 	}
-	return func(_ tea.Model) tea.Msg {
-		return input.Blink(m.input)
+	if m.state == submitting {
+		return tea.SubMap(spinner.Sub, m.spinner)
 	}
+	return nil
 }
 
 // COMMANDS
