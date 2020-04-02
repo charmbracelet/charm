@@ -6,6 +6,8 @@ github.com/charmbracelet/tea v0.0.0-20200401160505-2e509ad32c12 h1:ZeLw32EiEaiV8
 github.com/charmbracelet/tea v0.0.0-20200401160505-2e509ad32c12/go.mod h1:lADjwO2mMub9qvXSCA9vAkabVWO0HeUrv4uO/lG3C+k=
 github.com/charmbracelet/teaparty v0.0.0-20200327181402-eea5c2a32a46 h1:BJ8qnc8j3Sg/Jz6Gujg8VWJuIZYG6CfebJfovtTqt94=
 github.com/charmbracelet/teaparty v0.0.0-20200327181402-eea5c2a32a46/go.mod h1:J74WU9pFTdFSkvDmsk5VVchndjTDpgQxi4lKUw6VMy4=
+github.com/charmbracelet/teaparty v0.0.0-20200402005156-ea5161af98ed h1:es2vL1UNtE9SxgmM2coZN8cc+AlQ822Dh0qGkbTnLK8=
+github.com/charmbracelet/teaparty v0.0.0-20200402005156-ea5161af98ed/go.mod h1:DSGqzGz0x4loaifo2VWgOWnLegKiFgo7G3i0k3TiYM4=
 github.com/google/goterm v0.0.0-20190703233501-fc88cf888a3f h1:5CjVwnuUcp5adK4gmY6i72gpVFVnZDP2h5TmPScB6u4=
 github.com/google/goterm v0.0.0-20190703233501-fc88cf888a3f/go.mod h1:nOFQdrUlIlx6M6ODdSpBj1NVA+VgLC6kmw60mkw34H4=
 github.com/lucasb-eyer/go-colorful v1.0.3 h1:QIbQXiugsb+q10B+MI+7DI1oQLdmnep86tWFlaaUAac=

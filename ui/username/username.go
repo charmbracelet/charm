@@ -58,6 +58,7 @@ func NewModel(cc *charm.Client) Model {
 	inputModel.CursorColor = fuschia
 	inputModel.Placeholder = "divagurl2000"
 	inputModel.Prompt = focusedPrompt
+	inputModel.CharLimit = 64
 	inputModel.Focus()
 
 	return Model{
