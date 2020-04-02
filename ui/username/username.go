@@ -230,6 +230,12 @@ func setName(model tea.Model) tea.Msg {
 		return tea.ModelAssertionErr
 	}
 
+	// Validate before resetting the session to speed things up and keep us
+	// from pounding charm.RenewSession().
+	if !charm.ValidateName(m.newName) {
+		return NameInvalidMsg{}
+	}
+
 	// We must renew the session for every subsequent SSH-backed command we
 	// run. In the case below, we request a new JWT when setting the username.
 	if err := m.cc.RenewSession(); err != nil {

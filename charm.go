@@ -229,7 +229,7 @@ func (cc *Client) LinkGen(lh LinkHandler) error {
 }
 
 func (cc *Client) SetName(name string) (*User, error) {
-	if !validateName(name) {
+	if !ValidateName(name) {
 		return nil, ErrNameInvalid
 	}
 	u := &User{}
@@ -321,6 +321,11 @@ func (cc *Client) RenewSession() error {
 	return err
 }
 
+// ValidateName validates a given name
+func ValidateName(name string) bool {
+	return nameValidator.MatchString(name)
+}
+
 func (cc *Client) sshSession() (*ssh.Session, error) {
 	c, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cc.config.IDHost, cc.config.IDPort), cc.sshConfig)
 	if err != nil {
@@ -373,8 +378,4 @@ func agentAuthMethod() (ssh.AuthMethod, error) {
 	}
 	agentClient := agent.NewClient(conn)
 	return ssh.PublicKeysCallback(agentClient.Signers), nil
-}
-
-func validateName(name string) bool {
-	return nameValidator.MatchString(name)
 }
