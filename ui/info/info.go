@@ -22,6 +22,7 @@ type GotBioMsg *charm.User
 // MODEL
 
 type Model struct {
+	Quit    bool // signals it's time to exit the whole application
 	User    *charm.User
 	err     error
 	cc      *charm.Client
@@ -34,6 +35,7 @@ func NewModel(cc *charm.Client) Model {
 	s.ForegroundColor = "244"
 
 	return Model{
+		Quit:    false,
 		User:    nil,
 		cc:      cc,
 		spinner: s,
@@ -47,7 +49,10 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	case GotBioMsg:
 		m.User = msg
 	case tea.ErrMsg:
+		// If there's an error we print the error and exit
 		m.err = msg
+		m.Quit = true
+		return m, nil
 	case spinner.TickMsg:
 		m.spinner, _ = spinner.Update(msg, m.spinner)
 	}

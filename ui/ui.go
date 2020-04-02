@@ -186,6 +186,10 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	switch m.state {
 	case fetching:
 		m.info, _ = info.Update(msg, m.info)
+		if m.info.Quit {
+			m.state = quitting
+			return m, tea.Quit
+		}
 		return m, nil
 	case setUsername:
 		m.username, cmd = username.Update(msg, m.username)
