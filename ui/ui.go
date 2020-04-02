@@ -226,15 +226,12 @@ func view(model tea.Model) string {
 	switch m.state {
 	case fetching:
 		s += info.View(m.info)
+	case ready:
+		s += info.View(m.info)
+		s += "\n\n" + menuView(m.menuIndex)
+		s += footerView(m)
 	case setUsername:
 		s += username.View(m.username)
-	case ready:
-		switch m.menuChoice {
-		default:
-			s += info.View(m.info)
-			s += "\n\n" + menuView(m.menuIndex)
-			s += footerView(m)
-		}
 	case quitting:
 		s += quitView()
 	}
@@ -344,7 +341,6 @@ func copyCharmIDCmd(model tea.Model) tea.Msg {
 	if m.user == nil {
 		return copyCharmIDErrMsg{errors.New("we don't have any user info")}
 	}
-
 	if err := clipboard.WriteAll(m.user.CharmID); err != nil {
 		return copyCharmIDErrMsg{err}
 	}
