@@ -17,7 +17,7 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 )
 
-var nameValidator = regexp.MustCompile("^[a-zA-Z0-9]{1,64}$")
+var nameValidator = regexp.MustCompile("^[a-zA-Z0-9]{1,50}$")
 
 var ErrMissingSSHAuth = errors.New("missing ssh auth")
 

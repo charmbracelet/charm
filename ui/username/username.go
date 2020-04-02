@@ -68,7 +68,7 @@ func NewModel(cc *charm.Client) Model {
 	inputModel.CursorColor = fuschia
 	inputModel.Placeholder = "divagurl2000"
 	inputModel.Prompt = focusedPrompt
-	inputModel.CharLimit = 64
+	inputModel.CharLimit = 50
 	inputModel.Focus()
 
 	spinnerModel := spinner.NewModel()
@@ -175,7 +175,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		m.state = ready
 		m.errMsg = te.String(wordwrap.String(
 			te.String("Invalid name. ").Foreground(color("203")).String()+
-				te.String("Names can only contain plain letters and numbers and must be less than 64 characters. And no emojis, kiddo.").Foreground(color("241")).String(),
+				te.String("Names can only contain plain letters and numbers and must be less than 50 characters. And no emojis, kiddo.").Foreground(color("241")).String(),
 			50,
 		)).Foreground(color("203")).String()
 		return m, nil
