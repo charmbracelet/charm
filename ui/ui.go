@@ -281,7 +281,7 @@ func footerView(m Model) string {
 }
 
 func helpView() string {
-	s := "j/k, up/down: choose • enter: select"
+	s := "j/k, ↑/↓: choose • enter: select"
 	return te.String(s).Foreground(color("241")).String()
 }
 
