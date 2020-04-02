@@ -283,7 +283,7 @@ func setName(model tea.Model) tea.Msg {
 		return tea.NewErrMsgFromErr(err)
 	}
 
-	_, err := m.cc.SetName(m.newName)
+	u, err := m.cc.SetName(m.newName)
 	if err == charm.ErrNameTaken {
 		return NameTakenMsg{}
 	} else if err == charm.ErrNameInvalid {
@@ -292,5 +292,5 @@ func setName(model tea.Model) tea.Msg {
 		return tea.NewErrMsgFromErr(err)
 	}
 
-	return NameSetMsg(m.newName)
+	return NameSetMsg(u.Name)
 }
