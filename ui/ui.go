@@ -2,6 +2,7 @@ package ui
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/charm"
@@ -198,6 +199,7 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		m.info, _ = info.Update(msg, m.info)
 		if m.info.Quit {
 			m.state = quitting
+			m.err = m.info.Err
 			return m, tea.Quit
 		}
 		return m, nil
@@ -262,7 +264,7 @@ func view(model tea.Model) string {
 	case setUsername:
 		s += username.View(m.username)
 	case quitting:
-		s += quitView()
+		s += quitView(m)
 	}
 
 	return indent.String(s, padding)
@@ -291,7 +293,10 @@ func menuView(currentIndex int) string {
 	return s
 }
 
-func quitView() string {
+func quitView(m Model) string {
+	if m.err != nil {
+		return fmt.Sprintf("Uh oh, there’s been an error: %v\n", m.err)
+	}
 	return "Thanks for using Charm!\n"
 }
 

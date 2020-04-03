@@ -23,8 +23,8 @@ type GotBioMsg *charm.User
 
 type Model struct {
 	Quit    bool // signals it's time to exit the whole application
+	Err     error
 	User    *charm.User
-	err     error
 	cc      *charm.Client
 	spinner spinner.Model
 }
@@ -50,7 +50,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		m.User = msg
 	case tea.ErrMsg:
 		// If there's an error we print the error and exit
-		m.err = msg
+		m.Err = msg
 		m.Quit = true
 		return m, nil
 	case spinner.TickMsg:
@@ -62,8 +62,8 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 // VIEW
 
 func View(m Model) string {
-	if m.err != nil {
-		return "error: " + m.err.Error() + "\n"
+	if m.Err != nil {
+		return "error: " + m.Err.Error() + "\n"
 	} else if m.User == nil {
 		return spinner.View(m.spinner) + " Fetching your information...\n"
 	}
