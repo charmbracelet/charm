@@ -182,6 +182,7 @@ func (cc *Client) LinkGen(lh LinkHandler) error {
 		return err
 	}
 
+	// initialize link request on server
 	var lr Link
 	dec := json.NewDecoder(out)
 	err = dec.Decode(&lr)
