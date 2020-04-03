@@ -227,7 +227,7 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	case linkChoice:
 		m.state = linking
 		m.menuChoice = unsetChoice
-		cmd = tea.CmdMap(link.GenerateLink, m.link)
+		cmd = tea.Batch(link.HandleLinkRequest(m.link)...)
 	case setUsernameChoice:
 		m.state = setUsername
 		m.menuChoice = unsetChoice
