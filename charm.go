@@ -321,6 +321,11 @@ func (cc *Client) RenewSession() error {
 	return err
 }
 
+// CloseSession closes the client's SSH session
+func (cc *Client) CloseSession() error {
+	return cc.session.Close()
+}
+
 // ValidateName validates a given name
 func ValidateName(name string) bool {
 	return nameValidator.MatchString(name)
