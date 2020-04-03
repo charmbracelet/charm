@@ -64,6 +64,7 @@ type Model struct {
 }
 
 func NewModel(cc *charm.Client) Model {
+
 	inputModel := input.DefaultModel()
 	inputModel.CursorColor = fuschia
 	inputModel.Placeholder = "divagurl2000"
@@ -85,11 +86,6 @@ func NewModel(cc *charm.Client) Model {
 		input:   inputModel,
 		spinner: spinnerModel,
 	}
-}
-
-// Reset the given model to its default state
-func Reset(m Model) Model {
-	return NewModel(m.cc)
 }
 
 // UPDATE

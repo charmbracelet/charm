@@ -176,7 +176,7 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 	case username.NameSetMsg:
 		m.state = ready
-		m.username = username.Reset(m.username)
+		m.username = username.NewModel(m.cc) // reset the state
 		m.info.User.Name = string(msg)
 
 	}
@@ -204,7 +204,7 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	case linking:
 		m.link, _ = link.Update(msg, m.link)
 		if m.link.Exit {
-			m.link = link.NewModel(m.cc) // reset
+			m.link = link.NewModel(m.cc) // reset the state
 			m.state = ready
 		} else if m.link.Quit {
 			m.state = quitting
@@ -213,7 +213,7 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	case setUsername:
 		m.username, cmd = username.Update(msg, m.username)
 		if m.username.Done {
-			m.username = username.Reset(m.username)
+			m.username = username.NewModel(m.cc) // reset the state
 			m.state = ready
 		} else if m.username.Quit {
 			m.state = quitting
