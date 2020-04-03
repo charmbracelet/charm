@@ -6,6 +6,7 @@ import (
 	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/info"
+	"github.com/charmbracelet/charm/ui/link"
 	"github.com/charmbracelet/charm/ui/username"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/spinner"
@@ -36,6 +37,7 @@ type state int
 const (
 	fetching state = iota
 	ready
+	linking
 	setUsername
 	quitting
 )
@@ -45,6 +47,7 @@ type menuChoice int
 
 const (
 	copyCharmIDChoice menuChoice = iota
+	linkChoice
 	setUsernameChoice
 	exitChoice
 	unsetChoice // set when no choice has been made
@@ -52,6 +55,7 @@ const (
 
 // menu text corresponding to menu choices. these are presented to the user
 var menuChoices = map[menuChoice]string{
+	linkChoice:        "Link a machine",
 	copyCharmIDChoice: "Copy Charm ID",
 	setUsernameChoice: "Set Username",
 	exitChoice:        "Exit",
@@ -76,6 +80,7 @@ type Model struct {
 	menuChoice    menuChoice
 
 	info     info.Model
+	link     link.Model
 	username username.Model
 }
 
@@ -95,6 +100,7 @@ func initialize(cc *charm.Client) func() (tea.Model, tea.Cmd) {
 			menuIndex:     0,
 			menuChoice:    unsetChoice,
 			info:          info.NewModel(cc),
+			link:          link.NewModel(cc),
 			username:      username.NewModel(cc),
 		}
 		return m, tea.CmdMap(info.GetBio, m.info)
@@ -141,7 +147,7 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 					m.menuIndex = len(menuChoices) - 1
 				}
 
-				// Select menu item
+			// Select menu item
 			case "enter":
 				m.menuChoice = menuChoice(m.menuIndex)
 
@@ -195,19 +201,30 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 		return m, nil
+	case linking:
+		m.link, _ = link.Update(msg, m.link)
+		if m.link.Exit {
+			m.link.Reset()
+			m.state = ready
+		} else if m.link.Quit {
+			m.state = quitting
+			return m, tea.Quit
+		}
 	case setUsername:
 		m.username, cmd = username.Update(msg, m.username)
 		if m.username.Done {
 			m.username = username.Reset(m.username)
 			m.state = ready
-		}
-		if m.username.Quit {
+		} else if m.username.Quit {
 			m.state = quitting
 			return m, tea.Quit
 		}
 	}
 
 	switch m.menuChoice {
+	case linkChoice:
+		m.state = linking
+		m.menuChoice = unsetChoice
 	case setUsernameChoice:
 		m.state = setUsername
 		m.menuChoice = unsetChoice
@@ -239,6 +256,8 @@ func view(model tea.Model) string {
 		s += info.View(m.info)
 		s += "\n\n" + menuView(m.menuIndex)
 		s += footerView(m)
+	case linking:
+		s += link.View(m.link)
 	case setUsername:
 		s += username.View(m.username)
 	case quitting:
