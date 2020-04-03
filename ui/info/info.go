@@ -46,6 +46,16 @@ func NewModel(cc *charm.Client) Model {
 
 func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "q":
+			fallthrough
+		case "esc":
+			fallthrough
+		case "ctrl+c":
+			m.Quit = true
+			return m, nil
+		}
 	case GotBioMsg:
 		m.User = msg
 	case tea.ErrMsg:
