@@ -204,7 +204,7 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	case linking:
 		m.link, _ = link.Update(msg, m.link)
 		if m.link.Exit {
-			m.link.Reset()
+			m.link = link.NewModel(m.cc) // reset
 			m.state = ready
 		} else if m.link.Quit {
 			m.state = quitting
@@ -225,6 +225,7 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	case linkChoice:
 		m.state = linking
 		m.menuChoice = unsetChoice
+		cmd = tea.CmdMap(link.GenerateLink, m.link)
 	case setUsernameChoice:
 		m.state = setUsername
 		m.menuChoice = unsetChoice
