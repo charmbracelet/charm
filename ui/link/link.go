@@ -23,19 +23,25 @@ func (err errMsg) String() string {
 }
 
 type Model struct {
-	Quit          bool // indicates the user wants to exit the whole program
-	Exit          bool // indicates the user wants to exit this mini-app
-	err           error
-	status        charm.LinkStatus
-	token         string
-	linkRequest   linkRequest
-	acceptRequest bool
-	rejectRequest bool
-	cc            *charm.Client
+	lh          *linkHandler
+	Quit        bool // indicates the user wants to exit the whole program
+	Exit        bool // indicates the user wants to exit this mini-app
+	err         error
+	status      charm.LinkStatus
+	token       string
+	linkRequest linkRequest
+	cc          *charm.Client
 }
 
 func NewModel(cc *charm.Client) Model {
+	lh := &linkHandler{
+		err:      make(chan error),
+		token:    make(chan string),
+		request:  make(chan linkRequest),
+		response: make(chan bool),
+	}
 	return Model{
+		lh:          lh,
 		Quit:        false,
 		Exit:        false,
 		err:         nil,
@@ -95,11 +101,11 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 			switch strings.ToLower(msg.String()) {
 			case "y":
 				// Accept request
-				// We should fire off a command here
+				m.lh.response <- true
 				return m, nil
 			case "n":
 				// Reject request
-				// We should fire off a command here
+				m.lh.response <- false
 				return m, nil
 			}
 		}
@@ -115,7 +121,7 @@ func View(m Model) string {
 	case charm.LinkStatusTokenCreated:
 		s += "\n\ncharm link " + m.token
 	case charm.LinkStatusRequested:
-		s += "\n\nIncoming request from " + m.linkRequest.requestAddr
+		s += fmt.Sprintf("\n\nIncoming request from %s.\n\nWhatcha think? (y/n)\n", m.linkRequest.requestAddr)
 	case charm.LinkStatusError:
 		s += "Uh oh: " + m.err.Error()
 	}
@@ -123,32 +129,6 @@ func View(m Model) string {
 }
 
 // COMMANDS
-
-// GenerateLink starts the linking process by creating a token
-func GenerateLink(model tea.Model) tea.Msg {
-	m, ok := model.(Model)
-	if !ok {
-		return tea.ModelAssertionErr
-	}
-
-	lh := &linkHandler{token: make(chan string)}
-	errChan := make(chan error)
-
-	go func() {
-		m.cc.RenewSession()
-		if err := m.cc.LinkGen(lh); err != nil {
-			errChan <- err
-			return
-		}
-	}()
-
-	select {
-	case err := <-errChan:
-		return errMsg{err}
-	case token := <-lh.token:
-		return linkTokenCreatedMsg(token)
-	}
-}
 
 // HandleLinkRequest returns a bunch of blocking commands that resolve on link
 // request states. As a Tea command, this should be treated as batch:
@@ -163,22 +143,16 @@ func HandleLinkRequest(model tea.Model) []tea.Cmd {
 		}}
 	}
 
-	lh := &linkHandler{
-		err:     make(chan error),
-		token:   make(chan string),
-		request: make(chan linkRequest),
-	}
-
 	go func() {
 		m.cc.RenewSession()
-		if err := m.cc.LinkGen(lh); err != nil {
-			lh.err <- err
+		if err := m.cc.LinkGen(m.lh); err != nil {
+			m.lh.err <- err
 		}
 	}()
 
 	return []tea.Cmd{
-		generateLink(lh),
-		handleLinkRequest(lh),
+		generateLink(m.lh),
+		handleLinkRequest(m.lh),
 	}
 }
 
