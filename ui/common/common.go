@@ -59,6 +59,18 @@ func NoButtonView(focused bool) string {
 		buttonStyling("o  ", false, focused)
 }
 
+func OKButtonView(focused bool, defaultButton bool) string {
+	return buttonStyling("  ", false, focused) +
+		buttonStyling("OK", true, focused) +
+		buttonStyling("  ", false, focused)
+}
+
+func CancelButtonView(focused bool, defaultButton bool) string {
+	return buttonStyling("  ", false, focused) +
+		buttonStyling("Cancel", true, focused) +
+		buttonStyling("  ", false, focused)
+}
+
 func buttonStyling(str string, underline, focused bool) string {
 	var s te.Style = te.String(str).Foreground(Color(cream))
 	if focused {

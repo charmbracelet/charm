@@ -204,7 +204,8 @@ func View(m Model) string {
 	if m.state == submitting {
 		s += spinnerView(m)
 	} else {
-		s += buttonView("OK", m.index == 1, true) + " " + buttonView("Cancel", m.index == 2, false)
+		s += common.OKButtonView(m.index == 1, true) +
+			" " + common.CancelButtonView(m.index == 2, false)
 		if m.errMsg != "" {
 			s += "\n\n" + m.errMsg
 		}
