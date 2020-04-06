@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/tea"
+	"github.com/charmbracelet/teaparty/spinner"
 )
 
 type linkTokenCreatedMsg string
@@ -32,6 +33,7 @@ type Model struct {
 	linkRequest linkRequest
 	cc          *charm.Client
 	buttonIndex int // focused state of ok/cancel buttons
+	spinner     spinner.Model
 }
 
 // acceptRequest rejects the current linking request
@@ -53,6 +55,9 @@ func NewModel(cc *charm.Client) Model {
 		response: make(chan bool),
 		success:  make(chan struct{}),
 	}
+	s := spinner.NewModel()
+	s.Type = spinner.Dot
+	s.ForegroundColor = "241"
 	return Model{
 		lh:          lh,
 		Quit:        false,
@@ -63,6 +68,7 @@ func NewModel(cc *charm.Client) Model {
 		linkRequest: linkRequest{},
 		cc:          cc,
 		buttonIndex: 0,
+		spinner:     s,
 	}
 }
 
@@ -164,6 +170,9 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		m.status = charm.LinkStatusSuccess
 		return m, nil
 
+	case spinner.TickMsg:
+		m.spinner, _ = spinner.Update(msg, m.spinner)
+		return m, nil
 	}
 
 	switch m.status {
@@ -195,7 +204,7 @@ func View(m Model) string {
 	))
 	switch m.status {
 	case charm.LinkStatusInit:
-		s += "Generating link..."
+		s += spinner.View(m.spinner) + " Generating link..."
 	case charm.LinkStatusTokenCreated:
 		s += fmt.Sprintf(
 			"%s\n\n%s\n\n%s",
@@ -225,6 +234,20 @@ func View(m Model) string {
 		s += "Link request " + common.Keyword("denied") + common.HelpView("Press any key to exit...")
 	}
 	return s
+}
+
+// SUBSCRIPTIONS
+
+func Spin(model tea.Model) tea.Sub {
+	m, ok := model.(Model)
+	if !ok {
+		return nil
+	}
+
+	if m.status != charm.LinkStatusInit {
+		return nil
+	}
+	return tea.SubMap(spinner.Sub, m.spinner)
 }
 
 // COMMANDS

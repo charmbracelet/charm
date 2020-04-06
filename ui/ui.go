@@ -341,6 +341,8 @@ func subscriptions(model tea.Model) tea.Subs {
 	case setUsername:
 		subs["username-input-blink"] = username.Blink(m.username)
 		subs["username-spinner-tick"] = username.Spin(m.username)
+	case linking:
+		subs["link-setup-spinner-tick"] = link.Spin(m.link)
 	}
 
 	return subs
