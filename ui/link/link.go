@@ -39,6 +39,7 @@ func NewModel(cc *charm.Client) Model {
 		token:    make(chan string),
 		request:  make(chan linkRequest),
 		response: make(chan bool),
+		success:  make(chan struct{}),
 	}
 	return Model{
 		lh:          lh,
@@ -76,6 +77,12 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 			m.CancelRequest()
 			m.Exit = true
 			return m, nil
+		default:
+			if m.status == charm.LinkStatusSuccess {
+				// After a successful connection any key returns to the menu.
+				m.Exit = true
+				return m, nil
+			}
 		}
 
 	case errMsg:
@@ -92,6 +99,11 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		m.status = charm.LinkStatusRequested
 		m.linkRequest = linkRequest(msg)
 		return m, nil
+
+	case linkSuccessMsg:
+		m.status = charm.LinkStatusSuccess
+		return m, nil
+
 	}
 
 	switch m.status {
@@ -116,14 +128,24 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 // View renders the UI
 func View(m Model) string {
-	s := wordwrap.String("You can link the SSH keys on another machine to your Charm account so both machines have access to your stuff. Rest assured that you can also unlink keys at any time.\n\nReady to go?", 50)
+	s := wordwrap.String("You can link the SSH keys on another machine to your Charm account so both machines have access to your stuff. Rest assured that you can also unlink keys at any time.\n\n", 50)
 	switch m.status {
+	case charm.LinkStatusInit:
+		s += "Generating link..."
 	case charm.LinkStatusTokenCreated:
+		s += wordwrap.String("To link, run the following command on your other machine:", 50)
 		s += "\n\ncharm link " + m.token
 	case charm.LinkStatusRequested:
-		s += fmt.Sprintf("\n\nIncoming request from %s.\n\nWhatcha think? (y/n)\n", m.linkRequest.requestAddr)
+		s += "Link request from:\n\n"
+		s += fmt.Sprintf("IP: %s\n", m.linkRequest.requestAddr)
+		if len(m.linkRequest.pubKey) > 50 {
+			s += fmt.Sprintf("Key: %s...", m.linkRequest.pubKey[0:50])
+		}
+		s += "\n\nLink your account to this device? y/n"
 	case charm.LinkStatusError:
 		s += "Uh oh: " + m.err.Error()
+	case charm.LinkStatusSuccess:
+		s += "Linked!\n\nPress any key to exit..."
 	}
 	return s
 }
@@ -153,6 +175,7 @@ func HandleLinkRequest(model tea.Model) []tea.Cmd {
 	return []tea.Cmd{
 		generateLink(m.lh),
 		handleLinkRequest(m.lh),
+		handleLinkSuccess(m.lh),
 	}
 }
 
@@ -202,6 +225,7 @@ func (lh *linkHandler) TokenCreated(l *charm.Link) {
 	lh.token <- l.Token
 }
 
+// Not needed on the link generator side
 func (lh *linkHandler) TokenSent(l *charm.Link) {
 	log.Println("Linking...")
 }
@@ -224,6 +248,7 @@ func (lh *linkHandler) Request(l *charm.Link) bool {
 	//return false
 }
 
+// Not needed on the link generator side
 func (lh *linkHandler) RequestDenied(l *charm.Link) {
 	log.Println("Not Linked :(")
 }
@@ -233,8 +258,8 @@ func (lh *linkHandler) SameAccount(l *charm.Link) {
 }
 
 func (lh *linkHandler) Success(l *charm.Link) {
-	log.Println("Linked!")
 	lh.success <- struct{}{}
+	log.Println("Linked!")
 }
 
 func (lh *linkHandler) Timeout(l *charm.Link) {
