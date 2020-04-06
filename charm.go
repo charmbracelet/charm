@@ -29,7 +29,7 @@ var ErrNameInvalid = errors.New("invalid name")
 type Config struct {
 	IDHost      string `env:"CHARM_ID_HOST" default:"id.dev.charm.sh"`
 	IDPort      int    `env:"CHARM_ID_PORT" default:"5555"`
-	BioHost     string `env:"CHARM_BIO_HOST" default:"http://bio.dev.charm.sh"`
+	BioHost     string `env:"CHARM_BIO_HOST" default:"https://bio.dev.charm.sh"`
 	BioPort     int    `env:"CHARM_BIO_PORT" default:"80"`
 	UseSSHAgent bool   `env:"CHARM_USE_SSH_AGENT" default:"true"`
 	SSHKeyPath  string `env:"CHARM_SSH_KEY_PATH" default:"~/.ssh/id_dsa"`
