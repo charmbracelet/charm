@@ -80,19 +80,17 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := tea.UseSysLog("charm-tea"); err != nil {
-		log.Fatal(err)
-	}
-	if err := ui.NewProgram(cc).Start(); err != nil {
-		log.Fatal(err)
-	}
-	return
-
 	args := flag.Args()
 	if len(args) == 0 {
-		flag.Usage()
+		if err := tea.UseSysLog("charm-tea"); err != nil {
+			log.Fatal(err)
+		}
+		if err := ui.NewProgram(cc).Start(); err != nil {
+			log.Fatal(err)
+		}
 		return
 	}
+
 	switch args[0] {
 	case "name":
 		if len(args) != 2 {
