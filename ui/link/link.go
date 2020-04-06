@@ -136,13 +136,13 @@ func View(m Model) string {
 		s += common.Wrap("To link, run the following command on your other machine:")
 		s += "\n\ncharm link " + m.token
 	case charm.LinkStatusRequested:
+		var d []string
 		s += "Link request from:\n\n"
-		d := make(map[string]string)
-		d["IP"] = m.linkRequest.requestAddr
+		d = append(d, []string{"IP", m.linkRequest.requestAddr}...)
 		if len(m.linkRequest.pubKey) > 50 {
-			d["Key"] = m.linkRequest.pubKey[0:50] + "..."
+			d = append(d, []string{"Key", m.linkRequest.pubKey[0:50] + "..."}...)
 		}
-		s += common.KeyValueView(d)
+		s += common.KeyValueView(d...)
 		s += "\n\nLink your account to this device? y/n"
 	case charm.LinkStatusError:
 		s += "Uh oh: " + m.err.Error()

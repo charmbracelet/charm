@@ -7,12 +7,20 @@ import (
 )
 
 // KeyValueView renders key-value pairs
-func KeyValueView(m map[string]string) string {
+func KeyValueView(stuff ...string) string {
+	if len(stuff) == 0 {
+		return ""
+	}
 	var s string
-	for k, v := range m {
-		s += te.String("│ ").Foreground(Color("241")).String()
-		s += k + ": "
-		s += te.String(v).Foreground(Color(purpleFg)).String()
+	for i := 0; i < len(stuff); i++ {
+		if i%2 == 0 {
+			// even
+			s += te.String("│ ").Foreground(Color("241")).String()
+			s += stuff[i] + ": "
+			continue
+		}
+		// odd
+		s += te.String(stuff[i]).Foreground(Color(purpleFg)).String()
 		s += "\n"
 	}
 	return strings.TrimSpace(s)
