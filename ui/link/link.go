@@ -100,6 +100,10 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 			case charm.LinkStatusRequested:
 				switch msg.String() {
+				case "j":
+					fallthrough
+				case "h":
+					fallthrough
 				case "right":
 					fallthrough
 				case "tab":
@@ -107,6 +111,10 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 					if m.buttonIndex > 1 {
 						m.buttonIndex = 0
 					}
+				case "k":
+					fallthrough
+				case "l":
+					fallthrough
 				case "left":
 					fallthrough
 				case "shift+tab":
