@@ -89,8 +89,8 @@ func bioView(u *charm.User) string {
 		username = te.String("(none set)").Foreground(color("241")).String()
 	}
 	return common.KeyValueView(
-		"Charm ID", u.CharmID,
 		"Username", username,
+		"Joined", u.CreatedAt.Format("02 Jan 2006"),
 	)
 }
 
