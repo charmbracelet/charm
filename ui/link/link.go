@@ -128,13 +128,20 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 // View renders the UI
 func View(m Model) string {
-	s := common.Wrap("You can link the SSH keys on another machine to your Charm account so both machines have access to your stuff. Rest assured that you can also unlink keys at any time.\n\n")
+	s := common.Wrap(fmt.Sprintf(
+		"You can %s the SSH keys on another machine to your Charm account so both machines have access to your stuff. You can unlink keys at any time.\n\n",
+		common.Keyword("link"),
+	))
 	switch m.status {
 	case charm.LinkStatusInit:
 		s += "Generating link..."
 	case charm.LinkStatusTokenCreated:
-		s += common.Wrap("To link, run the following command on your other machine:")
-		s += "\n\ncharm link " + m.token
+		s += fmt.Sprintf(
+			"%s\n\n%s\n\n%s",
+			common.Wrap("To link, run the following command on your other machine:"),
+			common.Code("charm link "+m.token),
+			"To cancel, press escape",
+		)
 	case charm.LinkStatusRequested:
 		var d []string
 		s += "Link request from:\n\n"
@@ -143,7 +150,7 @@ func View(m Model) string {
 			d = append(d, []string{"Key", m.linkRequest.pubKey[0:50] + "..."}...)
 		}
 		s += common.KeyValueView(d...)
-		s += "\n\nLink your account to this device? y/n"
+		s += "\n\nLink this device? y/n"
 	case charm.LinkStatusError:
 		s += "Uh oh: " + m.err.Error()
 	case charm.LinkStatusSuccess:

@@ -301,19 +301,17 @@ func quitView(m Model) string {
 }
 
 func footerView(m Model) string {
-	s := "\n\n"
 	if m.err != nil {
-		return s + errorView(m.err)
+		return errorView(m.err)
 	}
 	if m.statusMessage != "" {
-		return s + statusMessageView(m.statusMessage)
+		return statusMessageView(m.statusMessage)
 	}
-	return s + helpView()
+	return helpView()
 }
 
 func helpView() string {
-	s := "j/k, ↑/↓: choose • enter: select"
-	return te.String(s).Foreground(color("241")).String()
+	return common.HelpView("j/k, ↑/↓: choose • enter: select")
 }
 
 func statusMessageView(s string) string {
@@ -323,7 +321,7 @@ func statusMessageView(s string) string {
 func errorView(err error) string {
 	head := te.String("Error: ").Foreground(color("203")).String()
 	msg := te.String(common.Wrap(err.Error())).Foreground(color("241")).String()
-	return indent.String(head+msg, 2)
+	return "\n\n" + indent.String(head+msg, 2)
 }
 
 // SUBSCRIPTIONS
