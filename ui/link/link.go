@@ -78,8 +78,10 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 			m.Exit = true
 			return m, nil
 		default:
-			if m.status == charm.LinkStatusSuccess {
-				// After a successful connection any key returns to the menu.
+			if m.status == charm.LinkStatusSuccess ||
+				m.status == charm.LinkStatusRequestDenied {
+				// After a successful or denied connection any key returns to
+				// the menu.
 				m.Exit = true
 				return m, nil
 			}
@@ -117,7 +119,9 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 				return m, nil
 			case "n":
 				// Reject request
+				m.status = charm.LinkStatusRequestDenied
 				m.lh.response <- false
+				//close(m.lh.success)
 				return m, nil
 			}
 		}
@@ -154,7 +158,9 @@ func View(m Model) string {
 	case charm.LinkStatusError:
 		s += "Uh oh: " + m.err.Error()
 	case charm.LinkStatusSuccess:
-		s += "Linked!\n\nPress any key to exit..."
+		s += common.Keyword("Linked!") + common.HelpView("Press any key to exit...")
+	case charm.LinkStatusRequestDenied:
+		s += "Link request " + common.Keyword("denied") + common.HelpView("Press any key to exit...")
 	}
 	return s
 }
