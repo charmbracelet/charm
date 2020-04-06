@@ -6,13 +6,13 @@ import (
 
 	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/charm"
+	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/charm/ui/info"
 	"github.com/charmbracelet/charm/ui/link"
 	"github.com/charmbracelet/charm/ui/username"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/spinner"
 	"github.com/muesli/reflow/indent"
-	"github.com/muesli/reflow/wordwrap"
 	te "github.com/muesli/termenv"
 )
 
@@ -322,9 +322,7 @@ func statusMessageView(s string) string {
 
 func errorView(err error) string {
 	head := te.String("Error: ").Foreground(color("203")).String()
-	msg := te.String(
-		wordwrap.String(err.Error(), 50),
-	).Foreground(color("241")).String()
+	msg := te.String(common.Wrap(err.Error())).Foreground(color("241")).String()
 	return indent.String(head+msg, 2)
 }
 

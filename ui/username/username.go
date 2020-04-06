@@ -4,10 +4,10 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/charm"
+	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/input"
 	"github.com/charmbracelet/teaparty/spinner"
-	"github.com/muesli/reflow/wordwrap"
 	te "github.com/muesli/termenv"
 )
 
@@ -169,19 +169,17 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 	case NameInvalidMsg:
 		m.state = ready
-		m.errMsg = te.String(wordwrap.String(
-			te.String("Invalid name. ").Foreground(color("203")).String()+
+		m.errMsg = te.String(common.Wrap(
+			te.String("Invalid name. ").Foreground(color("203")).String() +
 				te.String("Names can only contain plain letters and numbers and must be less than 50 characters. And no emojis, kiddo.").Foreground(color("241")).String(),
-			50,
 		)).Foreground(color("203")).String()
 		return m, nil
 
 	case tea.ErrMsg:
 		m.state = ready
-		errMsg := wordwrap.String(
-			te.String("Oh, what? There was a curious error we were not expecting. ").Foreground(color("203")).String()+
+		errMsg := common.Wrap(
+			te.String("Oh, what? There was a curious error we were not expecting. ").Foreground(color("203")).String() +
 				te.String(msg.String()).Foreground(color("241")).String(),
-			50,
 		)
 		m.errMsg = errMsg
 		return m, nil

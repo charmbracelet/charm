@@ -8,7 +8,6 @@ import (
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/tea"
-	"github.com/muesli/reflow/wordwrap"
 )
 
 type linkTokenCreatedMsg string
@@ -129,12 +128,12 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 // View renders the UI
 func View(m Model) string {
-	s := wordwrap.String("You can link the SSH keys on another machine to your Charm account so both machines have access to your stuff. Rest assured that you can also unlink keys at any time.\n\n", 50)
+	s := common.Wrap("You can link the SSH keys on another machine to your Charm account so both machines have access to your stuff. Rest assured that you can also unlink keys at any time.\n\n")
 	switch m.status {
 	case charm.LinkStatusInit:
 		s += "Generating link..."
 	case charm.LinkStatusTokenCreated:
-		s += wordwrap.String("To link, run the following command on your other machine:", 50)
+		s += common.Wrap("To link, run the following command on your other machine:")
 		s += "\n\ncharm link " + m.token
 	case charm.LinkStatusRequested:
 		s += "Link request from:\n\n"
