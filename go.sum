@@ -1,9 +1,5 @@
-github.com/atotto/clipboard v0.1.2 h1:YZCtFu5Ie8qX2VmVTBnrqLSiU9XOWwqNRmdT3gIQzbY=
-github.com/atotto/clipboard v0.1.2/go.mod h1:ZY9tmq7sm5xIbd9bOK4onWV4S6X0u6GY7Vn0Yu86PYI=
 github.com/charmbracelet/tea v0.0.0-20200220032354-23432f30dd46 h1:ZRxnZ9WA8+DX7IpIrUjaAzue12wCA8bHgDWSrqARvGY=
 github.com/charmbracelet/tea v0.0.0-20200220032354-23432f30dd46/go.mod h1:96S8RyGdd7HfPcgDC8XqPKe+eH/1etFkw6lfhQCesgU=
-github.com/charmbracelet/tea v0.0.0-20200402160723-5c383ab573ec h1:4zuv9Wvi0g7XVAofdSqdIlZGxow+MGY6flQssjsxX3E=
-github.com/charmbracelet/tea v0.0.0-20200402160723-5c383ab573ec/go.mod h1:lADjwO2mMub9qvXSCA9vAkabVWO0HeUrv4uO/lG3C+k=
 github.com/charmbracelet/tea v0.0.0-20200402161010-cd63ed1e4444 h1:6wJUSaS+C3Lwz2EXnyZk5nX/H+e+AfbIpFYUqFSRJp4=
 github.com/charmbracelet/tea v0.0.0-20200402161010-cd63ed1e4444/go.mod h1:lADjwO2mMub9qvXSCA9vAkabVWO0HeUrv4uO/lG3C+k=
 github.com/charmbracelet/teaparty v0.0.0-20200402005156-ea5161af98ed h1:es2vL1UNtE9SxgmM2coZN8cc+AlQ822Dh0qGkbTnLK8=

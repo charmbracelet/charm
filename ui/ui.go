@@ -1,10 +1,8 @@
 package ui
 
 import (
-	"errors"
 	"fmt"
 
-	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/charm/ui/info"
@@ -47,8 +45,7 @@ const (
 type menuChoice int
 
 const (
-	copyCharmIDChoice menuChoice = iota
-	linkChoice
+	linkChoice menuChoice = iota
 	setUsernameChoice
 	exitChoice
 	unsetChoice // set when no choice has been made
@@ -57,7 +54,6 @@ const (
 // menu text corresponding to menu choices. these are presented to the user
 var menuChoices = map[menuChoice]string{
 	linkChoice:        "Link a machine",
-	copyCharmIDChoice: "Copy Charm ID",
 	setUsernameChoice: "Set Username",
 	exitChoice:        "Exit",
 }
@@ -231,9 +227,6 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	case setUsernameChoice:
 		m.state = setUsername
 		m.menuChoice = unsetChoice
-	case copyCharmIDChoice:
-		cmd = copyCharmIDCmd
-		m.menuChoice = unsetChoice
 	case exitChoice:
 		m.state = quitting
 		cmd = tea.Quit
@@ -346,21 +339,4 @@ func subscriptions(model tea.Model) tea.Subs {
 	}
 
 	return subs
-}
-
-// COMMANDS
-
-// copyCharmIDCmd copies the Charm ID to the clipboard
-func copyCharmIDCmd(model tea.Model) tea.Msg {
-	m, ok := model.(Model)
-	if !ok {
-		return tea.ModelAssertionErr
-	}
-	if m.user == nil {
-		return copyCharmIDErrMsg{errors.New("we don't have any user info")}
-	}
-	if err := clipboard.WriteAll(m.user.CharmID); err != nil {
-		return copyCharmIDErrMsg{err}
-	}
-	return copiedCharmIDMsg{}
 }
