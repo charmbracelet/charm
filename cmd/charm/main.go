@@ -11,6 +11,12 @@ import (
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui"
 	"github.com/charmbracelet/tea"
+	"github.com/muesli/reflow/wordwrap"
+	"github.com/spf13/cobra"
+)
+
+const (
+	wrapAt = 78
 )
 
 type TermLinkHandler struct{}
@@ -61,17 +67,19 @@ func (th *TermLinkHandler) Error(l *charm.Link) {
 	fmt.Println("Error, something's wrong.")
 }
 
+var ()
+
 func main() {
-	i := flag.String("i", "", "identity file (ssh key) path")
-	flag.Parse()
+	//i := flag.String("i", "", "identity file (ssh key) path")
+	//flag.Parse()
 	cfg, err := charm.ConfigFromEnv()
 	if err != nil {
 		log.Fatal(err)
 	}
-	if *i != "" {
-		cfg.SSHKeyPath = *i
-		cfg.ForceKey = true
-	}
+	//if *i != "" {
+	//cfg.SSHKeyPath = *i
+	//cfg.ForceKey = true
+	//}
 	cc, err := charm.NewClient(cfg)
 	if err == charm.ErrMissingSSHAuth {
 		log.Fatal("Missing ssh key. Run `ssh-keygen` to make one or set the `CHARM_SSH_KEY_PATH` env var to your private key path.")
@@ -79,6 +87,32 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	rootCmd := &cobra.Command{
+		Use:   "charm",
+		Short: "Do Charm stuff",
+		Run: func(cmd *cobra.Command, args []string) {
+		},
+	}
+
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   "jwt",
+		Short: "Print your JWT token",
+		Long:  wordwrap.String("JWT tokens are a way to authenticate to different web services that utilize your Charm account. If you're a nerd you can use `jwt` to get one for yourself.", wrapAt),
+		Run: func(_ *cobra.Command, _ []string) {
+			jwt, err := cc.JWT()
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("%s", jwt)
+		},
+	})
+
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	return
 
 	args := flag.Args()
 	if len(args) == 0 {
