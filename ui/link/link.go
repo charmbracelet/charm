@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/charm"
+	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/tea"
 	"github.com/muesli/reflow/wordwrap"
 )
@@ -137,10 +138,12 @@ func View(m Model) string {
 		s += "\n\ncharm link " + m.token
 	case charm.LinkStatusRequested:
 		s += "Link request from:\n\n"
-		s += fmt.Sprintf("IP: %s\n", m.linkRequest.requestAddr)
+		d := make(map[string]string)
+		d["IP"] = m.linkRequest.requestAddr
 		if len(m.linkRequest.pubKey) > 50 {
-			s += fmt.Sprintf("Key: %s...", m.linkRequest.pubKey[0:50])
+			d["Key"] = m.linkRequest.pubKey[0:50] + "..."
 		}
+		s += common.KeyValueView(d)
 		s += "\n\nLink your account to this device? y/n"
 	case charm.LinkStatusError:
 		s += "Uh oh: " + m.err.Error()

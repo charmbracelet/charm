@@ -4,6 +4,7 @@ package info
 
 import (
 	"github.com/charmbracelet/charm"
+	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/spinner"
 	te "github.com/muesli/termenv"
@@ -82,15 +83,15 @@ func View(m Model) string {
 
 func bioView(u *charm.User) string {
 	var username string
-	bar := te.String("│ ").Foreground(color("241")).String()
 	if u.Name != "" {
-		username = te.String(u.Name).Foreground(color(purpleFg)).String()
+		username = u.Name
 	} else {
 		username = te.String("(none set)").Foreground(color("241")).String()
 	}
-	id := te.String(u.CharmID).Foreground(color(purpleFg)).String()
-	return bar + "Charm ID " + id + "\n" +
-		bar + "Username " + username
+	return common.KeyValueView(map[string]string{
+		"Charm ID": u.CharmID,
+		"Username": username,
+	})
 }
 
 // SUBSCRIPTIONS
