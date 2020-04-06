@@ -61,13 +61,13 @@ func NoButtonView(focused bool) string {
 
 func OKButtonView(focused bool, defaultButton bool) string {
 	return buttonStyling("  ", false, focused) +
-		buttonStyling("OK", true, focused) +
+		buttonStyling("OK", defaultButton, focused) +
 		buttonStyling("  ", false, focused)
 }
 
 func CancelButtonView(focused bool, defaultButton bool) string {
 	return buttonStyling("  ", false, focused) +
-		buttonStyling("Cancel", true, focused) +
+		buttonStyling("Cancel", defaultButton, focused) +
 		buttonStyling("  ", false, focused)
 }
 

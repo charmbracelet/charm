@@ -63,6 +63,36 @@ type Model struct {
 	spinner spinner.Model
 }
 
+// updateFocus updates the focused states in the model based on the current
+// focus index.
+func (m *Model) updateFocus() {
+	if m.index == textInput && !m.input.Focused() {
+		m.input.Focus()
+		m.input.Prompt = focusedPrompt
+	} else if m.index != textInput && m.input.Focused() {
+		m.input.Blur()
+		m.input.Prompt = prompt
+	}
+}
+
+// Move the focus index one unit forward
+func (m *Model) indexForward() {
+	m.index++
+	if m.index > cancelButton {
+		m.index = textInput
+	}
+	m.updateFocus()
+}
+
+// Move the focus index one unit Backwards
+func (m *Model) indexBackward() {
+	m.index--
+	if m.index < textInput {
+		m.index = cancelButton
+	}
+	m.updateFocus()
+}
+
 func NewModel(cc *charm.Client) Model {
 
 	inputModel := input.DefaultModel()
@@ -94,68 +124,74 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case tea.KeyMsg:
-		switch key := msg.Type; key {
+		switch msg.Type {
 
-		// Quit the entire program
-		case tea.KeyCtrlC:
+		case tea.KeyCtrlC: // quit
 			m.Quit = true
 			return m, nil
-
-		// Move focus forward
-		case tea.KeyTab:
-			fallthrough
-		case tea.KeyShiftTab:
-
-			// Set focus index
-			if key == tea.KeyTab {
-				m.index++
-				if m.index > cancelButton {
-					m.index = textInput
-				}
-			} else {
-				m.index--
-				if m.index < textInput {
-					m.index = cancelButton
-				}
-			}
-
-			// Set focus/blur on input field
-			if m.index == textInput && !m.input.Focused() {
-				m.input.Focus()
-				m.input.Prompt = focusedPrompt
-			} else if m.index != textInput && m.input.Focused() {
-				m.input.Blur()
-				m.input.Prompt = prompt
-			}
-
-			return m, nil
-
-		case tea.KeyEnter:
-			switch m.index {
-			case textInput: // Submit the form
-				fallthrough
-			case okButton: // Submit the form
-				m.state = submitting
-				m.errMsg = ""
-				m.newName = strings.TrimSpace(m.input.Value)
-				return m, tea.CmdMap(setName, m) // fire off the command, too
-			case cancelButton: // Exit this mini-app
-				m.Done = true
-				return m, nil
-			}
-
-		// Exit this mini-app
-		case tea.KeyEscape:
+		case tea.KeyEscape: // exit this mini-app
 			m.Done = true
 			return m, nil
 
 		default:
+			// Ignore keys if we're submitting
+			if m.state == submitting {
+				return m, nil
+			}
+
+			switch msg.String() {
+			case "tab":
+				m.indexForward()
+			case "shift+tab":
+				m.indexBackward()
+			case "l":
+				fallthrough
+			case "k":
+				fallthrough
+			case "right":
+				if m.index != textInput {
+					m.indexForward()
+				}
+			case "h":
+				fallthrough
+			case "j":
+				fallthrough
+			case "left":
+				if m.index != textInput {
+					m.indexBackward()
+				}
+			case "up":
+				fallthrough
+			case "down":
+				if m.index == textInput {
+					m.indexForward()
+				} else {
+					m.index = textInput
+					m.updateFocus()
+				}
+			case "enter":
+				switch m.index {
+				case textInput:
+					fallthrough
+				case okButton: // Submit the form
+					m.state = submitting
+					m.errMsg = ""
+					m.newName = strings.TrimSpace(m.input.Value)
+					return m, tea.CmdMap(setName, m) // fire off the command, too
+				case cancelButton: // Exit this mini-app
+					m.Done = true
+					return m, nil
+				}
+			}
+
+			// Pass messages through to the input element if that's the element
+			// in focus
 			if m.index == textInput {
-				// Pass messages through to the input element
 				var cmd tea.Cmd
 				m.input, cmd = input.Update(msg, m.input)
 				return m, cmd
 			}
+
 			return m, nil
 		}
 
@@ -192,8 +228,6 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		m.input, _ = input.Update(msg, m.input) // Do we still need this?
 		return m, nil
 	}
-
-	return m, nil
 }
 
 // VIEWS
