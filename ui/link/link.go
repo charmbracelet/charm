@@ -172,6 +172,8 @@ func HandleLinkRequest(model tea.Model) []tea.Cmd {
 		}
 	}()
 
+	// We use a series of blocking commands to interface with channels on the
+	// link handler.
 	return []tea.Cmd{
 		generateLink(m.lh),
 		handleLinkRequest(m.lh),
@@ -179,6 +181,7 @@ func HandleLinkRequest(model tea.Model) []tea.Cmd {
 	}
 }
 
+// generateLink waits for either a link to be generated, or an error.
 func generateLink(lh *linkHandler) tea.Cmd {
 	return func(_ tea.Model) tea.Msg {
 		select {
@@ -190,12 +193,14 @@ func generateLink(lh *linkHandler) tea.Cmd {
 	}
 }
 
+// handleLinkRequest waits for a link request code.
 func handleLinkRequest(lh *linkHandler) tea.Cmd {
 	return func(_ tea.Model) tea.Msg {
 		return linkRequestMsg(<-lh.request)
 	}
 }
 
+// handleLinkSuccess waits for data in the link success channel.
 func handleLinkSuccess(lh *linkHandler) tea.Cmd {
 	return func(_ tea.Model) tea.Msg {
 		<-lh.success
@@ -221,37 +226,24 @@ type linkHandler struct {
 }
 
 func (lh *linkHandler) TokenCreated(l *charm.Link) {
-	log.Printf("To link a machine, run: \n\n> charm link %s\n", l.Token)
 	lh.token <- l.Token
 }
 
-// Not needed on the link generator side
-func (lh *linkHandler) TokenSent(l *charm.Link) {
-	log.Println("Linking...")
-}
+func (lh *linkHandler) TokenSent(l *charm.Link) {}
 
-func (lh *linkHandler) ValidToken(l *charm.Link) {
-	log.Println("Valid token")
-}
+func (lh *linkHandler) ValidToken(l *charm.Link) {}
 
-func (lh *linkHandler) InvalidToken(l *charm.Link) {
-	log.Println("That token looks invalid.")
-}
+func (lh *linkHandler) InvalidToken(l *charm.Link) {}
 
+// Request handles link approvals. The remote machine sends an approval request,
+// which we send to the Tea UI as a message. The Tea application then sends a
+// response to the link handler's response channel with a command.
 func (lh *linkHandler) Request(l *charm.Link) bool {
-	log.Printf("Does this look right? (yes/no)\n\n%s\nIP: %s\n", l.RequestPubKey, l.RequestAddr)
 	lh.request <- linkRequest{l.RequestPubKey, l.RequestAddr}
 	return <-lh.response
-	//if strings.ToLower(conf) == "yes\n" {
-	//return true
-	//}
-	//return false
 }
 
-// Not needed on the link generator side
-func (lh *linkHandler) RequestDenied(l *charm.Link) {
-	log.Println("Not Linked :(")
-}
+func (lh *linkHandler) RequestDenied(l *charm.Link) {}
 
 func (lh *linkHandler) SameAccount(l *charm.Link) {
 	fmt.Println("Linked! You already linked this key btw.")
@@ -259,7 +251,6 @@ func (lh *linkHandler) SameAccount(l *charm.Link) {
 
 func (lh *linkHandler) Success(l *charm.Link) {
 	lh.success <- struct{}{}
-	log.Println("Linked!")
 }
 
 func (lh *linkHandler) Timeout(l *charm.Link) {
