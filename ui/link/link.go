@@ -31,6 +31,18 @@ type Model struct {
 	token       string
 	linkRequest linkRequest
 	cc          *charm.Client
+	buttonIndex int // focused state of ok/cancel buttons
+}
+
+// acceptRequest rejects the current linking request
+func (m *Model) acceptRequest() {
+	m.lh.response <- true
+}
+
+// rejectRequset rejects the current linking request
+func (m *Model) rejectRequest() {
+	m.lh.response <- false
+	m.status = charm.LinkStatusRequestDenied
 }
 
 func NewModel(cc *charm.Client) Model {
@@ -50,6 +62,7 @@ func NewModel(cc *charm.Client) Model {
 		token:       "",
 		linkRequest: linkRequest{},
 		cc:          cc,
+		buttonIndex: 0,
 	}
 }
 
@@ -66,7 +79,10 @@ func (m *Model) CancelRequest() {
 func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+
 		switch msg.String() {
+
+		// General keybindings
 		case "ctrl+c":
 			m.CancelRequest()
 			m.Quit = true
@@ -77,13 +93,47 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 			m.CancelRequest()
 			m.Exit = true
 			return m, nil
+
+		// State-specific keybindings
 		default:
-			if m.status == charm.LinkStatusSuccess ||
-				m.status == charm.LinkStatusRequestDenied {
-				// After a successful or denied connection any key returns to
-				// the menu.
+			switch m.status {
+
+			case charm.LinkStatusRequested:
+				switch msg.String() {
+				case "right":
+					fallthrough
+				case "tab":
+					m.buttonIndex++
+					if m.buttonIndex > 1 {
+						m.buttonIndex = 0
+					}
+				case "left":
+					fallthrough
+				case "shift+tab":
+					m.buttonIndex--
+					if m.buttonIndex < 0 {
+						m.buttonIndex = 1
+					}
+				case "enter":
+					if m.buttonIndex == 0 {
+						m.acceptRequest()
+					} else {
+						m.rejectRequest()
+					}
+				case "y":
+					m.acceptRequest()
+				case "n":
+					m.rejectRequest()
+				}
+				return m, nil
+
+			case charm.LinkStatusSuccess:
+				fallthrough
+			case charm.LinkStatusRequestDenied:
+				// Any key exits
 				m.Exit = true
 				return m, nil
+
 			}
 		}
 
@@ -121,7 +171,6 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 				// Reject request
 				m.status = charm.LinkStatusRequestDenied
 				m.lh.response <- false
-				//close(m.lh.success)
 				return m, nil
 			}
 		}
@@ -154,7 +203,12 @@ func View(m Model) string {
 			d = append(d, []string{"Key", m.linkRequest.pubKey[0:50] + "..."}...)
 		}
 		s += common.KeyValueView(d...)
-		s += "\n\nLink this device? y/n"
+		s += "\n\nLink this device?\n\n"
+		s += fmt.Sprintf(
+			"%s %s",
+			common.YesButtonView(m.buttonIndex == 0),
+			common.NoButtonView(m.buttonIndex == 1),
+		)
 	case charm.LinkStatusError:
 		s += "Uh oh: " + m.err.Error()
 	case charm.LinkStatusSuccess:

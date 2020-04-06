@@ -10,10 +10,13 @@ var (
 	// for use in termenv styling.
 	Color func(string) te.Color = te.ColorProfile().Color
 
-	purpleBg    = "#5A56E0"
-	purpleFg    = "#7571F9"
-	fuschia     = "#EE6FF8"
-	yellowGreen = "#ECFD65"
+	cream             = "#FFFDF5"
+	purpleBg          = "#5A56E0"
+	purpleFg          = "#7571F9"
+	fuschia           = "#EE6FF8"
+	yellowGreen       = "#ECFD65"
+	unfocusedButtonBg = "#827983"
+	focusedButtonBg   = fuschia
 
 	wrapAt = 60
 )
@@ -37,4 +40,34 @@ func Code(s string) string {
 // a view.
 func HelpView(s string) string {
 	return "\n\n" + te.String(s).Foreground(Color("241")).String()
+}
+
+// Button view renders something that resembles a button
+func ButtonView(text string, focused bool) string {
+	return buttonStyling(text, false, focused)
+}
+
+func YesButtonView(focused bool) string {
+	return buttonStyling("  ", false, focused) +
+		buttonStyling("Y", true, focused) +
+		buttonStyling("es  ", false, focused)
+}
+
+func NoButtonView(focused bool) string {
+	return buttonStyling("  ", false, focused) +
+		buttonStyling("N", true, focused) +
+		buttonStyling("o  ", false, focused)
+}
+
+func buttonStyling(str string, underline, focused bool) string {
+	var s te.Style = te.String(str).Foreground(Color(cream))
+	if focused {
+		s = s.Background(Color(focusedButtonBg))
+	} else {
+		s = s.Background(Color(unfocusedButtonBg))
+	}
+	if underline {
+		s = s.Underline()
+	}
+	return s.String()
 }
