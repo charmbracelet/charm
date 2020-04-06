@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"time"
 
 	"github.com/meowgorithm/babyenv"
 	"github.com/mitchellh/go-homedir"
@@ -43,8 +44,11 @@ type Client struct {
 }
 
 type User struct {
-	CharmID string `json:"charm_id"`
-	Name    string `json:"name"`
+	CharmID   string     `json:"charm_id"`
+	Name      string     `json:"name"`
+	Email     string     `json:"email"`
+	Bio       string     `json:"bio"`
+	CreatedAt *time.Time `json:"created_at"`
 }
 
 type sshSession struct {
