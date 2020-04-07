@@ -9,6 +9,20 @@ import (
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/spinner"
+	"github.com/muesli/reflow/indent"
+)
+
+type status int
+
+const (
+	linkInit status = iota
+	linkTokenCreated
+	linkRequested
+	linkSuccess
+	linkRequestDenied
+	linkTimedOut
+	linkError
+	quitting
 )
 
 type linkTokenCreatedMsg string
@@ -30,8 +44,7 @@ type Model struct {
 	Quit          bool // indicates the user wants to exit the whole program
 	Exit          bool // indicates the user wants to exit this mini-app
 	err           error
-	quitting      bool // true when the program is shutting down (standalone only)
-	status        charm.LinkStatus
+	status        status
 	alreadyLinked bool
 	token         string
 	linkRequest   linkRequest
@@ -48,7 +61,7 @@ func (m *Model) acceptRequest() {
 // rejectRequset rejects the current linking request
 func (m *Model) rejectRequest() {
 	m.lh.response <- false
-	m.status = charm.LinkStatusRequestDenied
+	m.status = linkRequestDenied
 }
 
 func NewModel(cc *charm.Client) Model {
@@ -68,7 +81,7 @@ func NewModel(cc *charm.Client) Model {
 		Quit:          false,
 		Exit:          false,
 		err:           nil,
-		status:        charm.LinkStatusInit,
+		status:        linkInit,
 		alreadyLinked: false,
 		token:         "",
 		linkRequest:   linkRequest{},
@@ -114,6 +127,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			m.CancelRequest()
 			if m.standalone {
+				m.status = quitting
 				return m, tea.Quit
 			}
 			m.Quit = true
@@ -123,6 +137,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		case "esc":
 			m.CancelRequest()
 			if m.standalone {
+				m.status = quitting
 				return m, tea.Quit
 			}
 			m.Exit = true
@@ -132,7 +147,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		default:
 			switch m.status {
 
-			case charm.LinkStatusRequested:
+			case linkRequested:
 				switch msg.String() {
 				case "j":
 					fallthrough
@@ -169,10 +184,10 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 				}
 				return m, nil
 
-			case charm.LinkStatusSuccess:
+			case linkSuccess:
 				fallthrough
-			case charm.LinkStatusRequestDenied:
-			case charm.LinkStatusTimedOut:
+			case linkRequestDenied:
+			case linkTimedOut:
 				// Any key exits
 				m.Exit = true
 				return m, nil
@@ -181,27 +196,27 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		}
 
 	case errMsg:
-		m.status = charm.LinkStatusError
+		m.status = linkError
 		m.err = msg
 		return m, nil
 
 	case linkTokenCreatedMsg:
-		m.status = charm.LinkStatusTokenCreated
+		m.status = linkTokenCreated
 		m.token = string(msg)
 		return m, nil
 
 	case linkRequestMsg:
-		m.status = charm.LinkStatusRequested
+		m.status = linkRequested
 		m.linkRequest = linkRequest(msg)
 		return m, nil
 
 	case linkSuccessMsg:
-		m.status = charm.LinkStatusSuccess
+		m.status = linkSuccess
 		m.alreadyLinked = bool(msg)
 		return m, nil
 
 	case linkTimeoutMsg:
-		m.status = charm.LinkStatusTimedOut
+		m.status = linkTimedOut
 		return m, nil
 
 	case spinner.TickMsg:
@@ -210,7 +225,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	}
 
 	switch m.status {
-	case charm.LinkStatusRequested:
+	case linkRequested:
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			switch strings.ToLower(msg.String()) {
@@ -220,7 +235,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 				return m, nil
 			case "n":
 				// Reject request
-				m.status = charm.LinkStatusRequestDenied
+				m.status = linkRequestDenied
 				m.lh.response <- false
 				return m, nil
 			}
@@ -234,26 +249,31 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 func View(model tea.Model) string {
 	m, ok := model.(Model)
 	if !ok {
-		m.status = charm.LinkStatusError
+		m.status = linkError
 		m.err = errors.New("could not perform model assertion in view")
 	}
 
-	s := common.Wrap(fmt.Sprintf(
+	var s string
+	preamble := common.Wrap(fmt.Sprintf(
 		"You can %s the SSH keys on another machine to your Charm account so both machines have access to your stuff. You can unlink keys at any time.\n\n",
 		common.Keyword("link"),
 	))
+
 	switch m.status {
-	case charm.LinkStatusInit:
+	case linkInit:
+		s += preamble
 		s += spinner.View(m.spinner) + " Generating link..."
-	case charm.LinkStatusTokenCreated:
+	case linkTokenCreated:
+		s += preamble
 		s += fmt.Sprintf(
 			"%s\n\n%s%s",
 			common.Wrap("To link, run the following command on your other machine:"),
 			common.Code("charm link "+m.token),
 			common.HelpView("To cancel, press escape"),
 		)
-	case charm.LinkStatusRequested:
+	case linkRequested:
 		var d []string
+		s += preamble
 		s += "Link request from:\n\n"
 		d = append(d, []string{"IP", m.linkRequest.requestAddr}...)
 		if len(m.linkRequest.pubKey) > 50 {
@@ -266,18 +286,28 @@ func View(model tea.Model) string {
 			common.YesButtonView(m.buttonIndex == 0),
 			common.NoButtonView(m.buttonIndex == 1),
 		)
-	case charm.LinkStatusError:
+	case linkError:
+		s += preamble
 		s += "Uh oh: " + m.err.Error()
-	case charm.LinkStatusSuccess:
+	case linkSuccess:
+		s += preamble
 		also := ""
 		if m.alreadyLinked {
 			also = " This account is already linked, btw."
 		}
 		s += common.Keyword("Linked!") + also + common.HelpView("Press any key to exit...")
-	case charm.LinkStatusRequestDenied:
+	case linkRequestDenied:
+		s += preamble
 		s += "Link request " + common.Keyword("denied") + common.HelpView("Press any key to exit...")
-	case charm.LinkStatusTimedOut:
+	case linkTimedOut:
+		s += preamble
 		s += "Link request timed out." + common.HelpView("Press any key to exit...")
+	case quitting:
+		s += "Linking cancelled.\n"
+	}
+
+	if m.standalone {
+		s = fmt.Sprintf("\n%s", indent.String(s, 2))
 	}
 	return s
 }
@@ -304,7 +334,7 @@ func Spin(model tea.Model) tea.Sub {
 		return nil
 	}
 
-	if m.status != charm.LinkStatusInit {
+	if m.status != linkInit {
 		return nil
 	}
 	return tea.SubMap(spinner.Sub, m.spinner)
