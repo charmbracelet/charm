@@ -1,8 +1,8 @@
 package link
 
 import (
+	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/charmbracelet/charm"
@@ -288,6 +288,7 @@ func HandleLinkRequest(model tea.Model) []tea.Cmd {
 		handleLinkRequest(m.lh),
 		handleLinkSuccess(m.lh),
 		handleLinkTimeout(m.lh),
+		handleLinkError(m.lh),
 	}
 }
 
@@ -323,6 +324,13 @@ func handleLinkTimeout(lh *linkHandler) tea.Cmd {
 	return func(_ tea.Model) tea.Msg {
 		<-lh.timeout
 		return linkTimeoutMsg{}
+	}
+}
+
+// handleLinkError responds when a linking error is reported
+func handleLinkError(lh *linkHandler) tea.Cmd {
+	return func(_ tea.Model) tea.Msg {
+		return errMsg{<-lh.err}
 	}
 }
 
@@ -377,5 +385,5 @@ func (lh *linkHandler) Timeout(l *charm.Link) {
 }
 
 func (lh *linkHandler) Error(l *charm.Link) {
-	log.Println("Error, something's wrong.")
+	lh.err <- errors.New("there’s been an error; please try again")
 }
