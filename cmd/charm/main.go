@@ -93,14 +93,21 @@ func main() {
 
 	rootCmd := &cobra.Command{
 		Use:   "charm",
-		Short: "Do Charm stuff",
-		Run: func(cmd *cobra.Command, args []string) {
+		Short: indent.String(fmt.Sprintf("\nDo %s stuff", common.Keyword("Charm")), indentBy),
+		Run: func(_ *cobra.Command, _ []string) {
+			if err := tea.UseSysLog("charm-tea"); err != nil {
+				log.Fatal(err)
+			}
+			if err := ui.NewProgram(cc).Start(); err != nil {
+				log.Fatal(err)
+			}
+			return
 		},
 	}
 
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "jwt",
-		Short: "Print your JWT token",
+		Short: "Print a JWT token",
 		Long: fmt.Sprintf("\n%s",
 			indent.String(
 				wordwrap.String(common.Keyword("JWT tokens")+" are a way to authenticate to different web services that utilize your Charm account. If you’re a nerd you can use "+common.Code("jwt")+" to get one for yourself.", wrapAt),
@@ -123,16 +130,6 @@ func main() {
 	return
 
 	args := flag.Args()
-	if len(args) == 0 {
-		if err := tea.UseSysLog("charm-tea"); err != nil {
-			log.Fatal(err)
-		}
-		if err := ui.NewProgram(cc).Start(); err != nil {
-			log.Fatal(err)
-		}
-		return
-	}
-
 	switch args[0] {
 	case "name":
 		if len(args) != 2 {
