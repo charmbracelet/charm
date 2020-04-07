@@ -26,9 +26,11 @@ func (err errMsg) String() string {
 
 type Model struct {
 	lh            *linkHandler
+	standalone    bool // true if this is running as a stadalone Tea program
 	Quit          bool // indicates the user wants to exit the whole program
 	Exit          bool // indicates the user wants to exit this mini-app
 	err           error
+	quitting      bool // true when the program is shutting down (standalone only)
 	status        charm.LinkStatus
 	alreadyLinked bool
 	token         string
@@ -76,6 +78,8 @@ func NewModel(cc *charm.Client) Model {
 	}
 }
 
+// CancelRequest performs cleanup that should be done when cancelling a linking
+// request.
 func (m *Model) CancelRequest() {
 	if m.cc == nil {
 		return
@@ -85,8 +89,22 @@ func (m *Model) CancelRequest() {
 	}
 }
 
+// Init is a Tea program's initialization function
+func Init(cc *charm.Client) func() (tea.Model, tea.Cmd) {
+	return func() (tea.Model, tea.Cmd) {
+		m := NewModel(cc)
+		m.standalone = true
+		return m, tea.Batch(HandleLinkRequest(m)...)
+	}
+}
+
 // Update is the Tea update loop
-func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
+func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
+	m, ok := model.(Model)
+	if !ok {
+		m.err = errors.New("could not perform model assertion in update")
+	}
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 
@@ -95,12 +113,18 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		// General keybindings
 		case "ctrl+c":
 			m.CancelRequest()
+			if m.standalone {
+				return m, tea.Quit
+			}
 			m.Quit = true
 			return m, nil
 		case "q":
 			fallthrough
 		case "esc":
 			m.CancelRequest()
+			if m.standalone {
+				return m, tea.Quit
+			}
 			m.Exit = true
 			return m, nil
 
@@ -207,7 +231,13 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 }
 
 // View renders the UI
-func View(m Model) string {
+func View(model tea.Model) string {
+	m, ok := model.(Model)
+	if !ok {
+		m.status = charm.LinkStatusError
+		m.err = errors.New("could not perform model assertion in view")
+	}
+
 	s := common.Wrap(fmt.Sprintf(
 		"You can %s the SSH keys on another machine to your Charm account so both machines have access to your stuff. You can unlink keys at any time.\n\n",
 		common.Keyword("link"),
@@ -254,6 +284,20 @@ func View(m Model) string {
 
 // SUBSCRIPTIONS
 
+// Subscriptions returns Tea subscriptions when using this componenent as a
+// standalone program.
+func Subscriptions(model tea.Model) tea.Subs {
+	m, ok := model.(Model)
+	if !ok {
+		return nil
+	}
+	return tea.Subs{
+		"link-spinner-tick": Spin(m),
+	}
+}
+
+// Spin wraps the spinner components's subscription. This should be integrated
+// when this component is used as part of another program.
 func Spin(model tea.Model) tea.Sub {
 	m, ok := model.(Model)
 	if !ok {

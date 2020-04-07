@@ -10,6 +10,8 @@ import (
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui"
 	"github.com/charmbracelet/charm/ui/common"
+	"github.com/charmbracelet/charm/ui/link"
+	"github.com/charmbracelet/tea"
 	"github.com/muesli/reflow/indent"
 	"github.com/muesli/reflow/wordwrap"
 	"github.com/spf13/cobra"
@@ -159,11 +161,21 @@ var (
 			lh := &TermLinkHandler{}
 			switch len(args) {
 			case 0:
-				err := cc.LinkGen(lh)
-				if err != nil {
+				p := tea.NewProgram(
+					link.Init(cc),
+					link.Update,
+					link.View,
+					link.Subscriptions,
+				)
+				if err := p.Start(); err != nil {
 					fmt.Println(err)
 					os.Exit(1)
 				}
+				//err := cc.LinkGen(lh)
+				//if err != nil {
+				//fmt.Println(err)
+				//os.Exit(1)
+				//}
 			case 1:
 				err := cc.Link(lh, args[1])
 				if err != nil {

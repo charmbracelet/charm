@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/charmbracelet/charm"
@@ -200,7 +201,13 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		}
 		return m, nil
 	case linking:
-		m.link, _ = link.Update(msg, m.link)
+		newModel, _ := link.Update(msg, tea.Model(m.link))
+		newLinkModel, ok := newModel.(link.Model)
+		if !ok {
+			m.err = errors.New("could not perform model assertion on link model")
+			return m, nil
+		}
+		m.link = newLinkModel
 		if m.link.Exit {
 			m.link = link.NewModel(m.cc) // reset the state
 			m.state = ready
