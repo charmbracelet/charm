@@ -68,10 +68,6 @@ func (th *TermLinkHandler) Error(l *charm.Link) {
 	fmt.Println("Error, something's wrong.")
 }
 
-func formatShort(s string) string {
-	return indent.String("\n"+s, indentBy)
-}
-
 func formatLong(s string) string {
 	return indent.String(wordwrap.String("\n"+s, wrapAt), indentBy)
 }
@@ -84,7 +80,7 @@ var (
 
 	rootCmd = &cobra.Command{
 		Use:   "charm",
-		Short: formatShort("Do " + common.Keyword("Charm") + " stuff"),
+		Short: "Do " + common.Keyword("Charm") + " stuff",
 		Run: func(_ *cobra.Command, _ []string) {
 			// Run the TUI
 			if err := ui.NewProgram(cc).Start(); err != nil {
@@ -99,6 +95,7 @@ var (
 		Hidden: true,
 		Short:  "",
 		Long:   formatLong(""),
+		Args:   cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			u, err := cc.Bio()
 			if err != nil {
@@ -113,6 +110,7 @@ var (
 		Use:   "id",
 		Short: "Print your Charm ID",
 		Long:  formatLong("Want to know your " + common.Keyword("Charm ID") + "? You’re in luck, kiddo."),
+		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			id, err := cc.ID()
 			if err != nil {
@@ -127,6 +125,7 @@ var (
 		Use:   "jwt",
 		Short: "Print a JWT token",
 		Long:  formatLong(common.Keyword("JWT tokens") + " are a way to authenticate to different web services that utilize your Charm account. If you’re a nerd you can use " + common.Code("jwt") + " to get one for yourself."),
+		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			jwt, err := cc.JWT()
 			if err != nil {
@@ -140,6 +139,7 @@ var (
 		Use:   "keys",
 		Short: "Print linked keys",
 		Long:  formatLong("Charm accounts are powered by " + common.Keyword("SSH keys") + ". This command prints all of the keys linked to your account. To remove keys use the main " + common.Code("charm") + " interface."),
+		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			ak, err := cc.AuthorizedKeys()
 			if err != nil {
@@ -154,6 +154,7 @@ var (
 		Use:   "link",
 		Short: "Link multiple machines to your Charm account",
 		Long:  formatLong("It’s easy to " + common.Keyword("link") + " multiple machines or keys to your Charm account. Just run " + common.Code("charm link") + " on a machine connected to the account to want to link to start the process."),
+		Args:  cobra.RangeArgs(1, 2),
 		Run: func(cmd *cobra.Command, args []string) {
 			lh := &TermLinkHandler{}
 			switch len(args) {
@@ -180,6 +181,7 @@ var (
 		Use:   "name",
 		Short: "Set your name",
 		Long:  formatLong("Set a " + common.Keyword("name") + " for your account. If the name is already taken, just run it again with a different, cooler name. Basic latin letters and numbers only, and no spaces."),
+		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			n := args[0]
 			u, err := cc.SetName(n)
@@ -188,7 +190,8 @@ var (
 				os.Exit(1)
 			}
 			if err != nil {
-				log.Fatal(err)
+				fmt.Println(err)
+				os.Exit(1)
 			}
 			fmt.Printf("@%s ID: %s\n", u.Name, u.CharmID)
 		},
