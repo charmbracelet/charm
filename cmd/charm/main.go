@@ -10,13 +10,16 @@ import (
 
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui"
+	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/tea"
+	"github.com/muesli/reflow/indent"
 	"github.com/muesli/reflow/wordwrap"
 	"github.com/spf13/cobra"
 )
 
 const (
-	wrapAt = 78
+	wrapAt   = 78
+	indentBy = 2
 )
 
 type TermLinkHandler struct{}
@@ -98,13 +101,18 @@ func main() {
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "jwt",
 		Short: "Print your JWT token",
-		Long:  wordwrap.String("JWT tokens are a way to authenticate to different web services that utilize your Charm account. If you're a nerd you can use `jwt` to get one for yourself.", wrapAt),
+		Long: fmt.Sprintf("\n%s",
+			indent.String(
+				wordwrap.String(common.Keyword("JWT tokens")+" are a way to authenticate to different web services that utilize your Charm account. If you’re a nerd you can use "+common.Code("jwt")+" to get one for yourself.", wrapAt),
+				indentBy,
+			),
+		),
 		Run: func(_ *cobra.Command, _ []string) {
 			jwt, err := cc.JWT()
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf("%s", jwt)
+			fmt.Printf("%s\n", jwt)
 		},
 	})
 
