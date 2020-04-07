@@ -3,7 +3,6 @@ package link
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
@@ -223,24 +222,6 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	case spinner.TickMsg:
 		m.spinner, _ = spinner.Update(msg, m.spinner)
 		return m, nil
-	}
-
-	switch m.status {
-	case linkRequested:
-		switch msg := msg.(type) {
-		case tea.KeyMsg:
-			switch strings.ToLower(msg.String()) {
-			case "y":
-				// Accept request
-				m.lh.response <- true
-				return m, nil
-			case "n":
-				// Reject request
-				m.status = linkRequestDenied
-				m.lh.response <- false
-				return m, nil
-			}
-		}
 	}
 
 	return m, nil
