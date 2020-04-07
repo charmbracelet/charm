@@ -150,10 +150,11 @@ var (
 	}
 
 	linkCmd = &cobra.Command{
-		Use:   "link",
-		Short: "Link multiple machines to your Charm account",
-		Long:  formatLong("It’s easy to " + common.Keyword("link") + " multiple machines or keys to your Charm account. Just run " + common.Code("charm link") + " on a machine connected to the account to want to link to start the process."),
-		Args:  cobra.RangeArgs(0, 1),
+		Use:     "link [code]",
+		Short:   "Link multiple machines to your Charm account",
+		Long:    formatLong("It’s easy to " + common.Keyword("link") + " multiple machines or keys to your Charm account. Just run " + common.Code("charm link") + " on a machine connected to the account to want to link to start the process."),
+		Example: indent.String("charm link\ncharm link XXXXXX", indentBy),
+		Args:    cobra.RangeArgs(0, 1),
 		Run: func(cmd *cobra.Command, args []string) {
 			lh := &TermLinkHandler{}
 			switch len(args) {
@@ -177,10 +178,11 @@ var (
 	}
 
 	nameCmd = &cobra.Command{
-		Use:   "name",
-		Short: "Set your name",
-		Long:  formatLong("Set a " + common.Keyword("name") + " for your account. If the name is already taken, just run it again with a different, cooler name. Basic latin letters and numbers only, and no spaces."),
-		Args:  cobra.ExactArgs(1),
+		Use:     "name NAME",
+		Short:   "Set your name",
+		Long:    formatLong("Set a " + common.Keyword("name") + " for your account. If the name is already taken, just run it again with a different, cooler name. Basic latin letters and numbers only, and no spaces."),
+		Args:    cobra.ExactArgs(1),
+		Example: indent.String("charm name beatrix", indentBy),
 		Run: func(cmd *cobra.Command, args []string) {
 			n := args[0]
 			u, err := cc.SetName(n)
