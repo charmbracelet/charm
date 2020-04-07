@@ -187,6 +187,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 			case linkSuccess:
 				fallthrough
 			case linkRequestDenied:
+				fallthrough
 			case linkTimedOut:
 				// Any key exits
 				m.Exit = true
