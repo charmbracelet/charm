@@ -14,6 +14,7 @@ import (
 type linkTokenCreatedMsg string
 type linkRequestMsg linkRequest
 type linkSuccessMsg struct{}
+type linkTimeoutMsg struct{}
 
 type errMsg struct {
 	error
@@ -54,6 +55,7 @@ func NewModel(cc *charm.Client) Model {
 		request:  make(chan linkRequest),
 		response: make(chan bool),
 		success:  make(chan struct{}),
+		timeout:  make(chan struct{}),
 	}
 	s := spinner.NewModel()
 	s.Type = spinner.Dot
@@ -144,6 +146,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 			case charm.LinkStatusSuccess:
 				fallthrough
 			case charm.LinkStatusRequestDenied:
+			case charm.LinkStatusTimedOut:
 				// Any key exits
 				m.Exit = true
 				return m, nil
@@ -168,6 +171,10 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 	case linkSuccessMsg:
 		m.status = charm.LinkStatusSuccess
+		return m, nil
+
+	case linkTimeoutMsg:
+		m.status = charm.LinkStatusTimedOut
 		return m, nil
 
 	case spinner.TickMsg:
@@ -207,10 +214,10 @@ func View(m Model) string {
 		s += spinner.View(m.spinner) + " Generating link..."
 	case charm.LinkStatusTokenCreated:
 		s += fmt.Sprintf(
-			"%s\n\n%s\n\n%s",
+			"%s\n\n%s%s",
 			common.Wrap("To link, run the following command on your other machine:"),
 			common.Code("charm link "+m.token),
-			"To cancel, press escape",
+			common.HelpView("To cancel, press escape"),
 		)
 	case charm.LinkStatusRequested:
 		var d []string
@@ -232,6 +239,8 @@ func View(m Model) string {
 		s += common.Keyword("Linked!") + common.HelpView("Press any key to exit...")
 	case charm.LinkStatusRequestDenied:
 		s += "Link request " + common.Keyword("denied") + common.HelpView("Press any key to exit...")
+	case charm.LinkStatusTimedOut:
+		s += "Link request timed out." + common.HelpView("Press any key to exit...")
 	}
 	return s
 }
@@ -278,6 +287,7 @@ func HandleLinkRequest(model tea.Model) []tea.Cmd {
 		generateLink(m.lh),
 		handleLinkRequest(m.lh),
 		handleLinkSuccess(m.lh),
+		handleLinkTimeout(m.lh),
 	}
 }
 
@@ -308,6 +318,14 @@ func handleLinkSuccess(lh *linkHandler) tea.Cmd {
 	}
 }
 
+// handleLinkTimeout waits for a timeout in the linking process.
+func handleLinkTimeout(lh *linkHandler) tea.Cmd {
+	return func(_ tea.Model) tea.Msg {
+		<-lh.timeout
+		return linkTimeoutMsg{}
+	}
+}
+
 // LINK HANDLING
 
 // linkRequest carries metadata pertaining to a link request
@@ -323,6 +341,7 @@ type linkHandler struct {
 	request  chan linkRequest
 	response chan bool
 	success  chan struct{}
+	timeout  chan struct{}
 }
 
 func (lh *linkHandler) TokenCreated(l *charm.Link) {
@@ -354,7 +373,7 @@ func (lh *linkHandler) Success(l *charm.Link) {
 }
 
 func (lh *linkHandler) Timeout(l *charm.Link) {
-	log.Println("Timed out. Sorry.")
+	lh.timeout <- struct{}{}
 }
 
 func (lh *linkHandler) Error(l *charm.Link) {
