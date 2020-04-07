@@ -177,7 +177,7 @@ var (
 				//os.Exit(1)
 				//}
 			case 1:
-				err := cc.Link(lh, args[1])
+				err := cc.Link(lh, args[0])
 				if err != nil {
 					fmt.Println(err)
 					os.Exit(1)
