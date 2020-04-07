@@ -159,39 +159,27 @@ var (
 		Args:    cobra.RangeArgs(0, 1),
 		Run: func(cmd *cobra.Command, args []string) {
 			lh := &TermLinkHandler{}
-			switch len(args) {
-			case 0:
-				p := tea.NewProgram(
-					link.Init(cc),
-					link.Update,
-					link.View,
-					link.Subscriptions,
-				)
+			if len(args) == 0 {
+				// Initialize a linking session
+				p := tea.NewProgram(link.Init(cc), link.Update, link.View, link.Subscriptions)
 				if err := p.Start(); err != nil {
 					fmt.Println(err)
 					os.Exit(1)
 				}
-				//err := cc.LinkGen(lh)
-				//if err != nil {
-				//fmt.Println(err)
-				//os.Exit(1)
-				//}
-			case 1:
-				err := cc.Link(lh, args[0])
-				if err != nil {
-					fmt.Println(err)
-					os.Exit(1)
-				}
-			default:
-				fmt.Println("Weird arguments. Have a look at " + common.Code("charm help link") + ".")
+				return
+			}
+			// Join in on a linking session
+			err := cc.Link(lh, args[0])
+			if err != nil {
+				fmt.Println(err)
 				os.Exit(1)
 			}
 		},
 	}
 
 	nameCmd = &cobra.Command{
-		Use:     "name NAME",
-		Short:   "Set your name",
+		Use:     "name USERNAME",
+		Short:   "Set your username",
 		Long:    formatLong("Set a " + common.Keyword("name") + " for your account. If the name is already taken, just run it again with a different, cooler name. Basic latin letters and numbers only, and no spaces."),
 		Args:    cobra.ExactArgs(1),
 		Example: indent.String("charm name beatrix", indentBy),
