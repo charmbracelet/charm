@@ -153,7 +153,7 @@ var (
 		Use:   "link",
 		Short: "Link multiple machines to your Charm account",
 		Long:  formatLong("It’s easy to " + common.Keyword("link") + " multiple machines or keys to your Charm account. Just run " + common.Code("charm link") + " on a machine connected to the account to want to link to start the process."),
-		Args:  cobra.RangeArgs(1, 2),
+		Args:  cobra.RangeArgs(0, 1),
 		Run: func(cmd *cobra.Command, args []string) {
 			lh := &TermLinkHandler{}
 			switch len(args) {
