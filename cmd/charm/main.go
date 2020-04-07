@@ -76,7 +76,6 @@ var (
 	identityFile string
 	cfg          *charm.Config
 	cc           *charm.Client
-	err          error
 
 	rootCmd = &cobra.Command{
 		Use:   "charm",
@@ -199,6 +198,7 @@ var (
 )
 
 func main() {
+	var err error
 
 	// Setup Cobra
 	rootCmd.PersistentFlags().StringVarP(&identityFile, "identity", "i", "", "path to identity file (that is, an ssh private key)")
