@@ -13,7 +13,7 @@ import (
 
 type linkTokenCreatedMsg string
 type linkRequestMsg linkRequest
-type linkSuccessMsg struct{}
+type linkSuccessMsg bool // true if this account's already been linked
 type linkTimeoutMsg struct{}
 
 type errMsg struct {
@@ -25,16 +25,17 @@ func (err errMsg) String() string {
 }
 
 type Model struct {
-	lh          *linkHandler
-	Quit        bool // indicates the user wants to exit the whole program
-	Exit        bool // indicates the user wants to exit this mini-app
-	err         error
-	status      charm.LinkStatus
-	token       string
-	linkRequest linkRequest
-	cc          *charm.Client
-	buttonIndex int // focused state of ok/cancel buttons
-	spinner     spinner.Model
+	lh            *linkHandler
+	Quit          bool // indicates the user wants to exit the whole program
+	Exit          bool // indicates the user wants to exit this mini-app
+	err           error
+	status        charm.LinkStatus
+	alreadyLinked bool
+	token         string
+	linkRequest   linkRequest
+	cc            *charm.Client
+	buttonIndex   int // focused state of ok/cancel buttons
+	spinner       spinner.Model
 }
 
 // acceptRequest rejects the current linking request
@@ -54,23 +55,24 @@ func NewModel(cc *charm.Client) Model {
 		token:    make(chan string),
 		request:  make(chan linkRequest),
 		response: make(chan bool),
-		success:  make(chan struct{}),
+		success:  make(chan bool),
 		timeout:  make(chan struct{}),
 	}
 	s := spinner.NewModel()
 	s.Type = spinner.Dot
 	s.ForegroundColor = "241"
 	return Model{
-		lh:          lh,
-		Quit:        false,
-		Exit:        false,
-		err:         nil,
-		status:      charm.LinkStatusInit,
-		token:       "",
-		linkRequest: linkRequest{},
-		cc:          cc,
-		buttonIndex: 0,
-		spinner:     s,
+		lh:            lh,
+		Quit:          false,
+		Exit:          false,
+		err:           nil,
+		status:        charm.LinkStatusInit,
+		alreadyLinked: false,
+		token:         "",
+		linkRequest:   linkRequest{},
+		cc:            cc,
+		buttonIndex:   0,
+		spinner:       s,
 	}
 }
 
@@ -171,6 +173,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 	case linkSuccessMsg:
 		m.status = charm.LinkStatusSuccess
+		m.alreadyLinked = bool(msg)
 		return m, nil
 
 	case linkTimeoutMsg:
@@ -236,7 +239,11 @@ func View(m Model) string {
 	case charm.LinkStatusError:
 		s += "Uh oh: " + m.err.Error()
 	case charm.LinkStatusSuccess:
-		s += common.Keyword("Linked!") + common.HelpView("Press any key to exit...")
+		also := ""
+		if m.alreadyLinked {
+			also = " This account is already linked, btw."
+		}
+		s += common.Keyword("Linked!") + also + common.HelpView("Press any key to exit...")
 	case charm.LinkStatusRequestDenied:
 		s += "Link request " + common.Keyword("denied") + common.HelpView("Press any key to exit...")
 	case charm.LinkStatusTimedOut:
@@ -314,8 +321,7 @@ func handleLinkRequest(lh *linkHandler) tea.Cmd {
 // handleLinkSuccess waits for data in the link success channel.
 func handleLinkSuccess(lh *linkHandler) tea.Cmd {
 	return func(_ tea.Model) tea.Msg {
-		<-lh.success
-		return linkSuccessMsg{}
+		return linkSuccessMsg(<-lh.success)
 	}
 }
 
@@ -348,7 +354,7 @@ type linkHandler struct {
 	token    chan string
 	request  chan linkRequest
 	response chan bool
-	success  chan struct{}
+	success  chan bool
 	timeout  chan struct{}
 }
 
@@ -372,12 +378,13 @@ func (lh *linkHandler) Request(l *charm.Link) bool {
 
 func (lh *linkHandler) RequestDenied(l *charm.Link) {}
 
+// Successful link, but this account has already been linked
 func (lh *linkHandler) SameAccount(l *charm.Link) {
-	fmt.Println("Linked! You already linked this key btw.")
+	lh.success <- true
 }
 
 func (lh *linkHandler) Success(l *charm.Link) {
-	lh.success <- struct{}{}
+	lh.success <- false
 }
 
 func (lh *linkHandler) Timeout(l *charm.Link) {
