@@ -200,6 +200,10 @@ var (
 
 func main() {
 
+	// Setup Cobra
+	rootCmd.PersistentFlags().StringVarP(&identityFile, "identity", "i", "", "path to identity file (that is, an ssh private key)")
+	rootCmd.AddCommand(bioCmd, idCmd, jwtCmd, keysCmd, linkCmd, nameCmd)
+
 	// Load config
 	cfg, err = charm.ConfigFromEnv()
 	if err != nil {
@@ -221,8 +225,6 @@ func main() {
 	}
 
 	// Run Cobra
-	rootCmd.PersistentFlags().StringVarP(&identityFile, "identity", "i", "", "path to identity file (that is, an ssh private key)")
-	rootCmd.AddCommand(bioCmd, idCmd, jwtCmd, keysCmd, linkCmd, nameCmd)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
