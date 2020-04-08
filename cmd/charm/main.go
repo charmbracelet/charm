@@ -81,7 +81,8 @@ var (
 
 	rootCmd = &cobra.Command{
 		Use:   "charm",
-		Short: "Do " + common.Keyword("Charm") + " stuff",
+		Short: "Do Charm stuff",
+		Long:  formatLong(fmt.Sprintf("Do %s stuff. Run without arguments for fancy mode or use the sub-commands like a pro.", common.Keyword("Charm"))),
 		Run: func(_ *cobra.Command, _ []string) {
 			// Run the TUI
 			if err := ui.NewProgram(cc).Start(); err != nil {
