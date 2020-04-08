@@ -36,6 +36,11 @@ func Code(s string) string {
 	return te.String(" " + s + " ").Foreground(Color("203")).Background(Color("237")).String()
 }
 
+// Subtle applies formatting to strings intended to be "subtle"
+func Subtle(s string) string {
+	return te.String(s).Foreground(Color("241")).String()
+}
+
 // Help renders text intended to display at help text, usually at the bottom of
 // a view.
 func HelpView(s string) string {
