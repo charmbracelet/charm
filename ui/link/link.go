@@ -218,6 +218,9 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	case linkSuccessMsg:
 		m.status = linkSuccess
 		m.alreadyLinked = bool(msg)
+		if m.standalone {
+			return m, tea.Quit
+		}
 		return m, nil
 
 	case linkTimeoutMsg:
@@ -277,12 +280,15 @@ func View(model tea.Model) string {
 		s += preamble
 		s += "Uh oh: " + m.err.Error()
 	case linkSuccess:
-		s += preamble
-		also := ""
+		s += common.Keyword("Linked!")
 		if m.alreadyLinked {
-			also = " This account is already linked, btw."
+			s += " This account is already linked, btw."
 		}
-		s += common.Keyword("Linked!") + also + common.HelpView("Press any key to exit...")
+		if m.standalone {
+			s += "\n"
+		} else {
+			s = preamble + s + common.HelpView("Press any key to exit...")
+		}
 	case linkRequestDenied:
 		s += "Link request " + common.Keyword("denied") + "."
 		if m.standalone {
