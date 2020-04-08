@@ -53,14 +53,19 @@ type Model struct {
 }
 
 // acceptRequest rejects the current linking request
-func (m *Model) acceptRequest() {
+func (m Model) acceptRequest() (Model, tea.Cmd) {
 	m.lh.response <- true
+	return m, nil
 }
 
 // rejectRequset rejects the current linking request
-func (m *Model) rejectRequest() {
+func (m Model) rejectRequest() (Model, tea.Cmd) {
 	m.lh.response <- false
 	m.status = linkRequestDenied
+	if m.standalone {
+		return m, tea.Quit
+	}
+	return m, nil
 }
 
 func NewModel(cc *charm.Client) Model {
@@ -172,14 +177,14 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 					}
 				case "enter":
 					if m.buttonIndex == 0 {
-						m.acceptRequest()
+						return m.acceptRequest()
 					} else {
-						m.rejectRequest()
+						return m.rejectRequest()
 					}
 				case "y":
-					m.acceptRequest()
+					return m.acceptRequest()
 				case "n":
-					m.rejectRequest()
+					return m.rejectRequest()
 				}
 				return m, nil
 
@@ -279,8 +284,12 @@ func View(model tea.Model) string {
 		}
 		s += common.Keyword("Linked!") + also + common.HelpView("Press any key to exit...")
 	case linkRequestDenied:
-		s += preamble
-		s += "Link request " + common.Keyword("denied") + common.HelpView("Press any key to exit...")
+		s += "Link request " + common.Keyword("denied") + "."
+		if m.standalone {
+			s += "\n"
+		} else {
+			s = preamble + s + common.HelpView("Press any key to exit...")
+		}
 	case linkTimedOut:
 		s += preamble
 		s += "Link request timed out." + common.HelpView("Press any key to exit...")
