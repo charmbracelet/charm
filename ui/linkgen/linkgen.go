@@ -97,7 +97,7 @@ func NewModel(cc *charm.Client) Model {
 	}
 }
 
-// CancelRequest performs cleanup that should be done when cancelling a linking
+// CancelRequest performs cleanup that should be done when canceling a linking
 // request.
 func (m *Model) CancelRequest() {
 	if m.cc == nil {
@@ -302,7 +302,7 @@ func View(model tea.Model) string {
 		s += preamble
 		s += "Link request timed out." + common.HelpView("Press any key to exit...")
 	case quitting:
-		s += "Linking cancelled.\n"
+		s += "Linking canceled.\n"
 	}
 
 	if m.standalone {
