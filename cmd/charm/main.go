@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/charm/ui"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/charm/ui/link"
+	"github.com/charmbracelet/charm/ui/linkparticipant"
 	"github.com/charmbracelet/tea"
 	"github.com/muesli/reflow/indent"
 	"github.com/muesli/reflow/wordwrap"
@@ -159,7 +160,6 @@ var (
 		Example: indent.String("charm link\ncharm link XXXXXX", indentBy),
 		Args:    cobra.RangeArgs(0, 1),
 		Run: func(cmd *cobra.Command, args []string) {
-			lh := &TermLinkHandler{}
 			switch len(args) {
 			case 0:
 				// Initialize a linking session
@@ -171,11 +171,17 @@ var (
 				return
 			default:
 				// Join in on a linking session
-				err := cc.Link(lh, args[0])
-				if err != nil {
+				p := linkparticipant.NewProgram(cc, args[0])
+				if err := p.Start(); err != nil {
 					fmt.Println(err)
 					os.Exit(1)
 				}
+				//lh := &TermLinkHandler{}
+				//err := cc.Link(lh, args[0])
+				//if err != nil {
+				//fmt.Println(err)
+				//os.Exit(1)
+				//}
 			}
 		},
 	}
