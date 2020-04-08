@@ -58,6 +58,12 @@ type User struct {
 	CreatedAt *time.Time `json:"created_at"`
 }
 
+// Key contains data and metadata for an SSH key
+type Key struct {
+	Key       string     `json:"key"`
+	CreatedAt *time.Time `json:"created_at"`
+}
+
 type sshSession struct {
 	session *ssh.Session
 }
@@ -134,11 +140,23 @@ func (cc *Client) ID() (string, error) {
 // AuthorizedKeys returns the keys linked to a user's account
 func (cc *Client) AuthorizedKeys() (string, error) {
 	defer cc.session.Close()
-	jwt, err := cc.session.Output("keys")
+	keys, err := cc.session.Output("keys")
 	if err != nil {
 		return "", err
 	}
-	return string(jwt), nil
+	return string(keys), nil
+}
+
+// AuthorizedKeys fetches keys linked to a user's account, with metadata
+func (cc *Client) AuthorizedKeysWithMetadata() ([]Key, error) {
+	defer cc.session.Close()
+	b, err := cc.session.Output("api-keys")
+	if err != nil {
+		return nil, err
+	}
+	var k []Key
+	err = json.Unmarshal(b, &k)
+	return k, err
 }
 
 // Link joins in on a linking session initiated by LinkGen

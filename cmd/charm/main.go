@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui"
@@ -11,6 +12,7 @@ import (
 	"github.com/charmbracelet/charm/ui/link"
 	"github.com/charmbracelet/charm/ui/linkgen"
 	"github.com/charmbracelet/tea"
+	"github.com/mattn/go-isatty"
 	"github.com/muesli/reflow/indent"
 	"github.com/muesli/reflow/wordwrap"
 	"github.com/spf13/cobra"
@@ -27,6 +29,10 @@ func formatLong(s string) string {
 
 func printFormatted(s string) {
 	fmt.Println(formatLong(s + "\n"))
+}
+
+func isTTY() bool {
+	return isatty.IsTerminal(os.Stdout.Fd())
 }
 
 var (
@@ -98,12 +104,29 @@ var (
 		Long:  formatLong("Charm accounts are powered by " + common.Keyword("SSH keys") + ". This command prints all of the keys linked to your account. To remove keys use the main " + common.Code("charm") + " interface."),
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			ak, err := cc.AuthorizedKeys()
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
+			if isTTY() {
+				ak, err := cc.AuthorizedKeysWithMetadata()
+				if err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
+				var s string
+				for _, k := range ak {
+					s += fmt.Sprintf(
+						"%s\n%s\n\n",
+						k.Key,
+						common.Subtle("Added "+k.CreatedAt.Format("Mon 2 Jan 2006 15:04:05 MST")),
+					)
+				}
+				fmt.Println(strings.TrimSpace(s))
+			} else {
+				ak, err := cc.AuthorizedKeys()
+				if err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
+				fmt.Println(ak)
 			}
-			fmt.Println(ak)
 		},
 	}
 
