@@ -30,6 +30,7 @@ type LinkerMessage struct {
 	Message string `json:"message"`
 }
 
+// LinkHandler handles linking operations
 type LinkHandler interface {
 	TokenCreated(*Link)
 	TokenSent(*Link)

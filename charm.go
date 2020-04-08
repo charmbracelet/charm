@@ -20,12 +20,17 @@ import (
 
 var nameValidator = regexp.MustCompile("^[a-zA-Z0-9]{1,50}$")
 
+// ErrMissingSSHAuth is used when the user is missing SSH credentials
 var ErrMissingSSHAuth = errors.New("missing ssh auth")
 
+// ErrNameTaken is used when a user attempts to set a username and that
+// username is already taken
 var ErrNameTaken = errors.New("name already taken")
 
+// ErrNameInvalid is used when a username is invalid
 var ErrNameInvalid = errors.New("invalid name")
 
+// Config contains the Charm client configuration
 type Config struct {
 	IDHost      string `env:"CHARM_ID_HOST" default:"id.dev.charm.sh"`
 	IDPort      int    `env:"CHARM_ID_PORT" default:"5555"`
@@ -36,6 +41,7 @@ type Config struct {
 	ForceKey    bool
 }
 
+// Client is the Charm client
 type Client struct {
 	config    *Config
 	sshConfig *ssh.ClientConfig
@@ -43,6 +49,7 @@ type Client struct {
 	User      *User
 }
 
+// User represents a Charm user
 type User struct {
 	CharmID   string     `json:"charm_id"`
 	Name      string     `json:"name"`
@@ -55,6 +62,7 @@ type sshSession struct {
 	session *ssh.Session
 }
 
+// ConfigFromEnv loads the configuration from the environment
 func ConfigFromEnv() (*Config, error) {
 	var cfg Config
 	if err := babyenv.Parse(&cfg); err != nil {
@@ -63,6 +71,7 @@ func ConfigFromEnv() (*Config, error) {
 	return &cfg, nil
 }
 
+// NewClient creates a new Charm client
 func NewClient(cfg *Config) (*Client, error) {
 	cc := &Client{config: cfg}
 	if !cfg.ForceKey {
@@ -102,6 +111,7 @@ func NewClient(cfg *Config) (*Client, error) {
 	return cc, nil
 }
 
+// JWT returns a JSON web token for the user
 func (cc *Client) JWT() (string, error) {
 	defer cc.session.Close()
 	jwt, err := cc.session.Output("jwt")
@@ -111,6 +121,7 @@ func (cc *Client) JWT() (string, error) {
 	return string(jwt), nil
 }
 
+// ID returns the user's ID
 func (cc *Client) ID() (string, error) {
 	defer cc.session.Close()
 	id, err := cc.session.Output("id")
@@ -120,6 +131,7 @@ func (cc *Client) ID() (string, error) {
 	return string(id), nil
 }
 
+// AuthorizedKeys returns the keys linked to a user's account
 func (cc *Client) AuthorizedKeys() (string, error) {
 	defer cc.session.Close()
 	jwt, err := cc.session.Output("keys")
@@ -129,6 +141,7 @@ func (cc *Client) AuthorizedKeys() (string, error) {
 	return string(jwt), nil
 }
 
+// Link joins in on a linking session initiated by LinkGen
 func (cc *Client) Link(lh LinkHandler, code string) error {
 	defer cc.session.Close()
 	out, err := cc.session.StdoutPipe()
@@ -170,6 +183,7 @@ func (cc *Client) Link(lh LinkHandler, code string) error {
 	return nil
 }
 
+// LinkGen initiates a linking session
 func (cc *Client) LinkGen(lh LinkHandler) error {
 	defer cc.session.Close()
 	out, err := cc.session.StdoutPipe()
@@ -233,6 +247,7 @@ func (cc *Client) LinkGen(lh LinkHandler) error {
 	return nil
 }
 
+// SetName sets the account's username
 func (cc *Client) SetName(name string) (*User, error) {
 	if !ValidateName(name) {
 		return nil, ErrNameInvalid
@@ -274,6 +289,7 @@ func (cc *Client) SetName(name string) (*User, error) {
 	return u, nil
 }
 
+// Bio returns the user's profile
 func (cc *Client) Bio() (*User, error) {
 	u := &User{}
 	client := &http.Client{}
