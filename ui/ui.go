@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/charm/ui/info"
-	"github.com/charmbracelet/charm/ui/link"
+	"github.com/charmbracelet/charm/ui/linkgen"
 	"github.com/charmbracelet/charm/ui/username"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/spinner"
@@ -78,7 +78,7 @@ type Model struct {
 	menuChoice    menuChoice
 
 	info     info.Model
-	link     link.Model
+	link     linkgen.Model
 	username username.Model
 }
 
@@ -98,7 +98,7 @@ func initialize(cc *charm.Client) func() (tea.Model, tea.Cmd) {
 			menuIndex:     0,
 			menuChoice:    unsetChoice,
 			info:          info.NewModel(cc),
-			link:          link.NewModel(cc),
+			link:          linkgen.NewModel(cc),
 			username:      username.NewModel(cc),
 		}
 		return m, tea.CmdMap(info.GetBio, m.info)
@@ -201,15 +201,15 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		}
 		return m, nil
 	case linking:
-		newModel, _ := link.Update(msg, tea.Model(m.link))
-		newLinkModel, ok := newModel.(link.Model)
+		newModel, _ := linkgen.Update(msg, tea.Model(m.link))
+		newLinkModel, ok := newModel.(linkgen.Model)
 		if !ok {
 			m.err = errors.New("could not perform model assertion on link model")
 			return m, nil
 		}
 		m.link = newLinkModel
 		if m.link.Exit {
-			m.link = link.NewModel(m.cc) // reset the state
+			m.link = linkgen.NewModel(m.cc) // reset the state
 			m.state = ready
 		} else if m.link.Quit {
 			m.state = quitting
@@ -230,7 +230,7 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	case linkChoice:
 		m.state = linking
 		m.menuChoice = unsetChoice
-		cmd = tea.Batch(link.HandleLinkRequest(m.link)...)
+		cmd = tea.Batch(linkgen.HandleLinkRequest(m.link)...)
 	case setUsernameChoice:
 		m.state = setUsername
 		m.menuChoice = unsetChoice
@@ -260,7 +260,7 @@ func view(model tea.Model) string {
 		s += "\n\n" + menuView(m.menuIndex)
 		s += footerView(m)
 	case linking:
-		s += link.View(m.link)
+		s += linkgen.View(m.link)
 	case setUsername:
 		s += username.View(m.username)
 	case quitting:
@@ -342,7 +342,7 @@ func subscriptions(model tea.Model) tea.Subs {
 		subs["username-input-blink"] = username.Blink(m.username)
 		subs["username-spinner-tick"] = username.Spin(m.username)
 	case linking:
-		subs["link-setup-spinner-tick"] = link.Spin(m.link)
+		subs["link-setup-spinner-tick"] = linkgen.Spin(m.link)
 	}
 
 	return subs

@@ -7,407 +7,217 @@ import (
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/tea"
-	"github.com/charmbracelet/teaparty/spinner"
 	"github.com/muesli/reflow/indent"
 )
+
+// NewProgram returns a Tea program for the link participant
+func NewProgram(cc *charm.Client, code string) *tea.Program {
+	return tea.NewProgram(initialize(cc, code), update, view, subscriptions)
+}
 
 type status int
 
 const (
 	linkInit status = iota
-	linkTokenCreated
-	linkRequested
-	linkSuccess
+	linkTokenSent
+	linkTokenValid
+	linkTokenInvalid
 	linkRequestDenied
-	linkTimedOut
-	linkError
+	linkSuccess
+	linkTimeout
+	linkErr
 	quitting
 )
 
-type linkTokenCreatedMsg string
-type linkRequestMsg linkRequest
-type linkSuccessMsg bool // true if this account's already been linked
-type linkTimeoutMsg struct{}
+type tokenSentMsg struct{}
+type validTokenMsg bool
+type requestDeniedMsg struct{}
+type successMsg bool
+type timeoutMsg struct{}
+type errMsg struct{ error }
 
-type errMsg struct {
-	error
-}
-
-// Error statisfies the error interface
-func (err errMsg) Error() string {
-	return err.Error()
-}
-
-// Model is the Tea model for the link initiator program
-type Model struct {
+type model struct {
 	lh            *linkHandler
-	standalone    bool // true if this is running as a stadalone Tea program
-	Quit          bool // indicates the user wants to exit the whole program
-	Exit          bool // indicates the user wants to exit this mini-app
-	err           error
+	cc            *charm.Client
+	code          string
 	status        status
 	alreadyLinked bool
-	token         string
-	linkRequest   linkRequest
-	cc            *charm.Client
-	buttonIndex   int // focused state of ok/cancel buttons
-	spinner       spinner.Model
+	err           error
 }
 
-// acceptRequest rejects the current linking request
-func (m Model) acceptRequest() (Model, tea.Cmd) {
-	m.lh.response <- true
-	return m, nil
-}
-
-// rejectRequset rejects the current linking request
-func (m Model) rejectRequest() (Model, tea.Cmd) {
-	m.lh.response <- false
-	m.status = linkRequestDenied
-	if m.standalone {
-		return m, tea.Quit
-	}
-	return m, nil
-}
-
-func NewModel(cc *charm.Client) Model {
-	lh := &linkHandler{
-		err:      make(chan error),
-		token:    make(chan string),
-		request:  make(chan linkRequest),
-		response: make(chan bool),
-		success:  make(chan bool),
-		timeout:  make(chan struct{}),
-	}
-	s := spinner.NewModel()
-	s.Type = spinner.Dot
-	s.ForegroundColor = "241"
-	return Model{
-		lh:            lh,
-		Quit:          false,
-		Exit:          false,
-		err:           nil,
-		status:        linkInit,
-		alreadyLinked: false,
-		token:         "",
-		linkRequest:   linkRequest{},
-		cc:            cc,
-		buttonIndex:   0,
-		spinner:       s,
-	}
-}
-
-// CancelRequest performs cleanup that should be done when cancelling a linking
-// request.
-func (m *Model) CancelRequest() {
-	if m.cc == nil {
-		return
-	}
-	if err := m.cc.CloseSession(); err != nil {
-		m.err = err
-	}
-}
-
-// Init is a Tea program's initialization function
-func Init(cc *charm.Client) func() (tea.Model, tea.Cmd) {
+func initialize(cc *charm.Client, code string) func() (tea.Model, tea.Cmd) {
 	return func() (tea.Model, tea.Cmd) {
-		m := NewModel(cc)
-		m.standalone = true
-		return m, tea.Batch(HandleLinkRequest(m)...)
+		m := model{
+			cc:            cc,
+			lh:            newLinkHandler(),
+			code:          code,
+			status:        linkInit,
+			alreadyLinked: false,
+			err:           nil,
+		}
+		return m, handleLinkRequest(m)
 	}
 }
 
-// Update is the Tea update loop
-func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
-	m, ok := model.(Model)
+func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
+	m, ok := mdl.(model)
 	if !ok {
-		m.err = errors.New("could not perform model assertion in update")
+		return tea.ModelAssertionErr, nil
 	}
 
 	switch msg := msg.(type) {
+
 	case tea.KeyMsg:
-
 		switch msg.String() {
-
-		// General keybindings
 		case "ctrl+c":
-			m.CancelRequest()
-			if m.standalone {
-				m.status = quitting
-				return m, tea.Quit
-			}
-			m.Quit = true
-			return m, nil
-		case "q":
 			fallthrough
 		case "esc":
-			m.CancelRequest()
-			if m.standalone {
-				m.status = quitting
-				return m, tea.Quit
-			}
-			m.Exit = true
-			return m, nil
-
-		// State-specific keybindings
+			fallthrough
+		case "q":
+			m.status = quitting
+			return m, tea.Quit
 		default:
-			switch m.status {
-
-			case linkRequested:
-				switch msg.String() {
-				case "j":
-					fallthrough
-				case "h":
-					fallthrough
-				case "right":
-					fallthrough
-				case "tab":
-					m.buttonIndex++
-					if m.buttonIndex > 1 {
-						m.buttonIndex = 0
-					}
-				case "k":
-					fallthrough
-				case "l":
-					fallthrough
-				case "left":
-					fallthrough
-				case "shift+tab":
-					m.buttonIndex--
-					if m.buttonIndex < 0 {
-						m.buttonIndex = 1
-					}
-				case "enter":
-					if m.buttonIndex == 0 {
-						return m.acceptRequest()
-					} else {
-						return m.rejectRequest()
-					}
-				case "y":
-					return m.acceptRequest()
-				case "n":
-					return m.rejectRequest()
-				}
-				return m, nil
-
-			case linkSuccess:
-				fallthrough
-			case linkRequestDenied:
-				fallthrough
-			case linkTimedOut:
-				// Any key exits
-				m.Exit = true
-				return m, nil
-
-			}
+			return m, nil
 		}
+
+	case tokenSentMsg:
+		m.status = linkTokenSent
+		return m, nil
+
+	case validTokenMsg:
+		if msg {
+			m.status = linkTokenValid
+			return m, nil
+		}
+		m.status = linkTokenInvalid
+		return m, tea.Quit
+
+	case requestDeniedMsg:
+		m.status = linkRequestDenied
+		return m, tea.Quit
+
+	case successMsg:
+		m.status = linkSuccess
+		if msg {
+			m.alreadyLinked = true
+		}
+		return m, tea.Quit
+
+	case timeoutMsg:
+		m.status = linkTimeout
+		return m, tea.Quit
 
 	case errMsg:
-		m.status = linkError
-		m.err = msg
-		return m, nil
+		m.status = linkErr
+		return m, tea.Quit
 
-	case linkTokenCreatedMsg:
-		m.status = linkTokenCreated
-		m.token = string(msg)
-		return m, nil
-
-	case linkRequestMsg:
-		m.status = linkRequested
-		m.linkRequest = linkRequest(msg)
-		return m, nil
-
-	case linkSuccessMsg:
-		m.status = linkSuccess
-		m.alreadyLinked = bool(msg)
-		if m.standalone {
-			return m, tea.Quit
-		}
-		return m, nil
-
-	case linkTimeoutMsg:
-		m.status = linkTimedOut
-		return m, nil
-
-	case spinner.TickMsg:
-		m.spinner, _ = spinner.Update(msg, m.spinner)
+	default:
 		return m, nil
 	}
-
-	return m, nil
 }
 
-// View renders the UI
-func View(model tea.Model) string {
-	m, ok := model.(Model)
+func view(mdl tea.Model) string {
+	m, ok := mdl.(model)
 	if !ok {
-		m.status = linkError
-		m.err = errors.New("could not perform model assertion in view")
+		m.err = errors.New("could not perform assertion on model in view")
 	}
 
 	var s string
-	preamble := common.Wrap(fmt.Sprintf(
-		"You can %s the SSH keys on another machine to your Charm account so both machines have access to your stuff. You can unlink keys at any time.\n\n",
-		common.Keyword("link"),
-	))
 
 	switch m.status {
 	case linkInit:
-		s += preamble
-		s += spinner.View(m.spinner) + " Generating link..."
-	case linkTokenCreated:
-		s += preamble
-		s += fmt.Sprintf(
-			"%s\n\n%s%s",
-			common.Wrap("To link, run the following command on your other machine:"),
-			common.Code("charm link "+m.token),
-			common.HelpView("To cancel, press escape"),
-		)
-	case linkRequested:
-		var d []string
-		s += preamble
-		s += "Link request from:\n\n"
-		d = append(d, []string{"IP", m.linkRequest.requestAddr}...)
-		if len(m.linkRequest.pubKey) > 50 {
-			d = append(d, []string{"Key", m.linkRequest.pubKey[0:50] + "..."}...)
-		}
-		s += common.KeyValueView(d...)
-		s += "\n\nLink this device?\n\n"
-		s += fmt.Sprintf(
-			"%s %s",
-			common.YesButtonView(m.buttonIndex == 0),
-			common.NoButtonView(m.buttonIndex == 1),
-		)
-	case linkError:
-		s += preamble
-		s += "Uh oh: " + m.err.Error()
-	case linkSuccess:
-		s += common.Keyword("Linked!")
-		if m.alreadyLinked {
-			s += " This account is already linked, btw."
-		}
-		if m.standalone {
-			s += "\n"
-		} else {
-			s = preamble + s + common.HelpView("Press any key to exit...")
-		}
+		s = "Linking..."
+		break
+	case linkTokenSent:
+		s = "Token sent..."
+	case linkTokenValid:
+		s += fmt.Sprintf("Token %s. Waiting for authorization...", common.Keyword("valid"))
+	case linkTokenInvalid:
+		s = fmt.Sprintf("%s token. Goodbye.", common.Keyword("invalid"))
 	case linkRequestDenied:
-		s += "Link request " + common.Keyword("denied") + "."
-		if m.standalone {
-			s += "\n"
-		} else {
-			s = preamble + s + common.HelpView("Press any key to exit...")
+		s = fmt.Sprintf("Link request %s. Sorry, kid.", common.Keyword("denied"))
+	case linkSuccess:
+		s = common.Keyword("Linked!")
+		if m.alreadyLinked {
+			s += " You already linked this key, btw."
 		}
-	case linkTimedOut:
-		s += preamble
-		s += "Link request timed out." + common.HelpView("Press any key to exit...")
+	case linkTimeout:
+		s = fmt.Sprintf("Link request %s. Sorry.", common.Keyword("timed out"))
+	case linkErr:
+		s = common.Keyword("Error.")
 	case quitting:
-		s += "Linking cancelled.\n"
+		s = "Oh, ok. Bye."
 	}
 
-	if m.standalone {
-		s = fmt.Sprintf("\n%s", indent.String(s, 2))
-	}
-	return s
+	return indent.String(fmt.Sprintf("\n%s\n", s), 2)
 }
 
-// SUBSCRIPTIONS
-
-// Subscriptions returns Tea subscriptions when using this componenent as a
-// standalone program.
-func Subscriptions(model tea.Model) tea.Subs {
-	m, ok := model.(Model)
-	if !ok {
-		return nil
-	}
-	return tea.Subs{
-		"link-spinner-tick": Spin(m),
-	}
-}
-
-// Spin wraps the spinner components's subscription. This should be integrated
-// when this component is used as part of another program.
-func Spin(model tea.Model) tea.Sub {
-	m, ok := model.(Model)
-	if !ok {
-		return nil
-	}
-
-	if m.status != linkInit {
-		return nil
-	}
-	return tea.SubMap(spinner.Sub, m.spinner)
+func subscriptions(mdl tea.Model) tea.Subs {
+	return nil
 }
 
 // COMMANDS
 
-// HandleLinkRequest returns a bunch of blocking commands that resolve on link
-// request states. As a Tea command, this should be treated as batch:
-//
-//     tea.Batch(HandleLinkRequest(model)...)
-//
-func HandleLinkRequest(model tea.Model) []tea.Cmd {
-	m, ok := model.(Model)
+func handleLinkRequest(mdl tea.Model) tea.Cmd {
+	m, ok := mdl.(model)
 	if !ok {
-		return []tea.Cmd{func(_ tea.Model) tea.Msg {
+		// TODO: We should probably but a model assertion error command in Tea
+		// core
+		return func(_ tea.Model) tea.Msg {
 			return tea.ModelAssertionErr
-		}}
+		}
 	}
 
 	go func() {
-		m.cc.RenewSession()
-		if err := m.cc.LinkGen(m.lh); err != nil {
+		if err := m.cc.Link(m.lh, m.code); err != nil {
 			m.lh.err <- err
 		}
 	}()
 
-	// We use a series of blocking commands to interface with channels on the
-	// link handler.
-	return []tea.Cmd{
-		generateLink(m.lh),
-		handleLinkRequest(m.lh),
+	return tea.Batch(
+		handleTokenSent(m.lh),
+		handleValidToken(m.lh),
+		handleRequestDenied(m.lh),
 		handleLinkSuccess(m.lh),
-		handleLinkTimeout(m.lh),
-		handleLinkError(m.lh),
-	}
+		handleTimeout(m.lh),
+		handleErr(m.lh),
+	)
 }
 
-// generateLink waits for either a link to be generated, or an error.
-func generateLink(lh *linkHandler) tea.Cmd {
+func handleTokenSent(lh *linkHandler) tea.Cmd {
 	return func(_ tea.Model) tea.Msg {
-		select {
-		case err := <-lh.err:
-			return errMsg{err}
-		case tok := <-lh.token:
-			return linkTokenCreatedMsg(tok)
-		}
+		<-lh.tokenSent
+		return tokenSentMsg{}
 	}
 }
 
-// handleLinkRequest waits for a link request code.
-func handleLinkRequest(lh *linkHandler) tea.Cmd {
+func handleValidToken(lh *linkHandler) tea.Cmd {
 	return func(_ tea.Model) tea.Msg {
-		return linkRequestMsg(<-lh.request)
+		return validTokenMsg(<-lh.validToken)
 	}
 }
 
-// handleLinkSuccess waits for data in the link success channel.
+func handleRequestDenied(lh *linkHandler) tea.Cmd {
+	return func(_ tea.Model) tea.Msg {
+		<-lh.requestDenied
+		return requestDeniedMsg{}
+	}
+}
+
 func handleLinkSuccess(lh *linkHandler) tea.Cmd {
 	return func(_ tea.Model) tea.Msg {
-		return linkSuccessMsg(<-lh.success)
+		return successMsg(<-lh.success)
 	}
 }
 
-// handleLinkTimeout waits for a timeout in the linking process.
-func handleLinkTimeout(lh *linkHandler) tea.Cmd {
+func handleTimeout(lh *linkHandler) tea.Cmd {
 	return func(_ tea.Model) tea.Msg {
 		<-lh.timeout
-		return linkTimeoutMsg{}
+		return timeoutMsg{}
 	}
 }
 
-// handleLinkError responds when a linking error is reported
-func handleLinkError(lh *linkHandler) tea.Cmd {
+func handleErr(lh *linkHandler) tea.Cmd {
 	return func(_ tea.Model) tea.Msg {
 		return errMsg{<-lh.err}
 	}

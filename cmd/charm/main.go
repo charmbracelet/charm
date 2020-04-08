@@ -9,7 +9,7 @@ import (
 	"github.com/charmbracelet/charm/ui"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/charm/ui/link"
-	"github.com/charmbracelet/charm/ui/linkparticipant"
+	"github.com/charmbracelet/charm/ui/linkgen"
 	"github.com/charmbracelet/tea"
 	"github.com/muesli/reflow/indent"
 	"github.com/muesli/reflow/wordwrap"
@@ -113,7 +113,8 @@ var (
 			switch len(args) {
 			case 0:
 				// Initialize a linking session
-				p := tea.NewProgram(link.Init(cc), link.Update, link.View, link.Subscriptions)
+				// TODO: move NewProgram to package
+				p := tea.NewProgram(linkgen.Init(cc), linkgen.Update, linkgen.View, linkgen.Subscriptions)
 				if err := p.Start(); err != nil {
 					fmt.Println(err)
 					os.Exit(1)
@@ -121,7 +122,7 @@ var (
 				return
 			default:
 				// Join in on a linking session
-				p := linkparticipant.NewProgram(cc, args[0])
+				p := link.NewProgram(cc, args[0])
 				if err := p.Start(); err != nil {
 					fmt.Println(err)
 					os.Exit(1)
