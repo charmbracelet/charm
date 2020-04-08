@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/charmbracelet/charm"
+	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/tea"
 	"github.com/muesli/reflow/indent"
 )
@@ -54,7 +55,7 @@ func initialize(cc *charm.Client, code string) func() (tea.Model, tea.Cmd) {
 			alreadyLinked: false,
 			err:           nil,
 		}
-		return m, nil
+		return m, handleLinkRequest(m)
 	}
 }
 
@@ -75,6 +76,8 @@ func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
 		case "q":
 			m.status = quitting
 			return m, tea.Quit
+		default:
+			return m, nil
 		}
 
 	case tokenSentMsg:
@@ -84,10 +87,10 @@ func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
 	case validTokenMsg:
 		if msg {
 			m.status = linkTokenValid
-		} else {
-			m.status = linkTokenInvalid
+			return m, nil
 		}
-		return m, nil
+		m.status = linkTokenInvalid
+		return m, tea.Quit
 
 	case requestDeniedMsg:
 		m.status = linkRequestDenied
@@ -98,6 +101,7 @@ func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
 		if msg {
 			m.alreadyLinked = true
 		}
+		return m, tea.Quit
 
 	case timeoutMsg:
 		m.status = linkTimeout
@@ -106,9 +110,10 @@ func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
 	case errMsg:
 		m.status = linkErr
 		return m, tea.Quit
-	}
 
-	return m, nil
+	default:
+		return m, nil
+	}
 }
 
 func view(mdl tea.Model) string {
@@ -117,33 +122,34 @@ func view(mdl tea.Model) string {
 		m.err = errors.New("could not perform assertion on model in view")
 	}
 
-	s := "Linking..."
+	var s string
 
 	switch m.status {
 	case linkInit:
-		s += "Linking..."
+		s = "Linking..."
+		break
 	case linkTokenSent:
-		s += "token sent..."
+		s = "Token sent..."
 	case linkTokenValid:
-		s += "token valid..."
+		s += fmt.Sprintf("Token %s. Waiting for authorization...", common.Keyword("valid"))
 	case linkTokenInvalid:
-		s = "Invalid token."
+		s = fmt.Sprintf("%s token. Goodbye.", common.Keyword("invalid"))
 	case linkRequestDenied:
-		s = "Link request denied."
+		s = fmt.Sprintf("Link request %s. Sorry, kid.", common.Keyword("denied"))
 	case linkSuccess:
-		s = "Linked!"
+		s = common.Keyword("Linked!")
 		if m.alreadyLinked {
-			s += "You already linked this key, btw."
+			s += " You already linked this key, btw."
 		}
 	case linkTimeout:
-		s = "Link request timed out. Sorry."
+		s = fmt.Sprintf("Link request %s. Sorry.", common.Keyword("timed out"))
 	case linkErr:
-		s = "Error."
+		s = common.Keyword("Error.")
 	case quitting:
 		s = "Oh, ok. Bye."
 	}
 
-	return indent.String(fmt.Sprintf("\n%s", s), 2)
+	return indent.String(fmt.Sprintf("\n%s\n", s), 2)
 }
 
 func subscriptions(mdl tea.Model) tea.Subs {
@@ -152,14 +158,13 @@ func subscriptions(mdl tea.Model) tea.Subs {
 
 // COMMANDS
 
-func handleLinkRequest(mdl tea.Model) func(tea.Model) tea.Cmd {
+func handleLinkRequest(mdl tea.Model) tea.Cmd {
 	m, ok := mdl.(model)
 	if !ok {
-		// TODO: Make this less gross
-		return func(_ tea.Model) tea.Cmd {
-			return func(_ tea.Model) tea.Msg {
-				return tea.ModelAssertionErr
-			}
+		// TODO: We should probably but a model assertion error command in Tea
+		// core
+		return func(_ tea.Model) tea.Msg {
+			return tea.ModelAssertionErr
 		}
 	}
 
@@ -169,16 +174,14 @@ func handleLinkRequest(mdl tea.Model) func(tea.Model) tea.Cmd {
 		}
 	}()
 
-	return func(_ tea.Model) tea.Cmd {
-		return tea.Batch(
-			handleTokenSent(m.lh),
-			handleValidToken(m.lh),
-			handleRequestDenied(m.lh),
-			handleLinkSuccess(m.lh),
-			handleTimeout(m.lh),
-			handleErr(m.lh),
-		)
-	}
+	return tea.Batch(
+		handleTokenSent(m.lh),
+		handleValidToken(m.lh),
+		handleRequestDenied(m.lh),
+		handleLinkSuccess(m.lh),
+		handleTimeout(m.lh),
+		handleErr(m.lh),
+	)
 }
 
 func handleTokenSent(lh *linkHandler) tea.Cmd {

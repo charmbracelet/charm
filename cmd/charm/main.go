@@ -1,11 +1,9 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui"
@@ -22,54 +20,6 @@ const (
 	wrapAt   = 78
 	indentBy = 2
 )
-
-type TermLinkHandler struct{}
-
-func (th *TermLinkHandler) TokenCreated(l *charm.Link) {
-	fmt.Printf("To link a machine, run: \n\n> charm link %s\n", l.Token)
-}
-
-func (th *TermLinkHandler) TokenSent(l *charm.Link) {
-	fmt.Println("Linking...")
-}
-
-func (th *TermLinkHandler) ValidToken(l *charm.Link) {
-	fmt.Println("Valid token")
-}
-
-func (th *TermLinkHandler) InvalidToken(l *charm.Link) {
-	fmt.Println("That token looks invalid.")
-}
-
-func (th *TermLinkHandler) Request(l *charm.Link) bool {
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Printf("Does this look right? (yes/no)\n\n%s\nIP: %s\n", l.RequestPubKey, l.RequestAddr)
-	conf, _ := reader.ReadString('\n')
-	if strings.ToLower(conf) == "yes\n" {
-		return true
-	}
-	return false
-}
-
-func (th *TermLinkHandler) RequestDenied(l *charm.Link) {
-	fmt.Println("Not Linked :(")
-}
-
-func (th *TermLinkHandler) SameAccount(l *charm.Link) {
-	fmt.Println("Linked! You already linked this key btw.")
-}
-
-func (th *TermLinkHandler) Success(l *charm.Link) {
-	fmt.Println("Linked!")
-}
-
-func (th *TermLinkHandler) Timeout(l *charm.Link) {
-	fmt.Println("Timed out. Sorry.")
-}
-
-func (th *TermLinkHandler) Error(l *charm.Link) {
-	fmt.Println("Error, something's wrong.")
-}
 
 func formatLong(s string) string {
 	return indent.String(wordwrap.String("\n"+s, wrapAt), indentBy)
@@ -176,12 +126,6 @@ var (
 					fmt.Println(err)
 					os.Exit(1)
 				}
-				//lh := &TermLinkHandler{}
-				//err := cc.Link(lh, args[0])
-				//if err != nil {
-				//fmt.Println(err)
-				//os.Exit(1)
-				//}
 			}
 		},
 	}

@@ -26,11 +26,12 @@ func newLinkHandler() *linkHandler {
 	}
 }
 
-func (lh *linkHandler) TokenCreated(l *charm.Link) {}
+func (lh *linkHandler) TokenCreated(l *charm.Link) {
+	// Not implemented for the link participant
+}
 
 func (lh *linkHandler) TokenSent(l *charm.Link) {
 	lh.tokenSent <- struct{}{}
-
 }
 
 func (lh *linkHandler) ValidToken(l *charm.Link) {
@@ -42,6 +43,7 @@ func (lh *linkHandler) InvalidToken(l *charm.Link) {
 }
 
 func (lh *linkHandler) Request(l *charm.Link) bool {
+	// Not implemented for the link participant
 	return false
 }
 
