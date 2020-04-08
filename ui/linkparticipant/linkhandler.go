@@ -1,6 +1,10 @@
 package linkparticipant
 
-import "github.com/charmbracelet/charm"
+import (
+	"errors"
+
+	"github.com/charmbracelet/charm"
+)
 
 type linkHandler struct {
 	tokenSent     chan struct{}
@@ -22,13 +26,41 @@ func newLinkHandler() *linkHandler {
 	}
 }
 
-func (lh *linkHandler) TokenCreated(l *charm.Link)  {}
-func (lh *linkHandler) TokenSent(l *charm.Link)     {}
-func (lh *linkHandler) ValidToken(l *charm.Link)    {}
-func (lh *linkHandler) InvalidToken(l *charm.Link)  {}
-func (lh *linkHandler) Request(l *charm.Link)       {}
-func (lh *linkHandler) RequestDenied(l *charm.Link) {}
-func (lh *linkHandler) SameAccount(l *charm.Link)   {}
-func (lh *linkHandler) Success(l *charm.Link)       {}
-func (lh *linkHandler) Timeout(l *charm.Link)       {}
-func (lh *linkHandler) Error(l *charm.Link)         {}
+func (lh *linkHandler) TokenCreated(l *charm.Link) {}
+
+func (lh *linkHandler) TokenSent(l *charm.Link) {
+	lh.tokenSent <- struct{}{}
+
+}
+
+func (lh *linkHandler) ValidToken(l *charm.Link) {
+	lh.validToken <- true
+}
+
+func (lh *linkHandler) InvalidToken(l *charm.Link) {
+	lh.validToken <- false
+}
+
+func (lh *linkHandler) Request(l *charm.Link) bool {
+	return false
+}
+
+func (lh *linkHandler) RequestDenied(l *charm.Link) {
+	lh.requestDenied <- struct{}{}
+}
+
+func (lh *linkHandler) SameAccount(l *charm.Link) {
+	lh.success <- true
+}
+
+func (lh *linkHandler) Success(l *charm.Link) {
+	lh.success <- false
+}
+
+func (lh *linkHandler) Timeout(l *charm.Link) {
+	lh.timeout <- struct{}{}
+}
+
+func (lh *linkHandler) Error(l *charm.Link) {
+	lh.err <- errors.New("error")
+}

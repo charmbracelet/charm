@@ -28,7 +28,6 @@ const (
 	quitting
 )
 
-// Messages
 type tokenSentMsg struct{}
 type validTokenMsg bool
 type requestDeniedMsg struct{}
@@ -46,13 +45,10 @@ type model struct {
 }
 
 func initialize(cc *charm.Client, code string) func() (tea.Model, tea.Cmd) {
-	lh := &linkHandler{
-		err: make(chan error),
-	}
 	return func() (tea.Model, tea.Cmd) {
 		m := model{
 			cc:            cc,
-			lh:            lh,
+			lh:            newLinkHandler(),
 			code:          code,
 			status:        linkInit,
 			alreadyLinked: false,
@@ -152,4 +148,74 @@ func view(mdl tea.Model) string {
 
 func subscriptions(mdl tea.Model) tea.Subs {
 	return nil
+}
+
+// COMMANDS
+
+func handleLinkRequest(mdl tea.Model) func(tea.Model) tea.Cmd {
+	m, ok := mdl.(model)
+	if !ok {
+		// TODO: Make this less gross
+		return func(_ tea.Model) tea.Cmd {
+			return func(_ tea.Model) tea.Msg {
+				return tea.ModelAssertionErr
+			}
+		}
+	}
+
+	go func() {
+		if err := m.cc.Link(m.lh, m.code); err != nil {
+			m.lh.err <- err
+		}
+	}()
+
+	return func(_ tea.Model) tea.Cmd {
+		return tea.Batch(
+			handleTokenSent(m.lh),
+			handleValidToken(m.lh),
+			handleRequestDenied(m.lh),
+			handleLinkSuccess(m.lh),
+			handleTimeout(m.lh),
+			handleErr(m.lh),
+		)
+	}
+}
+
+func handleTokenSent(lh *linkHandler) tea.Cmd {
+	return func(_ tea.Model) tea.Msg {
+		<-lh.tokenSent
+		return tokenSentMsg{}
+	}
+}
+
+func handleValidToken(lh *linkHandler) tea.Cmd {
+	return func(_ tea.Model) tea.Msg {
+		return validTokenMsg(<-lh.validToken)
+	}
+}
+
+func handleRequestDenied(lh *linkHandler) tea.Cmd {
+	return func(_ tea.Model) tea.Msg {
+		<-lh.requestDenied
+		return requestDeniedMsg{}
+	}
+}
+
+func handleLinkSuccess(lh *linkHandler) tea.Cmd {
+	return func(_ tea.Model) tea.Msg {
+		return successMsg(<-lh.success)
+	}
+}
+
+func handleTimeout(lh *linkHandler) tea.Cmd {
+	return func(_ tea.Model) tea.Msg {
+		<-lh.timeout
+		return timeoutMsg{}
+	}
+}
+
+func handleErr(lh *linkHandler) tea.Cmd {
+	return func(_ tea.Model) tea.Msg {
+		return errMsg{<-lh.err}
+	}
 }
