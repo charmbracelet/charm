@@ -159,7 +159,8 @@ var (
 		Args:    cobra.RangeArgs(0, 1),
 		Run: func(cmd *cobra.Command, args []string) {
 			lh := &TermLinkHandler{}
-			if len(args) == 0 {
+			switch len(args) {
+			case 0:
 				// Initialize a linking session
 				p := tea.NewProgram(link.Init(cc), link.Update, link.View, link.Subscriptions)
 				if err := p.Start(); err != nil {
@@ -167,12 +168,13 @@ var (
 					os.Exit(1)
 				}
 				return
-			}
-			// Join in on a linking session
-			err := cc.Link(lh, args[0])
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
+			default:
+				// Join in on a linking session
+				err := cc.Link(lh, args[0])
+				if err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
 			}
 		},
 	}
