@@ -180,23 +180,33 @@ var (
 	}
 
 	nameCmd = &cobra.Command{
-		Use:     "name USERNAME",
-		Short:   "Set your username",
-		Long:    formatLong("Set a " + common.Keyword("name") + " for your account. If the name is already taken, just run it again with a different, cooler name. Basic latin letters and numbers only, and no spaces."),
-		Args:    cobra.ExactArgs(1),
-		Example: indent.String("charm name beatrix", indentBy),
+		Use:     "name [username]",
+		Short:   "Username stuff",
+		Long:    formatLong("Print or set your " + common.Keyword("username") + ". If the name is already taken, just run it again with a different, cooler name. Basic latin letters and numbers only, and no spaces."),
+		Args:    cobra.RangeArgs(0, 1),
+		Example: indent.String("charm name\ncharm name beatrix", indentBy),
 		Run: func(cmd *cobra.Command, args []string) {
-			n := args[0]
-			u, err := cc.SetName(n)
-			if err == charm.ErrNameTaken {
-				fmt.Println("User name " + common.Code(n) + " is already taken. Try another, cooler name.")
-				os.Exit(1)
+			switch len(args) {
+			case 0:
+				u, err := cc.Bio()
+				if err != nil {
+					fmt.Print(err)
+					os.Exit(1)
+				}
+				fmt.Println(u.Name)
+			default:
+				n := args[0]
+				u, err := cc.SetName(n)
+				if err == charm.ErrNameTaken {
+					fmt.Println("User name " + common.Code(n) + " is already taken. Try another, cooler name.")
+					os.Exit(1)
+				}
+				if err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
+				fmt.Printf("@%s ID: %s\n", u.Name, u.CharmID)
 			}
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-			fmt.Printf("@%s ID: %s\n", u.Name, u.CharmID)
 		},
 	}
 )
