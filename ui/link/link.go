@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/tea"
+	"github.com/charmbracelet/teaparty/spinner"
 	"github.com/muesli/reflow/indent"
 )
 
@@ -43,9 +44,13 @@ type model struct {
 	status        status
 	alreadyLinked bool
 	err           error
+	spinner       spinner.Model
 }
 
 func initialize(cc *charm.Client, code string) func() (tea.Model, tea.Cmd) {
+	sp := spinner.NewModel()
+	sp.ForegroundColor = "241"
+	sp.Type = spinner.Dot
 	return func() (tea.Model, tea.Cmd) {
 		m := model{
 			cc:            cc,
@@ -54,6 +59,7 @@ func initialize(cc *charm.Client, code string) func() (tea.Model, tea.Cmd) {
 			status:        linkInit,
 			alreadyLinked: false,
 			err:           nil,
+			spinner:       sp,
 		}
 		return m, handleLinkRequest(m)
 	}
@@ -111,6 +117,10 @@ func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
 		m.status = linkErr
 		return m, tea.Quit
 
+	case spinner.TickMsg:
+		m.spinner, _ = spinner.Update(msg, m.spinner)
+		return m, nil
+
 	default:
 		return m, nil
 	}
@@ -122,18 +132,18 @@ func view(mdl tea.Model) string {
 		m.err = errors.New("could not perform assertion on model in view")
 	}
 
-	var s string
+	s := spinner.View(m.spinner) + " "
 
 	switch m.status {
 	case linkInit:
-		s = "Linking..."
+		s += "Linking..."
 		break
 	case linkTokenSent:
-		s = "Token sent..."
+		s += "Token sent..."
 	case linkTokenValid:
 		s += fmt.Sprintf("Token %s. Waiting for authorization...", common.Keyword("valid"))
 	case linkTokenInvalid:
-		s = fmt.Sprintf("%s token. Goodbye.", common.Keyword("invalid"))
+		s = fmt.Sprintf("%s token. Goodbye.", common.Keyword("Invalid"))
 	case linkRequestDenied:
 		s = fmt.Sprintf("Link request %s. Sorry, kid.", common.Keyword("denied"))
 	case linkSuccess:
@@ -153,7 +163,15 @@ func view(mdl tea.Model) string {
 }
 
 func subscriptions(mdl tea.Model) tea.Subs {
-	return nil
+	return tea.Subs{
+		"tick": func(mdl tea.Model) tea.Msg {
+			m, ok := mdl.(model)
+			if !ok {
+				return tea.ModelAssertionErr
+			}
+			return spinner.Sub(m.spinner)
+		},
+	}
 }
 
 // COMMANDS
