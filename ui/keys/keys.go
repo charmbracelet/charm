@@ -24,24 +24,15 @@ type Model struct {
 	pager      pager.Model
 	standalone bool
 	keys       []charm.Key
+	index      int
 }
 
 // Init is the Tea initialization function which returns an initial model and,
 // potentially, an initial command
 func Init(cc *charm.Client) func() (tea.Model, tea.Cmd) {
 	return func() (tea.Model, tea.Cmd) {
-		now := time.Now()
-
 		m := NewModel(cc)
 		m.standalone = true
-		m.keys = []charm.Key{
-			charm.Key{"hey", &now},
-			charm.Key{"yo", &now},
-			charm.Key{"hallo", &now},
-			charm.Key{"konnichiwa", &now},
-			charm.Key{"annyeong", &now},
-			charm.Key{"hola", &now},
-		}
 		return m, nil
 	}
 }
@@ -52,9 +43,23 @@ func NewModel(cc *charm.Client) Model {
 	p.PerPage = keysPerPage
 	p.InactiveDot = common.Subtle("•")
 	p.Type = pager.Dots
+
+	now := time.Now()
+	keys := []charm.Key{
+		charm.Key{"hey", &now},
+		charm.Key{"yo", &now},
+		charm.Key{"hallo", &now},
+		charm.Key{"konnichiwa", &now},
+		charm.Key{"annyeong", &now},
+		charm.Key{"hola", &now},
+	}
+	p.SetTotalPages(len(keys))
+
 	return Model{
 		cc:    cc,
 		pager: p,
+		keys:  keys,
+		index: 0,
 	}
 }
 
@@ -69,12 +74,24 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
+
 		case "ctrl+c":
 			fallthrough
 		case "q":
 			fallthrough
 		case "esc":
 			return m, tea.Quit
+
+		case "up":
+			fallthrough
+		case "k":
+			break
+
+		case "down":
+			fallthrough
+		case "j":
+			break
+
 		}
 	}
 
@@ -92,7 +109,9 @@ func View(model tea.Model) string {
 		return ""
 	}
 	s := keysView(m)
-	s += pager.View(m.pager)
+	if m.pager.TotalPages > 1 {
+		s += pager.View(m.pager)
+	}
 	return "\n" + indent.String(s+helpView(), 2)
 }
 
