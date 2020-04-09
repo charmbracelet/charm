@@ -51,7 +51,7 @@ func (lh *linkHandler) RequestDenied(l *charm.Link) {
 	lh.requestDenied <- struct{}{}
 }
 
-func (lh *linkHandler) SameAccount(l *charm.Link) {
+func (lh *linkHandler) SameUser(l *charm.Link) {
 	lh.success <- true
 }
 

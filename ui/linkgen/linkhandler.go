@@ -43,7 +43,7 @@ func (lh *linkHandler) Request(l *charm.Link) bool {
 func (lh *linkHandler) RequestDenied(l *charm.Link) {}
 
 // Successful link, but this account has already been linked
-func (lh *linkHandler) SameAccount(l *charm.Link) {
+func (lh *linkHandler) SameUser(l *charm.Link) {
 	lh.success <- true
 }
 

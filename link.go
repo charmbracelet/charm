@@ -8,8 +8,8 @@ const (
 	LinkStatusTokenSent
 	LinkStatusRequested
 	LinkStatusRequestDenied
-	LinkStatusSameAccount
-	LinkStatusDifferentAccount
+	LinkStatusSameUser
+	LinkStatusDifferentUser
 	LinkStatusSuccess
 	LinkStatusTimedOut
 	LinkStatusError
@@ -38,7 +38,7 @@ type LinkHandler interface {
 	InvalidToken(*Link)
 	Request(*Link) bool
 	RequestDenied(*Link)
-	SameAccount(*Link)
+	SameUser(*Link)
 	Success(*Link)
 	Timeout(*Link)
 	Error(*Link)
@@ -58,8 +58,8 @@ func checkLinkStatus(lh LinkHandler, l *Link) bool {
 	case LinkStatusRequestDenied:
 		lh.RequestDenied(l)
 		return false
-	case LinkStatusSameAccount:
-		lh.SameAccount(l)
+	case LinkStatusSameUser:
+		lh.SameUser(l)
 	case LinkStatusSuccess:
 		lh.Success(l)
 	case LinkStatusTimedOut:
