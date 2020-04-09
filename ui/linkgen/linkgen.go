@@ -38,6 +38,11 @@ func (err errMsg) Error() string {
 	return err.Error()
 }
 
+// NewProgram is a simple wrapper for tea.NewProgram
+func NewProgram(cc *charm.Client) *tea.Program {
+	return tea.NewProgram(Init(cc), Update, View, Subscriptions)
+}
+
 // Model is the Tea model for the link initiator program
 type Model struct {
 	lh            *linkHandler
