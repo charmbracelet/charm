@@ -256,6 +256,7 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	case keysChoice:
 		m.state = browsingKeys
 		m.menuChoice = unsetChoice
+		cmd = tea.CmdMap(keys.LoadKeys, m.keys)
 	case setUsernameChoice:
 		m.state = setUsername
 		m.menuChoice = unsetChoice

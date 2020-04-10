@@ -108,22 +108,6 @@ var (
 					fmt.Println(err)
 					os.Exit(1)
 				}
-				/*
-					ak, err := cc.AuthorizedKeysWithMetadata()
-					if err != nil {
-						fmt.Println(err)
-						os.Exit(1)
-					}
-					var s string
-					for _, k := range ak {
-						s += fmt.Sprintf(
-							"%s\n%s\n\n",
-							k.Key,
-							common.Subtle("Added "+k.CreatedAt.Format("Mon 2 Jan 2006 15:04:05 MST")),
-						)
-					}
-					fmt.Println(strings.TrimSpace(s))
-				*/
 			} else {
 				ak, err := cc.AuthorizedKeys()
 				if err != nil {

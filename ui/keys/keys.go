@@ -2,7 +2,6 @@ package keys
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
@@ -27,6 +26,12 @@ func NewProgram(cc *charm.Client) *tea.Program {
 	return tea.NewProgram(Init(cc), Update, View, Subscriptions)
 }
 
+// MSG
+
+type keysLoadedMsg []charm.Key
+
+// MODEL
+
 // Model is the Tea state model for this user interface
 type Model struct {
 	cc           *charm.Client
@@ -50,43 +55,35 @@ func (m *Model) UpdatePaging(msg tea.Msg) {
 	m.index = min(m.index, numItems-1)
 }
 
-// Init is the Tea initialization function which returns an initial model and,
-// potentially, an initial command
-func Init(cc *charm.Client) func() (tea.Model, tea.Cmd) {
-	return func() (tea.Model, tea.Cmd) {
-		m := NewModel(cc)
-		m.standalone = true
-		return m, nil
-	}
-}
-
 // NewModel creates a new model with defaults
 func NewModel(cc *charm.Client) Model {
 	p := pager.NewModel()
 	p.PerPage = keysPerPage
 	p.InactiveDot = common.Subtle("•")
 	p.Type = pager.Dots
-
-	now := time.Now()
-	keys := []charm.Key{
-		charm.Key{"AAAAB3NzaC1yc2EAAAADAQABAAABgQDQ3mp1RT5MKT4i6ROZ59NQDds5IJR8c7Lm0Vc5p+E0LFTPveP/crWWpfdZNvYSu0nmAuRVcbtyol9y5Q7/WVoGdu5zi4f+mRzsUMFsgeKBqJNeJ+X8Y8kpcP6k78iYN82sROk/WddtnwXfEw+rsaAyYe7h4Hp4QZ/GCYCpi5KzNfbg0/rOlllPu387izcftixtXelO4JccaGfycgeQH8ylWpB5cqrK9Uqj86PykkwsTEM4MGJGU4FYnhl5RMxzPkd9Xt09YBZJHErbFjX9peSVCPQe7GUi+YDtxR1C4XRfNeXQq8AYiPbW82Y1Q00EInvDPAVv2+CQs/pKSAmWX61G5T2LbuXpNuwD2M7Jps1UlLCgPKE6G4J6I5TT5LOkwQNDiZxv6LGMhco7ji/jkFpXIvc0yFEH8zzswgheDEqnv9nqMQ6C6XcP0Au6ygThspn/eC75ZxLpd624Dvne9JRtpmPdVb45+k1dyDMYwf3vCgULXYrPVU7JZctu8dkzjQE=", &now},
-		charm.Key{"hej", &now},
-		charm.Key{"hallo", &now},
-		charm.Key{"konnichiwa", &now},
-		charm.Key{"annyeong", &now},
-		charm.Key{"hola", &now},
-	}
-	p.SetTotalPages(len(keys))
-
 	return Model{
 		cc:    cc,
 		pager: p,
-		keys:  keys,
+		keys:  []charm.Key{},
 		index: 0,
 		Exit:  false,
 		Quit:  false,
 	}
 }
+
+// INIT
+
+// Init is the Tea initialization function which returns an initial model and,
+// potentially, an initial command
+func Init(cc *charm.Client) func() (tea.Model, tea.Cmd) {
+	return func() (tea.Model, tea.Cmd) {
+		m := NewModel(cc)
+		m.standalone = true
+		return m, LoadKeys
+	}
+}
+
+// UPDATE
 
 // Update is the Tea update function which handles incoming IO
 func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
@@ -152,6 +149,14 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		}
+
+	case tea.ErrMsg:
+		// TODO: render error
+		return m, nil
+
+	case keysLoadedMsg:
+		m.index = 0
+		m.keys = msg
 	}
 
 	m.UpdatePaging(msg)
@@ -165,6 +170,8 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 	return m, nil
 }
+
+// VIEW
 
 // View renders the current UI into a string
 func View(model tea.Model) string {
@@ -181,7 +188,7 @@ func View(model tea.Model) string {
 	if m.promptDelete {
 		s += promptDeleteView()
 	} else {
-		s += helpView()
+		s += helpView(m)
 	}
 	s = fmt.Sprintf("%s\n", s)
 	if m.standalone {
@@ -191,10 +198,6 @@ func View(model tea.Model) string {
 }
 
 func keysView(m Model) string {
-	if len(m.keys) == 0 {
-		return ""
-	}
-
 	var (
 		s          string
 		state      = keyNormal
@@ -225,8 +228,18 @@ func keysView(m Model) string {
 	return s
 }
 
-func helpView() string {
-	return common.HelpView("j/k, ↑/↓: choose • h/l, ←/→: page, x: delete, esc: exit")
+func helpView(m Model) string {
+	var s string
+	if len(m.keys) > 1 {
+		s += "j/k, ↑/↓: choose • "
+	}
+	if m.pager.TotalPages > 1 {
+		s += "h/l, ←/→: page • "
+	}
+	if len(m.keys) > 1 {
+		s += "x: delete • "
+	}
+	return common.HelpView(s + "esc: exit")
 }
 
 func promptDeleteView() string {
@@ -234,9 +247,29 @@ func promptDeleteView() string {
 		te.String("(y/N)").Foreground(dullHotPink).String()
 }
 
+// SUBSCRIPTIONS
+
 func Subscriptions(model tea.Model) tea.Subs {
 	return nil
 }
+
+// COMMANDS
+
+// LoadKeys loads the current set of keys from the server
+func LoadKeys(model tea.Model) tea.Msg {
+	m, ok := model.(Model)
+	if !ok {
+		return tea.ModelAssertionErr
+	}
+	m.cc.RenewSession()
+	ak, err := m.cc.AuthorizedKeysWithMetadata()
+	if err != nil {
+		return tea.NewErrMsgFromErr(err)
+	}
+	return keysLoadedMsg(ak)
+}
+
+// Utils
 
 func min(a, b int) int {
 	if a < b {
