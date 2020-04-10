@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/tea"
 	"github.com/charmbracelet/teaparty/pager"
+	"github.com/charmbracelet/teaparty/spinner"
 	"github.com/muesli/reflow/indent"
 	te "github.com/muesli/termenv"
 )
@@ -37,9 +38,11 @@ type Model struct {
 	cc           *charm.Client
 	pager        pager.Model
 	standalone   bool
+	loading      bool
 	keys         []charm.Key
 	index        int
 	promptDelete bool // have we prompted to delete the item at the current index?
+	spinner      spinner.Model
 	Exit         bool
 	Quit         bool
 }
@@ -61,13 +64,21 @@ func NewModel(cc *charm.Client) Model {
 	p.PerPage = keysPerPage
 	p.InactiveDot = common.Subtle("•")
 	p.Type = pager.Dots
+
+	s := spinner.NewModel()
+	s.Type = spinner.Dot
+	s.ForegroundColor = "241"
+
 	return Model{
-		cc:    cc,
-		pager: p,
-		keys:  []charm.Key{},
-		index: 0,
-		Exit:  false,
-		Quit:  false,
+		cc:           cc,
+		pager:        p,
+		loading:      true,
+		keys:         []charm.Key{},
+		index:        0,
+		promptDelete: false,
+		spinner:      s,
+		Exit:         false,
+		Quit:         false,
 	}
 }
 
@@ -155,8 +166,13 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case keysLoadedMsg:
+		m.loading = false
 		m.index = 0
 		m.keys = msg
+
+	case spinner.TickMsg:
+		m.spinner, _ = spinner.Update(msg, m.spinner)
+		return m, nil
 	}
 
 	m.UpdatePaging(msg)
@@ -180,21 +196,36 @@ func View(model tea.Model) string {
 		// TODO: handle error
 		return ""
 	}
-	s := "Here are the keys linked to your Charm account.\n\n"
+
+	var s string
+
+	if m.loading {
+		s += loadingView(m)
+	} else {
+		s += "Here are the keys linked to your Charm account.\n\n"
+	}
+
+	// Keys
 	s += keysView(m)
 	if m.pager.TotalPages > 1 {
 		s += pager.View(m.pager)
 	}
+
+	// Footer
 	if m.promptDelete {
 		s += promptDeleteView()
 	} else {
 		s += helpView(m)
 	}
-	s = fmt.Sprintf("%s\n", s)
+
 	if m.standalone {
-		return indent.String("\n"+s, 2)
+		return indent.String(fmt.Sprintf("\n%s\n", s), 2)
 	}
 	return s
+}
+
+func loadingView(m Model) string {
+	return fmt.Sprintf("%s Loading...\n\n", spinner.View(m.spinner))
 }
 
 func keysView(m Model) string {
@@ -250,6 +281,26 @@ func promptDeleteView() string {
 // SUBSCRIPTIONS
 
 func Subscriptions(model tea.Model) tea.Subs {
+	m, ok := model.(Model)
+	if !ok {
+		return nil
+	}
+	if m.loading {
+		return tea.Subs{
+			"spinner-tick": Spin(m),
+		}
+	}
+	return nil
+}
+
+func Spin(model tea.Model) tea.Sub {
+	m, ok := model.(Model)
+	if !ok {
+		return nil
+	}
+	if m.loading {
+		return tea.SubMap(spinner.Sub, m.spinner)
+	}
 	return nil
 }
 
