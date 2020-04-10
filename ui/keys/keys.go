@@ -67,8 +67,8 @@ func NewModel(cc *charm.Client) Model {
 
 	now := time.Now()
 	keys := []charm.Key{
-		charm.Key{"hey", &now},
-		charm.Key{"yo", &now},
+		charm.Key{"AAAAB3NzaC1yc2EAAAADAQABAAABgQDQ3mp1RT5MKT4i6ROZ59NQDds5IJR8c7Lm0Vc5p+E0LFTPveP/crWWpfdZNvYSu0nmAuRVcbtyol9y5Q7/WVoGdu5zi4f+mRzsUMFsgeKBqJNeJ+X8Y8kpcP6k78iYN82sROk/WddtnwXfEw+rsaAyYe7h4Hp4QZ/GCYCpi5KzNfbg0/rOlllPu387izcftixtXelO4JccaGfycgeQH8ylWpB5cqrK9Uqj86PykkwsTEM4MGJGU4FYnhl5RMxzPkd9Xt09YBZJHErbFjX9peSVCPQe7GUi+YDtxR1C4XRfNeXQq8AYiPbW82Y1Q00EInvDPAVv2+CQs/pKSAmWX61G5T2LbuXpNuwD2M7Jps1UlLCgPKE6G4J6I5TT5LOkwQNDiZxv6LGMhco7ji/jkFpXIvc0yFEH8zzswgheDEqnv9nqMQ6C6XcP0Au6ygThspn/eC75ZxLpd624Dvne9JRtpmPdVb45+k1dyDMYwf3vCgULXYrPVU7JZctu8dkzjQE=", &now},
+		charm.Key{"hej", &now},
 		charm.Key{"hallo", &now},
 		charm.Key{"konnichiwa", &now},
 		charm.Key{"annyeong", &now},
