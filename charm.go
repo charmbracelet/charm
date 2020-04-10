@@ -165,6 +165,13 @@ func (cc *Client) AuthorizedKeysWithMetadata() ([]Key, error) {
 func (cc *Client) UnlinkAuthorizedKey(s string) error {
 	defer cc.session.Close()
 	k := Key{Key: s}
+	in, err := cc.session.StdinPipe()
+	if err != nil {
+		return err
+	}
+	if err := json.NewEncoder(in).Encode(k); err != nil {
+		return err
+	}
 	j, err := json.Marshal(&k)
 	if err != nil {
 		return err
@@ -173,8 +180,7 @@ func (cc *Client) UnlinkAuthorizedKey(s string) error {
 	if err != nil {
 		return err
 	}
-	// TODO: check response for more detailed errors
-	if len(b) == 0 {
+	if len(b) != 0 {
 		return ErrCouldNotUnlinkKey
 	}
 	return nil

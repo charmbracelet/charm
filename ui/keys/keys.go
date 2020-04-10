@@ -38,6 +38,7 @@ type unlinkedKeyMsg int
 type Model struct {
 	cc           *charm.Client
 	pager        pager.Model
+	err          error
 	standalone   bool
 	loading      bool
 	keys         []charm.Key
@@ -73,6 +74,7 @@ func NewModel(cc *charm.Client) Model {
 	return Model{
 		cc:           cc,
 		pager:        p,
+		err:          nil,
 		loading:      true,
 		keys:         []charm.Key{},
 		index:        0,
@@ -163,7 +165,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.ErrMsg:
-		// TODO: render error
+		m.err = msg
 		return m, nil
 
 	case keysLoadedMsg:
@@ -200,6 +202,10 @@ func View(model tea.Model) string {
 	if !ok {
 		// TODO: handle error
 		return ""
+	}
+
+	if m.err != nil {
+		return m.err.Error()
 	}
 
 	var s string
