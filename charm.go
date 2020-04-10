@@ -30,6 +30,9 @@ var ErrNameTaken = errors.New("name already taken")
 // ErrNameInvalid is used when a username is invalid
 var ErrNameInvalid = errors.New("invalid name")
 
+// ErrCouldNotUnlinkKey is used when a key can't be deleted
+var ErrCouldNotUnlinkKey = errors.New("could not unlink key")
+
 // Config contains the Charm client configuration
 type Config struct {
 	IDHost      string `env:"CHARM_ID_HOST" default:"id.dev.charm.sh"`
@@ -61,7 +64,7 @@ type User struct {
 // Key contains data and metadata for an SSH key
 type Key struct {
 	Key       string     `json:"key"`
-	CreatedAt *time.Time `json:"created_at"`
+	CreatedAt *time.Time `json:"created_at,omitempty"`
 }
 
 type sshSession struct {
@@ -157,6 +160,24 @@ func (cc *Client) AuthorizedKeysWithMetadata() ([]Key, error) {
 	var k []Key
 	err = json.Unmarshal(b, &k)
 	return k, err
+}
+
+func (cc *Client) UnlinkAuthorizedKey(s string) error {
+	defer cc.session.Close()
+	k := Key{Key: s}
+	j, err := json.Marshal(&k)
+	if err != nil {
+		return err
+	}
+	b, err := cc.session.Output(fmt.Sprintf("api-unlink %s", string(j)))
+	if err != nil {
+		return err
+	}
+	// TODO: check response for more detailed errors
+	if len(b) == 0 {
+		return ErrCouldNotUnlinkKey
+	}
+	return nil
 }
 
 // Link joins in on a linking session initiated by LinkGen

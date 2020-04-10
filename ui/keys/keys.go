@@ -30,6 +30,7 @@ func NewProgram(cc *charm.Client) *tea.Program {
 // MSG
 
 type keysLoadedMsg []charm.Key
+type unlinkedKeyMsg int
 
 // MODEL
 
@@ -157,7 +158,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 			if m.promptDelete {
 				// TODO: return deletion command, actually delete, and so on
 				m.promptDelete = false
-				return m, nil
+				return m, tea.CmdMap(unlinkKey, m)
 			}
 		}
 
@@ -169,6 +170,10 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		m.loading = false
 		m.index = 0
 		m.keys = msg
+
+	case unlinkedKeyMsg:
+		m.keys = append(m.keys[:m.index], m.keys[m.index+1:]...)
+		return m, nil
 
 	case spinner.TickMsg:
 		m.spinner, _ = spinner.Update(msg, m.spinner)
@@ -318,6 +323,20 @@ func LoadKeys(model tea.Model) tea.Msg {
 		return tea.NewErrMsgFromErr(err)
 	}
 	return keysLoadedMsg(ak)
+}
+
+// unlinkKey deletes the selected key
+func unlinkKey(model tea.Model) tea.Msg {
+	m, ok := model.(Model)
+	if !ok {
+		return tea.ModelAssertionErr
+	}
+	m.cc.RenewSession()
+	err := m.cc.UnlinkAuthorizedKey(m.keys[m.index].Key)
+	if err != nil {
+		return tea.NewErrMsgFromErr(err)
+	}
+	return unlinkedKeyMsg(m.index)
 }
 
 // Utils
