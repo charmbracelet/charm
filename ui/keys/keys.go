@@ -24,7 +24,7 @@ const (
 
 // NewProgram creates a new Tea program
 func NewProgram(cc *charm.Client) *tea.Program {
-	return tea.NewProgram(Init(cc), Update, View, nil)
+	return tea.NewProgram(Init(cc), Update, View, Subscriptions)
 }
 
 // Model is the Tea state model for this user interface
@@ -35,6 +35,8 @@ type Model struct {
 	keys         []charm.Key
 	index        int
 	promptDelete bool // have we prompted to delete the item at the current index?
+	Exit         bool
+	Quit         bool
 }
 
 func (m *Model) UpdatePaging(msg tea.Msg) {
@@ -81,6 +83,8 @@ func NewModel(cc *charm.Client) Model {
 		pager: p,
 		keys:  keys,
 		index: 0,
+		Exit:  false,
+		Quit:  false,
 	}
 }
 
@@ -97,11 +101,19 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 
 		case "ctrl+c":
-			fallthrough
+			m.Quit = true
+			if m.standalone {
+				return m, tea.Quit
+			}
+			return m, nil
 		case "q":
 			fallthrough
 		case "esc":
-			return m, tea.Quit
+			if m.standalone {
+				return m, tea.Quit
+			}
+			m.Exit = true
+			return m, nil
 
 		// Select individual items
 		case "up":
@@ -161,19 +173,21 @@ func View(model tea.Model) string {
 		// TODO: handle error
 		return ""
 	}
-	s := keysView(m)
+	s := "Here are the keys linked to your Charm account.\n\n"
+	s += keysView(m)
 	if m.pager.TotalPages > 1 {
 		s += pager.View(m.pager)
 	}
 	if m.promptDelete {
-		s += promptDelete()
+		s += promptDeleteView()
 	} else {
 		s += helpView()
 	}
-	return indent.String(
-		fmt.Sprintf("\n%s\n", s),
-		2,
-	)
+	s = fmt.Sprintf("%s\n", s)
+	if m.standalone {
+		return indent.String("\n"+s, 2)
+	}
+	return s
 }
 
 func keysView(m Model) string {
@@ -215,9 +229,13 @@ func helpView() string {
 	return common.HelpView("j/k, ↑/↓: choose • h/l, ←/→: page, x: delete, esc: exit")
 }
 
-func promptDelete() string {
+func promptDeleteView() string {
 	return te.String("\n\nDelete this key? ").Foreground(hotPink).String() +
 		te.String("(y/N)").Foreground(dullHotPink).String()
+}
+
+func Subscriptions(model tea.Model) tea.Subs {
+	return nil
 }
 
 func min(a, b int) int {

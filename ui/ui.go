@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/charm/ui/info"
+	"github.com/charmbracelet/charm/ui/keys"
 	"github.com/charmbracelet/charm/ui/linkgen"
 	"github.com/charmbracelet/charm/ui/username"
 	"github.com/charmbracelet/tea"
@@ -38,6 +39,7 @@ const (
 	fetching state = iota
 	ready
 	linking
+	browsingKeys
 	setUsername
 	quitting
 )
@@ -47,6 +49,7 @@ type menuChoice int
 
 const (
 	linkChoice menuChoice = iota
+	keysChoice
 	setUsernameChoice
 	exitChoice
 	unsetChoice // set when no choice has been made
@@ -55,6 +58,7 @@ const (
 // menu text corresponding to menu choices. these are presented to the user
 var menuChoices = map[menuChoice]string{
 	linkChoice:        "Link a machine",
+	keysChoice:        "Linked keys",
 	setUsernameChoice: "Set Username",
 	exitChoice:        "Exit",
 }
@@ -80,6 +84,7 @@ type Model struct {
 	info     info.Model
 	link     linkgen.Model
 	username username.Model
+	keys     keys.Model
 }
 
 // INIT
@@ -100,6 +105,7 @@ func initialize(cc *charm.Client) func() (tea.Model, tea.Cmd) {
 			info:          info.NewModel(cc),
 			link:          linkgen.NewModel(cc),
 			username:      username.NewModel(cc),
+			keys:          keys.NewModel(cc),
 		}
 		return m, tea.CmdMap(info.GetBio, m.info)
 	}
@@ -215,6 +221,22 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 			m.state = quitting
 			return m, tea.Quit
 		}
+	case browsingKeys:
+		var newModel tea.Model
+		newModel, cmd = keys.Update(msg, keys.Model(m.keys))
+		newKeysModel, ok := newModel.(keys.Model)
+		if !ok {
+			m.err = errors.New("could not perform model assertion on keys model")
+			return m, nil
+		}
+		m.keys = newKeysModel
+		if m.keys.Exit {
+			m.keys = keys.NewModel(m.cc)
+			m.state = ready
+		} else if m.keys.Quit {
+			m.state = quitting
+			return m, tea.Quit
+		}
 	case setUsername:
 		m.username, cmd = username.Update(msg, m.username)
 		if m.username.Done {
@@ -231,6 +253,9 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		m.state = linking
 		m.menuChoice = unsetChoice
 		cmd = tea.Batch(linkgen.HandleLinkRequest(m.link)...)
+	case keysChoice:
+		m.state = browsingKeys
+		m.menuChoice = unsetChoice
 	case setUsernameChoice:
 		m.state = setUsername
 		m.menuChoice = unsetChoice
@@ -261,6 +286,8 @@ func view(model tea.Model) string {
 		s += footerView(m)
 	case linking:
 		s += linkgen.View(m.link)
+	case browsingKeys:
+		s += keys.View(m.keys)
 	case setUsername:
 		s += username.View(m.username)
 	case quitting:
