@@ -58,7 +58,7 @@ const (
 // menu text corresponding to menu choices. these are presented to the user
 var menuChoices = map[menuChoice]string{
 	linkChoice:        "Link a machine",
-	keysChoice:        "Linked keys",
+	keysChoice:        "Manage linked keys",
 	setUsernameChoice: "Set Username",
 	exitChoice:        "Exit",
 }
