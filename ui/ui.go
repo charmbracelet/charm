@@ -129,6 +129,12 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 
+		switch msg.Type {
+		case tea.KeyCtrlC:
+			m.state = quitting
+			return m, tea.Quit
+		}
+
 		if m.state == ready { // Process keys for the menu
 
 			switch msg.String() {
@@ -137,8 +143,6 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 			case "q":
 				fallthrough
 			case "esc":
-				fallthrough
-			case "ctrl+c":
 				m.state = quitting
 				return m, tea.Quit
 
