@@ -23,7 +23,7 @@ func SelectableKeyValueView(selected bool, stuff ...string) string {
 		pipeColor = "241"
 	)
 	if selected {
-		pipeColor = yellowGreen
+		pipeColor = YellowGreen
 	}
 	for i := 0; i < len(stuff); i++ {
 		if i%2 == 0 {
@@ -37,7 +37,7 @@ func SelectableKeyValueView(selected bool, stuff ...string) string {
 			continue
 		}
 		// odd
-		s += te.String(stuff[i]).Foreground(Color(purpleFg)).String()
+		s += te.String(stuff[i]).Foreground(Color(PurpleFg)).String()
 		s += "\n"
 		index++
 	}

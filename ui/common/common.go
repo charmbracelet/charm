@@ -5,20 +5,22 @@ import (
 	te "github.com/muesli/termenv"
 )
 
+const (
+	Cream             = "#FFFDF5"
+	PurpleBg          = "#5A56E0"
+	PurpleFg          = "#7571F9"
+	Fuschia           = "#EE6FF8"
+	YellowGreen       = "#ECFD65"
+	unfocusedButtonBg = "#827983"
+	focusedButtonBg   = Fuschia
+
+	wrapAt = 60
+)
+
 var (
 	// Color wraps termenv.ColorProfile.Color, which produces a termenv color
 	// for use in termenv styling.
 	Color func(string) te.Color = te.ColorProfile().Color
-
-	cream             = "#FFFDF5"
-	purpleBg          = "#5A56E0"
-	purpleFg          = "#7571F9"
-	fuschia           = "#EE6FF8"
-	yellowGreen       = "#ECFD65"
-	unfocusedButtonBg = "#827983"
-	focusedButtonBg   = fuschia
-
-	wrapAt = 60
 )
 
 // Wrap wraps lines at a predefined width via package muesli/reflow.
@@ -28,7 +30,7 @@ func Wrap(s string) string {
 
 // Keyword applies special formatting to imporant words or phrases
 func Keyword(s string) string {
-	return te.String(s).Foreground(Color(fuschia)).String()
+	return te.String(s).Foreground(Color(Fuschia)).String()
 }
 
 // Code applies special formatting to strings indeded to read as code
@@ -77,7 +79,7 @@ func CancelButtonView(focused bool, defaultButton bool) string {
 }
 
 func buttonStyling(str string, underline, focused bool) string {
-	var s te.Style = te.String(str).Foreground(Color(cream))
+	var s te.Style = te.String(str).Foreground(Color(Cream))
 	if focused {
 		s = s.Background(Color(focusedButtonBg))
 	} else {
