@@ -82,21 +82,38 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		case "esc":
 			return m, tea.Quit
 
+		// Select individual items
 		case "up":
 			fallthrough
 		case "k":
-			break
-
+			// Move up
+			m.index--
+			if m.index < 0 && m.pager.Page > 0 {
+				m.index = m.pager.PerPage - 1
+				m.pager.PrevPage()
+			}
+			m.index = max(0, m.index)
 		case "down":
 			fallthrough
 		case "j":
-			break
-
+			// Move down
+			numItems := m.pager.ItemsOnPage(len(m.keys))
+			m.index++
+			if m.index > numItems-1 && m.pager.Page < m.pager.TotalPages-1 {
+				m.index = 0
+				m.pager.NextPage()
+			}
+			m.index = min(numItems-1, m.index)
 		}
 	}
 
+	// Handle paging
 	m.pager.SetTotalPages(len(m.keys))
 	m.pager, _ = pager.Update(msg, m.pager)
+
+	// If selected item is out of bounds, put it in bounds
+	numItems := m.pager.ItemsOnPage(len(m.keys))
+	m.index = min(m.index, numItems-1)
 
 	return m, nil
 }
@@ -112,7 +129,11 @@ func View(model tea.Model) string {
 	if m.pager.TotalPages > 1 {
 		s += pager.View(m.pager)
 	}
-	return "\n" + indent.String(s+helpView(), 2)
+	s += helpView()
+	return indent.String(
+		fmt.Sprintf("\n%s\n", s),
+		2,
+	)
 }
 
 func keysView(m Model) string {
@@ -124,8 +145,8 @@ func keysView(m Model) string {
 		start, end = m.pager.GetSliceBounds(len(m.keys))
 		slice      = m.keys[start:end]
 	)
-	for _, v := range slice {
-		s += fmt.Sprintf("%s\n\n", keyView(v))
+	for i := 0; i < len(slice); i++ {
+		s += fmt.Sprintf("%s\n\n", keyView(i == m.index, slice[i]))
 	}
 	if len(slice) < keysPerPage {
 		for i := len(slice); i < keysPerPage; i++ {
@@ -135,10 +156,24 @@ func keysView(m Model) string {
 	return s
 }
 
-func keyView(key charm.Key) string {
-	return common.KeyValueView("Key", key.Key, "Created", key.CreatedAt.Format("Mon 2 Jan 2006 15:04:05 MST"))
+func keyView(selected bool, key charm.Key) string {
+	return common.SelectableKeyValueView(selected, "Key", key.Key, "Added", key.CreatedAt.Format("Mon 2 Jan 2006 15:04:05 MST"))
 }
 
 func helpView() string {
 	return common.HelpView("j/k, ↑/↓: choose • h/l, ←/→: page, x: delete, esc: exit")
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
