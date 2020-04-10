@@ -36,8 +36,10 @@ func isTTY() bool {
 
 var (
 	identityFile string
-	cfg          *charm.Config
-	cc           *charm.Client
+	simpleOutput bool
+
+	cfg *charm.Config
+	cc  *charm.Client
 
 	rootCmd = &cobra.Command{
 		Use:   "charm",
@@ -103,18 +105,20 @@ var (
 		Long:  formatLong("Charm accounts are powered by " + common.Keyword("SSH keys") + ". This command prints all of the keys linked to your account. To remove keys use the main " + common.Code("charm") + " interface."),
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			if isTTY() {
+			if isTTY() && !simpleOutput {
 				if err := keys.NewProgram(cc).Start(); err != nil {
 					fmt.Println(err)
 					os.Exit(1)
 				}
 			} else {
-				ak, err := cc.AuthorizedKeys()
+				ak, err := cc.AuthorizedKeysWithMetadata()
 				if err != nil {
 					fmt.Println(err)
 					os.Exit(1)
 				}
-				fmt.Println(ak)
+				for _, v := range ak {
+					fmt.Println(v.Key)
+				}
 			}
 		},
 	}
@@ -210,7 +214,9 @@ func initCharmClient() {
 
 func main() {
 	cobra.OnInitialize(initCharmClient)
+
 	rootCmd.PersistentFlags().StringVarP(&identityFile, "identity", "i", "", "path to identity file (that is, an ssh private key)")
+	keysCmd.Flags().BoolVarP(&simpleOutput, "simple", "s", false, "simple, non-interactive output (good for scripts)")
 	rootCmd.AddCommand(bioCmd, idCmd, jwtCmd, keysCmd, linkCmd, nameCmd)
 
 	if err := rootCmd.Execute(); err != nil {
