@@ -232,6 +232,9 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 	case linkTimeoutMsg:
 		m.status = linkTimedOut
+		if m.standalone {
+			return m, tea.Quit
+		}
 		return m, nil
 
 	case spinner.TickMsg:
@@ -305,7 +308,12 @@ func View(model tea.Model) string {
 		}
 	case linkTimedOut:
 		s += preamble
-		s += "Link request timed out." + common.HelpView("Press any key to exit...")
+		s += "Link request timed out."
+		if m.standalone {
+			s += "\n"
+		} else {
+			s += common.HelpView("Press any key to exit...")
+		}
 	case quitting:
 		s += "Linking canceled.\n"
 	}
