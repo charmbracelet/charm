@@ -1,21 +1,104 @@
 package charm
 
 import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
-func TestGenerateSSHKeys(t *testing.T) {
-	k, err := NewSSHKeyPair()
-	if err != nil {
-		t.Fatal(err)
+func TestSSHKeyGeneration(t *testing.T) {
+	var (
+		bitSize = 4096
+		k       *SSHKeyPair
+	)
+
+	if testing.Short() {
+		bitSize = 64
+		t.Logf("Using silly %d-bit key size for quicker testing", bitSize)
 	}
 
-	// TODO: is there a good way to validate these? Lengths seem to vary a bit,
-	// so far now we're just asserting that the keys indeed exist.
-	if len(k.PrivateKeyPEM) == 0 {
-		t.Error("error creating SSH private key PEM; key is 0 bytes")
+	// Create temp directory for keys
+	dir, err := ioutil.TempDir("", "*")
+	if err != nil {
+		t.Errorf("error creating temp directory (%s): %v\n", dir, err)
 	}
-	if len(k.PublicKey) == 0 {
-		t.Error("error creating SSH public key; key is 0 bytes")
+
+	// Cleanup temp directory after testing
+	// NOTE: this is Go 1.14+ only
+	t.Cleanup(func() {
+		if err := os.RemoveAll(dir); err != nil {
+			t.Errorf("error cleaning up temp directory (%s): %v\n", dir, err)
+		}
+	})
+
+	t.Run("test generate SSH keys", func(t *testing.T) {
+		k, err = newSSHKeyPairWithBitSize(bitSize)
+		if err != nil {
+			t.Errorf("error creating ssh key pair: %v", err)
+		}
+
+		// TODO: is there a good way to validate these? Lengths seem to vary a bit,
+		// so far now we're just asserting that the keys indeed exist.
+		if len(k.PrivateKeyPEM) == 0 {
+			t.Error("error creating SSH private key PEM; key is 0 bytes")
+		}
+		if len(k.PublicKey) == 0 {
+			t.Error("error creating SSH public key; key is 0 bytes")
+		}
+	})
+
+	t.Run("test write SSH keys", func(t *testing.T) {
+		thisDir := filepath.Join(dir, "ssh1")
+		k.keyDir = thisDir
+		if err := k.WriteKeys(); err != nil {
+			t.Errorf("error writing SSH keys to %s: %v", thisDir, err)
+		}
+		if testing.Verbose() {
+			t.Logf("Wrote keys to %s", thisDir)
+		}
+	})
+
+	t.Run("test not overwriting existing keys", func(t *testing.T) {
+		thisDir := filepath.Join(dir, "ssh2")
+		filePath := filepath.Join(thisDir, k.filename)
+		k.keyDir = thisDir
+
+		// Private key
+		if !touchTestFile(t, filePath) {
+			return
+		}
+		if err := k.WriteKeys(); err == nil {
+			t.Errorf("we wrote the private key over an existing file, but we were not supposed to")
+		}
+		if err := os.Remove(filePath); err != nil {
+			t.Errorf("could not remove file %s", filePath)
+		}
+
+		// Public key
+		if !touchTestFile(t, filePath+".pub") {
+			return
+		}
+		if err := k.WriteKeys(); err == nil {
+			t.Errorf("we wrote the public key over an existing file, but we were not supposed to")
+		}
+
+	})
+}
+
+// touchTestFile is a utility function we're using in testing
+func touchTestFile(t *testing.T, path string) (ok bool) {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		t.Errorf("could not create directory %s: %v", dir, err)
+		return false
 	}
+	if _, err := os.Create(path); err != nil {
+		t.Errorf("could not create file %s", path)
+		return false
+	}
+	if testing.Verbose() {
+		t.Logf("created dummy file at %s", path)
+	}
+	return true
 }

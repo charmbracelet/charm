@@ -1,9 +1,14 @@
 package charm
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
+
+func TestMain(m *testing.M) {
+	os.Exit(m.Run())
+}
 
 func TestNameValidation(t *testing.T) {
 	if ValidateName("") {
