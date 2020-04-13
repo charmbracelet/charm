@@ -6,37 +6,37 @@ import (
 )
 
 func TestNameValidation(t *testing.T) {
-	if validateName("") {
+	if ValidateName("") {
 		t.Error("validated the empty string, which should have failed")
 	}
-	if !validateName("a") {
+	if !ValidateName("a") {
 		t.Error("failed validating the single character 'a', which should have passed")
 	}
-	if !validateName("A") {
+	if !ValidateName("A") {
 		t.Error("failed validating the single character 'A', which should have passed")
 	}
-	if validateName("épicerie") {
+	if ValidateName("épicerie") {
 		t.Error("validated a string with an 'é', which should have failed")
 	}
-	if validateName("straße") {
+	if ValidateName("straße") {
 		t.Error("validated a string with an 'ß', which should have failed")
 	}
-	if validateName("mr.green") {
+	if ValidateName("mr.green") {
 		t.Error("validated a string with a period, which should have failed")
 	}
-	if validateName("mister green") {
+	if ValidateName("mister green") {
 		t.Error("validated a string with a space, which should have failed")
 	}
-	if validateName("茶") {
+	if ValidateName("茶") {
 		t.Error("validated the string '茶', which should have failed")
 	}
-	if validateName("😀") {
+	if ValidateName("😀") {
 		t.Error("validated an emoji, which should have failed")
 	}
-	if !validateName(strings.Repeat("x", 64)) {
-		t.Error("falied validating a 64-character-string, which should have passed")
+	if !ValidateName(strings.Repeat("x", 50)) {
+		t.Error("falied validating a 50-character-string, which should have passed")
 	}
-	if validateName(strings.Repeat("x", 65)) {
-		t.Error("validated a 65-character-string, which should have failed")
+	if ValidateName(strings.Repeat("x", 51)) {
+		t.Error("validated a 51-character-string, which should have failed")
 	}
 }
