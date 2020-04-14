@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
+	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -45,12 +47,17 @@ func NewSSHKeyPair() (*SSHKeyPair, error) {
 // newSSHKeyPairWithBitSize returns an SSH key pair with a given bit size. This
 // is implemented for quick testing only. In production, use NewSSHKeyPair.
 func newSSHKeyPairWithBitSize(bitSize int) (*SSHKeyPair, error) {
+	homeDir, err := homedir.Dir()
+	if err != nil {
+		return nil, err
+	}
+
 	s := &SSHKeyPair{
 		bitSize:  bitSize,
-		keyDir:   "~/.ssh",
+		keyDir:   filepath.Join(homeDir, ".ssh"),
 		filename: "id_rsa",
 	}
-	err := s.GenerateKeys()
+	err = s.GenerateKeys()
 	if err != nil {
 		return nil, err
 	}
