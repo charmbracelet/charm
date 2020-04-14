@@ -162,7 +162,7 @@ func writeKeyToFile(keyBytes []byte, path string) error {
 	if os.IsNotExist(err) {
 		return ioutil.WriteFile(path, keyBytes, 0600)
 	}
-	return FilesystemErr{fmt.Errorf("file %s already exists", keyBytes)}
+	return FilesystemErr{fmt.Errorf("file %s already exists", path)}
 }
 
 // createSSHDirectory creates a directory if it doesn't exist, and makes

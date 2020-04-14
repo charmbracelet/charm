@@ -76,7 +76,7 @@ func View(m Model) string {
 	if m.Err != nil {
 		return "error: " + m.Err.Error() + "\n"
 	} else if m.User == nil {
-		return spinner.View(m.spinner) + " Fetching your information...\n"
+		return spinner.View(m.spinner) + " Authenticating...\n"
 	}
 	return bioView(m.User)
 }
