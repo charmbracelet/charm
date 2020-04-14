@@ -8,9 +8,11 @@ import (
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui"
 	"github.com/charmbracelet/charm/ui/common"
+	"github.com/charmbracelet/charm/ui/keygen"
 	"github.com/charmbracelet/charm/ui/keys"
 	"github.com/charmbracelet/charm/ui/link"
 	"github.com/charmbracelet/charm/ui/linkgen"
+	"github.com/charmbracelet/tea"
 	"github.com/mattn/go-isatty"
 	"github.com/muesli/reflow/indent"
 	"github.com/muesli/reflow/wordwrap"
@@ -46,6 +48,8 @@ var (
 		Short: "Do Charm stuff",
 		Long:  formatLong(fmt.Sprintf("Do %s stuff. Run without arguments for fancy mode or use the sub-commands like a pro.", common.Keyword("Charm"))),
 		Run: func(_ *cobra.Command, _ []string) {
+			initCharmClient()
+
 			// Run the TUI
 			if err := ui.NewProgram(cc).Start(); err != nil {
 				fmt.Println(err)
@@ -61,6 +65,7 @@ var (
 		Long:   formatLong(""),
 		Args:   cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
+			initCharmClient()
 			u, err := cc.Bio()
 			if err != nil {
 				fmt.Println(err)
@@ -76,6 +81,7 @@ var (
 		Long:  formatLong("Want to know your " + common.Keyword("Charm ID") + "? You’re in luck, kiddo."),
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
+			initCharmClient()
 			id, err := cc.ID()
 			if err != nil {
 				fmt.Println(err)
@@ -91,6 +97,7 @@ var (
 		Long:  formatLong(common.Keyword("JWT tokens") + " are a way to authenticate to different web services that utilize your Charm account. If you’re a nerd you can use " + common.Code("jwt") + " to get one for yourself."),
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
+			initCharmClient()
 			jwt, err := cc.JWT()
 			if err != nil {
 				log.Fatal(err)
@@ -105,6 +112,7 @@ var (
 		Long:  formatLong("Charm accounts are powered by " + common.Keyword("SSH keys") + ". This command prints all of the keys linked to your account. To remove keys use the main " + common.Code("charm") + " interface."),
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
+			initCharmClient()
 			if isTTY() && !simpleOutput {
 				if err := keys.NewProgram(cc).Start(); err != nil {
 					fmt.Println(err)
@@ -123,6 +131,25 @@ var (
 		},
 	}
 
+	keygenCmd = &cobra.Command{
+		Use:    "keygen",
+		Hidden: true,
+		Short:  "Generate SSH keys",
+		Long:   formatLong("Charm accounts are powered by " + common.Keyword("SSH keys") + ". This command will create them for you."),
+		Args:   cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			if isTTY() && !simpleOutput {
+				err := tea.NewProgram(keygen.Init, keygen.Update, keygen.View, keygen.Subscriptions).Start()
+				if err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
+			} else {
+				// TODO
+			}
+		},
+	}
+
 	linkCmd = &cobra.Command{
 		Use:     "link [code]",
 		Short:   "Link multiple machines to your Charm account",
@@ -130,6 +157,7 @@ var (
 		Example: indent.String("charm link\ncharm link XXXXXX", indentBy),
 		Args:    cobra.RangeArgs(0, 1),
 		Run: func(cmd *cobra.Command, args []string) {
+			initCharmClient()
 			switch len(args) {
 			case 0:
 				// Initialize a linking session
@@ -157,6 +185,7 @@ var (
 		Args:    cobra.RangeArgs(0, 1),
 		Example: indent.String("charm name\ncharm name beatrix", indentBy),
 		Run: func(cmd *cobra.Command, args []string) {
+			initCharmClient()
 			switch len(args) {
 			case 0:
 				u, err := cc.Bio()
@@ -188,7 +217,7 @@ var (
 	}
 )
 
-func initCharmClient() {
+func initCharmClient() *charm.Client {
 	var err error
 
 	// Load config
@@ -205,20 +234,26 @@ func initCharmClient() {
 	cc, err = charm.NewClient(cfg)
 	if err == charm.ErrMissingSSHAuth {
 		log.Fatal("Missing ssh key. Run `ssh-keygen` to make one or set the `CHARM_SSH_KEY_PATH` env var to your private key path.")
-	}
-	if err != nil {
+	} else if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+
+	return cc
 }
 
 func main() {
-	cobra.OnInitialize(initCharmClient)
-
 	rootCmd.PersistentFlags().StringVarP(&identityFile, "identity", "i", "", "path to identity file (that is, an ssh private key)")
 	keysCmd.Flags().BoolVarP(&simpleOutput, "simple", "s", false, "simple, non-interactive output (good for scripts)")
-	rootCmd.AddCommand(bioCmd, idCmd, jwtCmd, keysCmd, linkCmd, nameCmd)
-
+	rootCmd.AddCommand(
+		bioCmd,
+		idCmd,
+		jwtCmd,
+		keysCmd,
+		keygenCmd,
+		linkCmd,
+		nameCmd,
+	)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
