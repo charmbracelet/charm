@@ -20,13 +20,15 @@ var (
 	MissingSSHKeysErr = errors.New("missing one or more keys; did you forget to generate them?")
 )
 
-// SSHKeyGenFilesystemError
-type SSHKeygenFilesystemError struct {
+// FilesystemError is used to signal there was a problem at the
+// filesystem-level. For example, when we're unable to create a directory to
+// store new SSH keys in.
+type FilesystemErr struct {
 	error
 }
 
 // Error implements the error interface
-func (e SSHKeygenFilesystemError) Error() string {
+func (e FilesystemErr) Error() string {
 	return e.error.Error()
 }
 
@@ -160,7 +162,7 @@ func writeKeyToFile(keyBytes []byte, path string) error {
 	if os.IsNotExist(err) {
 		return ioutil.WriteFile(path, keyBytes, 0600)
 	}
-	return SSHKeygenFilesystemError{fmt.Errorf("file %s already exists", keyBytes)}
+	return FilesystemErr{fmt.Errorf("file %s already exists", keyBytes)}
 }
 
 // createSSHDirectory creates a directory if it doesn't exist, and makes
@@ -174,18 +176,18 @@ func createSSHDirectory(path string) error {
 
 	if err != nil {
 		// Some other error
-		return err
+		return FilesystemErr{err}
 	}
 
 	if !info.IsDir() {
 		// It's not a directory
-		return SSHKeygenFilesystemError{fmt.Errorf("%s is not a directory", path)}
+		return FilesystemErr{fmt.Errorf("%s is not a directory", path)}
 	}
 
 	if info.Mode().Perm() != 0700 {
 		// Fix permissions
 		if err := os.Chmod(path, 0700); err != nil {
-			return err
+			return FilesystemErr{err}
 		}
 	}
 
