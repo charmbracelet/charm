@@ -14,8 +14,19 @@ import (
 )
 
 var (
-	ErrMissingKeys = errors.New("missing one or more keys; did you forget to generate them?")
+	// MissingSSHKeysErr indicates we're missing
+	MissingSSHKeysErr = errors.New("missing one or more keys; did you forget to generate them?")
 )
+
+// SSHKeyGenFilesystemError
+type SSHKeygenFilesystemError struct {
+	error
+}
+
+// Error implements the error interface
+func (e SSHKeygenFilesystemError) Error() string {
+	return e.error.Error()
+}
 
 // SSHKeyPair holds a pair of SSH keys and associated methods
 type SSHKeyPair struct {
@@ -67,7 +78,7 @@ func (s *SSHKeyPair) GenerateKeys() error {
 // WriteKeys writes the SSH key pair to disk
 func (s *SSHKeyPair) WriteKeys() error {
 	if len(s.PrivateKeyPEM) == 0 || len(s.PublicKey) == 0 {
-		return ErrMissingKeys
+		return MissingSSHKeysErr
 	}
 
 	// Create directory if it doesn't exist + make sure permissions are right
@@ -142,7 +153,7 @@ func writeKeyToFile(keyBytes []byte, path string) error {
 	if os.IsNotExist(err) {
 		return ioutil.WriteFile(path, keyBytes, 0600)
 	}
-	return fmt.Errorf("file %s already exists", path)
+	return SSHKeygenFilesystemError{fmt.Errorf("file %s already exists", keyBytes)}
 }
 
 // createSSHDirectory creates a directory if it doesn't exist, and makes
@@ -161,7 +172,7 @@ func createSSHDirectory(path string) error {
 
 	if !info.IsDir() {
 		// It's not a directory
-		return fmt.Errorf("%s is not a directory", path)
+		return SSHKeygenFilesystemError{fmt.Errorf("%s is not a directory", path)}
 	}
 
 	if info.Mode().Perm() != 0700 {
