@@ -138,7 +138,11 @@ func generatePublicKey(privateKey *rsa.PublicKey) ([]byte, error) {
 
 // writeKeyToFile write a key to a given path with appropriate permissions
 func writeKeyToFile(keyBytes []byte, path string) error {
-	return ioutil.WriteFile(path, keyBytes, 0600)
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return ioutil.WriteFile(path, keyBytes, 0600)
+	}
+	return fmt.Errorf("file %s already exists", path)
 }
 
 // createSSHDirectory creates a directory if it doesn't exist, and makes
