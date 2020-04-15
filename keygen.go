@@ -50,12 +50,19 @@ func (s SSHKeyPair) publicKeyPath() string {
 }
 
 // NewSSHKeyPair generates an SSHKeyPair, which contains a pair of SSH keys.
-func NewSSHKeyPair() *SSHKeyPair {
-	return &SSHKeyPair{
+func NewSSHKeyPair() (*SSHKeyPair, error) {
+	s := &SSHKeyPair{
 		bitSize:  4096,
 		keyDir:   "~/.ssh",
 		filename: "id_rsa",
 	}
+	if err := s.GenerateKeys(); err != nil {
+		return nil, err
+	}
+	if err := s.WriteKeys(); err != nil {
+		return nil, err
+	}
+	return s, nil
 }
 
 // newSSHKeyPairWithBitSize returns an SSH key pair with a given bit size. This
