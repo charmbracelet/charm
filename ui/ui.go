@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/charm/ui/info"
+	"github.com/charmbracelet/charm/ui/keygen"
 	"github.com/charmbracelet/charm/ui/keys"
 	"github.com/charmbracelet/charm/ui/linkgen"
 	"github.com/charmbracelet/charm/ui/username"
@@ -28,15 +29,17 @@ var (
 )
 
 // NewProgram returns a new tea program
-func NewProgram(cc *charm.Client) *tea.Program {
-	return tea.NewProgram(initialize(cc), update, view, subscriptions)
+func NewProgram(cfg *charm.Config) *tea.Program {
+	return tea.NewProgram(initialize(cfg), update, view, subscriptions)
 }
 
 // state is used to indicate a high level application state
 type state int
 
 const (
-	fetching state = iota
+	statusInit state = iota
+	statusKeygen
+	fetching
 	ready
 	linking
 	browsingKeys
@@ -63,10 +66,19 @@ var menuChoices = map[menuChoice]string{
 	exitChoice:        "Exit",
 }
 
+// MSG
+
+type sshAuthErrorMsg struct{}
+
+type sshAuthFailedMsg error
+
+type newCharmClientMsg *charm.Client
+
 // MODEL
 
 // Model holds the state for this program
 type Model struct {
+	cfg           *charm.Config
 	cc            *charm.Client
 	user          *charm.User
 	err           error
@@ -75,6 +87,7 @@ type Model struct {
 	menuIndex     int
 	menuChoice    menuChoice
 
+	keygen   keygen.Model
 	info     info.Model
 	link     linkgen.Model
 	username username.Model
@@ -83,25 +96,27 @@ type Model struct {
 
 // INIT
 
-func initialize(cc *charm.Client) func() (tea.Model, tea.Cmd) {
+func initialize(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
 	return func() (tea.Model, tea.Cmd) {
 		s := spinner.NewModel()
 		s.Type = spinner.Dot
 		s.ForegroundColor = "244"
 		m := Model{
-			cc:            cc,
+			cfg:           cfg,
+			cc:            nil,
 			user:          nil,
 			err:           nil,
 			statusMessage: "",
-			state:         fetching,
+			state:         statusInit,
 			menuIndex:     0,
 			menuChoice:    unsetChoice,
-			info:          info.NewModel(cc),
-			link:          linkgen.NewModel(cc),
-			username:      username.NewModel(cc),
-			keys:          keys.NewModel(cc),
+			keygen:        keygen.NewModel(),
+			//info:          info.NewModel(cc),
+			//link:          linkgen.NewModel(cc),
+			//username:      username.NewModel(cc),
+			//keys:          keys.NewModel(cc),
 		}
-		return m, tea.CmdMap(info.GetBio, m.info)
+		return m, newCharmClient
 	}
 }
 
@@ -163,6 +178,24 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 				}
 			}
 		}
+	case sshAuthErrorMsg:
+		m.state = statusKeygen
+		return m, keygen.GenerateKeys
+
+	case sshAuthFailedMsg:
+		// TODO: report permanent failure
+		return m, tea.Quit
+
+	case keygen.DoneMsg:
+		return m, newCharmClient
+
+	case newCharmClientMsg:
+		m.cc = msg
+		m.info = info.NewModel(m.cc)
+		m.link = linkgen.NewModel(m.cc)
+		m.username = username.NewModel(m.cc)
+		m.keys = keys.NewModel(m.cc)
+		return m, tea.CmdMap(info.GetBio, m.info)
 
 	case info.GotBioMsg:
 		m.state = ready
@@ -189,6 +222,15 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch m.state {
+	case statusKeygen:
+		keygenModel, newCmd := keygen.Update(msg, tea.Model(m.keygen))
+		mdl, ok := keygenModel.(keygen.Model)
+		if !ok {
+			m.err = errors.New("could not perform model assertion on keygen model")
+			return m, nil
+		}
+		cmd = newCmd
+		m.keygen = mdl
 	case fetching:
 		m.info, _ = info.Update(msg, m.info)
 		if m.info.Quit {
@@ -270,6 +312,8 @@ func view(model tea.Model) string {
 	s := charmLogoView()
 
 	switch m.state {
+	case statusKeygen:
+		s += keygen.View(m.keygen)
 	case fetching:
 		s += info.View(m.info)
 	case ready:
@@ -343,6 +387,28 @@ func errorView(err error) string {
 	return "\n\n" + indent.String(head+msg, 2)
 }
 
+// COMMANDS
+
+func newCharmClient(model tea.Model) tea.Msg {
+	m, ok := model.(Model)
+	if !ok {
+		return tea.ModelAssertionErr
+	}
+
+	cc, err := charm.NewClient(m.cfg)
+	if err == charm.ErrMissingSSHAuth {
+		if m.state != statusKeygen {
+			return sshAuthErrorMsg{}
+		}
+		return sshAuthFailedMsg(err)
+	} else if err != nil {
+		// TODO: make this fatal
+		return tea.NewErrMsgFromErr(err)
+	}
+
+	return newCharmClientMsg(cc)
+}
+
 // SUBSCRIPTIONS
 
 func subscriptions(model tea.Model) tea.Subs {
@@ -355,6 +421,11 @@ func subscriptions(model tea.Model) tea.Subs {
 	subs := tea.Subs{}
 
 	switch m.state {
+	case statusKeygen:
+		s := keygen.Subscriptions(m.keygen)
+		for k, v := range s {
+			subs[k] = v
+		}
 	case fetching:
 		subs["info-spinner-tick"] = info.Tick(m.info)
 	case browsingKeys:

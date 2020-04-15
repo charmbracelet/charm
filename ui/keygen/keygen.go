@@ -140,9 +140,9 @@ func Subscriptions(model tea.Model) tea.Subs {
 
 	switch m.status {
 	case statusRunning:
-		subs["spinner"] = tea.SubMap(spinner.Sub, m.spinner)
+		subs["keygen-spinner"] = tea.SubMap(spinner.Sub, m.spinner)
 	case statusSuccess:
-		subs["pause"] = Pause
+		subs["keygen-pause"] = Pause
 	}
 	return subs
 }

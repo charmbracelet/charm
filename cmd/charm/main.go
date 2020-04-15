@@ -48,10 +48,9 @@ var (
 		Short: "Do Charm stuff",
 		Long:  formatLong(fmt.Sprintf("Do %s stuff. Run without arguments for fancy mode or use the sub-commands like a pro.", common.Keyword("Charm"))),
 		Run: func(_ *cobra.Command, _ []string) {
-			initCharmClient()
-
 			// Run the TUI
-			if err := ui.NewProgram(cc).Start(); err != nil {
+			cfg := getCharmConfig()
+			if err := ui.NewProgram(cfg).Start(); err != nil {
 				fmt.Println(err)
 				os.Exit(1)
 			}
@@ -217,11 +216,8 @@ var (
 	}
 )
 
-func initCharmClient() *charm.Client {
-	var err error
-
-	// Load config
-	cfg, err = charm.ConfigFromEnv()
+func getCharmConfig() *charm.Config {
+	cfg, err := charm.ConfigFromEnv()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -229,8 +225,14 @@ func initCharmClient() *charm.Client {
 		cfg.SSHKeyPath = identityFile
 		cfg.ForceKey = true
 	}
+	return cfg
+}
 
-	// Initialize Charm client
+func initCharmClient() *charm.Client {
+	var err error
+
+	cfg := getCharmConfig()
+
 	cc, err = charm.NewClient(cfg)
 	if err == charm.ErrMissingSSHAuth {
 		log.Fatal("Missing ssh key. Run `ssh-keygen` to make one or set the `CHARM_SSH_KEY_PATH` env var to your private key path.")
