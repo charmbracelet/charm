@@ -63,12 +63,6 @@ var menuChoices = map[menuChoice]string{
 	exitChoice:        "Exit",
 }
 
-// MSG
-
-type copiedCharmIDMsg struct{}
-
-type copyCharmIDErrMsg struct{ error }
-
 // MODEL
 
 // Model holds the state for this program
@@ -169,13 +163,6 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 				}
 			}
 		}
-
-	case copiedCharmIDMsg:
-		m.statusMessage = "Copied Charm ID!"
-		return m, nil
-
-	case copyCharmIDErrMsg:
-		m.err = msg
 
 	case info.GotBioMsg:
 		m.state = ready
