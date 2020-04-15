@@ -41,29 +41,30 @@ type SSHKeyPair struct {
 	filename      string // private key filename; public key will have .pub appended
 }
 
-// NewSSHKeyPair generates an SSHKeyPair, which contains a pair of SSH keys
-func NewSSHKeyPair() (*SSHKeyPair, error) {
-	return newSSHKeyPairWithBitSize(4096)
+func (s SSHKeyPair) privateKeyPath() string {
+	return filepath.Join(s.keyDir, s.filename)
+}
+
+func (s SSHKeyPair) publicKeyPath() string {
+	return filepath.Join(s.keyDir, s.filename+".pub")
+}
+
+// NewSSHKeyPair generates an SSHKeyPair, which contains a pair of SSH keys.
+func NewSSHKeyPair() *SSHKeyPair {
+	return &SSHKeyPair{
+		bitSize:  4096,
+		keyDir:   "~/.ssh",
+		filename: "id_rsa",
+	}
 }
 
 // newSSHKeyPairWithBitSize returns an SSH key pair with a given bit size. This
-// is implemented for quick testing only. In production, use NewSSHKeyPair.
-func newSSHKeyPairWithBitSize(bitSize int) (*SSHKeyPair, error) {
-	homeDir, err := homedir.Dir()
-	if err != nil {
-		return nil, err
-	}
-
+// is implemented for testing only. In production, use NewSSHKeyPair.
+func newSSHKeyPairWithBitSize(bitSize int) *SSHKeyPair {
 	s := &SSHKeyPair{
-		bitSize:  bitSize,
-		keyDir:   filepath.Join(homeDir, ".ssh"),
-		filename: "id_rsa",
+		bitSize: bitSize,
 	}
-	err = s.GenerateKeys()
-	if err != nil {
-		return nil, err
-	}
-	return s, nil
+	return s
 }
 
 // GenerateKeys creates a public and private key pair
@@ -84,24 +85,66 @@ func (s *SSHKeyPair) GenerateKeys() error {
 	return nil
 }
 
+// PrepFilesystem makes sure state of the filesystem is as it needs to be in
+// order to write our keys to disk. It will create and/or set permissions on
+// the SSH directory we're going to write our keys to (generally ~/.ssh) as
+// well as make sure that no files exist at the location in which we're going
+// to write out keys.
+func (s *SSHKeyPair) PrepFilesystem() error {
+	var err error
+
+	s.keyDir, err = homedir.Expand(s.keyDir)
+	if err != nil {
+		return err
+	}
+
+	info, err := os.Stat(s.keyDir)
+	if os.IsNotExist(err) {
+		// Directory doesn't exist: create it
+		return os.Mkdir(s.keyDir, 0700)
+	}
+	if err != nil {
+		// There was another error statting the directory; something is awry
+		return FilesystemErr{err}
+	}
+	if !info.IsDir() {
+		// It exist but it's not a directory
+		return FilesystemErr{fmt.Errorf("%s is not a directory", s.keyDir)}
+	}
+	if info.Mode().Perm() != 0700 {
+		// Permissions are wrong: fix 'em
+		if err := os.Chmod(s.keyDir, 0700); err != nil {
+			return FilesystemErr{err}
+		}
+	}
+
+	// Make sure the files we're going to write to don't already exist
+	if fileExists(s.privateKeyPath()) {
+		return FilesystemErr{fmt.Errorf("file %s already exists", s.privateKeyPath())}
+	}
+	if fileExists(s.publicKeyPath()) {
+		return FilesystemErr{fmt.Errorf("file %s already exists", s.publicKeyPath())}
+	}
+
+	// The directory looks good as-is. This should be a rare case.
+	return nil
+}
+
 // WriteKeys writes the SSH key pair to disk
 func (s *SSHKeyPair) WriteKeys() error {
 	if len(s.PrivateKeyPEM) == 0 || len(s.PublicKey) == 0 {
 		return MissingSSHKeysErr
 	}
 
-	// Create directory if it doesn't exist + make sure permissions are right
-	if err := createSSHDirectory(s.keyDir); err != nil {
+	if err := s.PrepFilesystem(); err != nil {
 		return err
 	}
 
 	// Write keys to disk
-	privPath := fmt.Sprintf("%s/%s", s.keyDir, s.filename)
-	if err := writeKeyToFile(s.PrivateKeyPEM, privPath); err != nil {
+	if err := writeKeyToFile(s.PrivateKeyPEM, s.privateKeyPath()); err != nil {
 		return err
 	}
-	pubPath := fmt.Sprintf("%s/%s", s.keyDir, s.filename+".pub")
-	if err := writeKeyToFile(s.PublicKey, pubPath); err != nil {
+	if err := writeKeyToFile(s.PublicKey, s.publicKeyPath()); err != nil {
 		return err
 	}
 
@@ -163,33 +206,4 @@ func writeKeyToFile(keyBytes []byte, path string) error {
 		return ioutil.WriteFile(path, keyBytes, 0600)
 	}
 	return FilesystemErr{fmt.Errorf("file %s already exists", path)}
-}
-
-// createSSHDirectory creates a directory if it doesn't exist, and makes
-// sure the permissions are correct for SSH keys if it does
-func createSSHDirectory(path string) error {
-	info, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		// Create directory
-		return os.Mkdir(path, 0700)
-	}
-
-	if err != nil {
-		// Some other error
-		return FilesystemErr{err}
-	}
-
-	if !info.IsDir() {
-		// It's not a directory
-		return FilesystemErr{fmt.Errorf("%s is not a directory", path)}
-	}
-
-	if info.Mode().Perm() != 0700 {
-		// Fix permissions
-		if err := os.Chmod(path, 0700); err != nil {
-			return FilesystemErr{err}
-		}
-	}
-
-	return nil
 }

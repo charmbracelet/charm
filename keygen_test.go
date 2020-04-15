@@ -33,9 +33,10 @@ func TestSSHKeyGeneration(t *testing.T) {
 	})
 
 	t.Run("test generate SSH keys", func(t *testing.T) {
-		k, err = newSSHKeyPairWithBitSize(bitSize)
-		if err != nil {
-			t.Errorf("error creating ssh key pair: %v", err)
+		k = newSSHKeyPairWithBitSize(bitSize)
+		k.filename = "id_rsa"
+		if err := k.GenerateKeys(); err != nil {
+			t.Errorf("error generating SSH keys: %v\n", err)
 		}
 
 		// TODO: is there a good way to validate these? Lengths seem to vary a bit,
@@ -49,22 +50,26 @@ func TestSSHKeyGeneration(t *testing.T) {
 	})
 
 	t.Run("test write SSH keys", func(t *testing.T) {
-		thisDir := filepath.Join(dir, "ssh1")
-		k.keyDir = thisDir
+		k.keyDir = filepath.Join(dir, "ssh1")
+		if err := k.PrepFilesystem(); err != nil {
+			t.Errorf("filesystem error: %v\n", err)
+		}
 		if err := k.WriteKeys(); err != nil {
-			t.Errorf("error writing SSH keys to %s: %v", thisDir, err)
+			t.Errorf("error writing SSH keys to %s: %v", k.keyDir, err)
 		}
 		if testing.Verbose() {
-			t.Logf("Wrote keys to %s", thisDir)
+			t.Logf("Wrote keys to %s", k.keyDir)
 		}
 	})
 
 	t.Run("test not overwriting existing keys", func(t *testing.T) {
-		thisDir := filepath.Join(dir, "ssh2")
-		filePath := filepath.Join(thisDir, k.filename)
-		k.keyDir = thisDir
+		k.keyDir = filepath.Join(dir, "ssh2")
+		if err := k.PrepFilesystem(); err != nil {
+			t.Errorf("filesystem error: %v\n", err)
+		}
 
 		// Private key
+		filePath := filepath.Join(k.keyDir, k.filename)
 		if !touchTestFile(t, filePath) {
 			return
 		}

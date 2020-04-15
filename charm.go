@@ -409,15 +409,15 @@ func (cc *Client) sshSession() (*ssh.Session, error) {
 	return s, nil
 }
 
-func fileExists(path string) (bool, error) {
+func fileExists(path string) bool {
 	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	}
 	if os.IsNotExist(err) {
-		return false, nil
+		return false
 	}
-	return true, err
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 func publicKeyAuthMethod(kp string) (ssh.AuthMethod, error) {
