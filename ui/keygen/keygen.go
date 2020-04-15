@@ -18,15 +18,16 @@ const (
 	statusRunning status = iota
 	statusError
 	statusSuccess
-	statusFinished
 	statusQuitting
 )
 
 // MSG
 
-type keysGeneratedMsg struct{}
+type failedMsg error
 
-type pauseMsg struct{}
+type successMsg struct{}
+
+type DoneMsg struct{}
 
 // MODEL
 
@@ -35,7 +36,7 @@ type Model struct {
 	err        error
 	spinner    spinner.Model
 	standalone bool
-	Finished   bool
+	Done       bool
 }
 
 // INIT
@@ -43,7 +44,7 @@ type Model struct {
 func Init() (tea.Model, tea.Cmd) {
 	m := NewModel()
 	m.standalone = true
-	return m, generateKeys
+	return m, GenerateKeys
 }
 
 func NewModel() Model {
@@ -55,7 +56,7 @@ func NewModel() Model {
 		err:        nil,
 		spinner:    s,
 		standalone: false,
-		Finished:   false,
+		Done:       false,
 	}
 }
 
@@ -78,21 +79,21 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 			m.status = statusQuitting
 			return m, tea.Quit
 		}
-	case tea.ErrMsg:
+	case failedMsg:
 		m.err = msg
 		m.status = statusError
 		return m, tea.Quit
-	case keysGeneratedMsg:
+	case successMsg:
 		m.status = statusSuccess
 		return m, nil
 	case spinner.TickMsg:
 		m.spinner, _ = spinner.Update(msg, m.spinner)
 		return m, nil
-	case pauseMsg:
+	case DoneMsg:
 		if m.standalone {
 			return m, tea.Quit
 		}
-		m.status = statusFinished
+		m.Done = true
 		return m, nil
 	}
 
@@ -156,18 +157,17 @@ func Spin(model tea.Model) tea.Sub {
 
 func Pause(model tea.Model) tea.Msg {
 	time.Sleep(time.Millisecond * 500)
-	return pauseMsg{}
+	return DoneMsg{}
 }
 
 // COMMANDS
 
-func generateKeys(model tea.Model) tea.Msg {
-	k, err := charm.NewSSHKeyPair()
+// GenerateKeys is a Tea command that generates a pair of SSH keys and writes
+// them to disk
+func GenerateKeys(model tea.Model) tea.Msg {
+	_, err := charm.NewSSHKeyPair()
 	if err != nil {
-		return tea.NewErrMsgFromErr(err)
+		return failedMsg(err)
 	}
-	if err := k.WriteKeys(); err != nil {
-		return tea.NewErrMsgFromErr(err)
-	}
-	return keysGeneratedMsg{}
+	return successMsg{}
 }
