@@ -40,9 +40,6 @@ var (
 	identityFile string
 	simpleOutput bool
 
-	cfg *charm.Config
-	cc  *charm.Client
-
 	rootCmd = &cobra.Command{
 		Use:   "charm",
 		Short: "Do Charm stuff",
@@ -67,7 +64,7 @@ var (
 		Long:   formatLong(""),
 		Args:   cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			initCharmClient()
+			cc := initCharmClient()
 			u, err := cc.Bio()
 			if err != nil {
 				fmt.Println(err)
@@ -83,7 +80,7 @@ var (
 		Long:  formatLong("Want to know your " + common.Keyword("Charm ID") + "? You’re in luck, kiddo."),
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			initCharmClient()
+			cc := initCharmClient()
 			id, err := cc.ID()
 			if err != nil {
 				fmt.Println(err)
@@ -99,7 +96,7 @@ var (
 		Long:  formatLong(common.Keyword("JWT tokens") + " are a way to authenticate to different web services that utilize your Charm account. If you’re a nerd you can use " + common.Code("jwt") + " to get one for yourself."),
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			initCharmClient()
+			cc := initCharmClient()
 			jwt, err := cc.JWT()
 			if err != nil {
 				log.Fatal(err)
@@ -114,7 +111,7 @@ var (
 		Long:  formatLong("Charm accounts are powered by " + common.Keyword("SSH keys") + ". This command prints all of the keys linked to your account. To remove keys use the main " + common.Code("charm") + " interface."),
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			initCharmClient()
+			cc := initCharmClient()
 			if isTTY() && !simpleOutput {
 				if err := keys.NewProgram(cc).Start(); err != nil {
 					fmt.Println(err)
@@ -159,7 +156,7 @@ var (
 		Example: indent.String("charm link\ncharm link XXXXXX", indentBy),
 		Args:    cobra.RangeArgs(0, 1),
 		Run: func(cmd *cobra.Command, args []string) {
-			initCharmClient()
+			cc := initCharmClient()
 			switch len(args) {
 			case 0:
 				// Initialize a linking session
@@ -187,7 +184,7 @@ var (
 		Args:    cobra.RangeArgs(0, 1),
 		Example: indent.String("charm name\ncharm name beatrix", indentBy),
 		Run: func(cmd *cobra.Command, args []string) {
-			initCharmClient()
+			cc := initCharmClient()
 			switch len(args) {
 			case 0:
 				u, err := cc.Bio()
@@ -232,18 +229,14 @@ func getCharmConfig() *charm.Config {
 }
 
 func initCharmClient() *charm.Client {
-	var err error
-
 	cfg := getCharmConfig()
-
-	cc, err = charm.NewClient(cfg)
+	cc, err := charm.NewClient(cfg)
 	if err == charm.ErrMissingSSHAuth {
 		log.Fatal("Missing ssh key. Run `ssh-keygen` to make one or set the `CHARM_SSH_KEY_PATH` env var to your private key path.")
 	} else if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
 	return cc
 }
 
