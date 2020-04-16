@@ -39,6 +39,7 @@ type state int
 const (
 	statusInit state = iota
 	statusKeygen
+	statusKeygenComplete
 	fetching
 	ready
 	linking
@@ -133,6 +134,10 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		cmd  tea.Cmd
 	)
 
+	//if _, ok := msg.(spinner.TickMsg); !ok {
+	//log.Printf("STATE -> %d | MSG -> %#v\n", m.state, msg)
+	//}
+
 	switch msg := msg.(type) {
 
 	case tea.KeyMsg:
@@ -194,6 +199,7 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case keygen.DoneMsg:
+		m.state = statusKeygenComplete
 		return m, newCharmClient
 
 	case newCharmClientMsg:
@@ -329,6 +335,8 @@ func view(model tea.Model) string {
 		s += spinner.View(m.spinner) + " Initializing..."
 	case statusKeygen:
 		s += keygen.View(m.keygen)
+	case statusKeygenComplete:
+		s += spinner.View(m.spinner) + " Reinitializing..."
 	case fetching:
 		s += info.View(m.info)
 	case ready:
@@ -414,7 +422,7 @@ func newCharmClient(model tea.Model) tea.Msg {
 
 	cc, err := charm.NewClient(m.cfg)
 	if err == charm.ErrMissingSSHAuth {
-		if m.state != statusKeygen {
+		if m.state != statusKeygenComplete {
 			return sshAuthErrorMsg{}
 		}
 		return sshAuthFailedMsg(err)

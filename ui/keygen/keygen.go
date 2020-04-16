@@ -18,6 +18,7 @@ const (
 	statusRunning status = iota
 	statusError
 	statusSuccess
+	statusDone
 	statusQuitting
 )
 
@@ -36,7 +37,6 @@ type Model struct {
 	err        error
 	spinner    spinner.Model
 	standalone bool
-	Done       bool
 }
 
 // INIT
@@ -56,7 +56,6 @@ func NewModel() Model {
 		err:        nil,
 		spinner:    s,
 		standalone: false,
-		Done:       false,
 	}
 }
 
@@ -85,7 +84,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	case successMsg:
 		m.status = statusSuccess
-		return m, nil
+		return m, pause
 	case spinner.TickMsg:
 		m.spinner, _ = spinner.Update(msg, m.spinner)
 		return m, nil
@@ -93,7 +92,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		if m.standalone {
 			return m, tea.Quit
 		}
-		m.Done = true
+		m.status = statusDone
 		return m, nil
 	}
 
@@ -138,11 +137,8 @@ func Subscriptions(model tea.Model) tea.Subs {
 	}
 	subs := make(tea.Subs)
 
-	switch m.status {
-	case statusRunning:
+	if m.status == statusRunning {
 		subs["keygen-spinner"] = tea.SubMap(spinner.Sub, m.spinner)
-	case statusSuccess:
-		subs["keygen-pause"] = Pause
 	}
 	return subs
 }
@@ -155,11 +151,6 @@ func Spin(model tea.Model) tea.Sub {
 	return tea.SubMap(spinner.Sub, m.spinner)
 }
 
-func Pause(model tea.Model) tea.Msg {
-	time.Sleep(time.Millisecond * 200)
-	return DoneMsg{}
-}
-
 // COMMANDS
 
 // GenerateKeys is a Tea command that generates a pair of SSH keys and writes
@@ -170,4 +161,10 @@ func GenerateKeys(model tea.Model) tea.Msg {
 		return failedMsg(err)
 	}
 	return successMsg{}
+}
+
+// pause runs the final pause before we wrap things up
+func pause(model tea.Model) tea.Msg {
+	time.Sleep(time.Millisecond * 500)
+	return DoneMsg{}
 }
