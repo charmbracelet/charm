@@ -3,6 +3,7 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
@@ -48,6 +49,22 @@ const (
 	statusQuitting
 	statusError
 )
+
+// String prints the status as a string. This is just for debugging purposes.
+func (s status) String() string {
+	return [...]string{
+		"initializing",
+		"generating keys",
+		"key generation complete",
+		"fetching",
+		"ready",
+		"linking",
+		"browsing keys",
+		"setting username",
+		"quitting",
+		"error",
+	}[s]
+}
 
 // menuChoice represents a chosen menu item
 type menuChoice int
@@ -134,9 +151,11 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		cmd  tea.Cmd
 	)
 
-	//if _, ok := msg.(spinner.TickMsg); !ok {
-	//log.Printf("STATUS -> %d | MSG -> %#v\n", m.status, msg)
-	//}
+	if m.cfg.Debug {
+		if _, ok := msg.(spinner.TickMsg); !ok {
+			log.Printf("STATUS: %s | MSG: %#v\n", m.status, msg)
+		}
+	}
 
 	switch msg := msg.(type) {
 
