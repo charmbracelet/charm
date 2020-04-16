@@ -74,9 +74,9 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 func View(m Model) string {
 	if m.Err != nil {
-		return "error: " + m.Err.Error() + "\n"
+		return "error: " + m.Err.Error()
 	} else if m.User == nil {
-		return spinner.View(m.spinner) + " Authenticating...\n"
+		return spinner.View(m.spinner) + " Authenticating..."
 	}
 	return bioView(m.User)
 }

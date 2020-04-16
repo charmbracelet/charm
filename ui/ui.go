@@ -45,6 +45,7 @@ const (
 	browsingKeys
 	setUsername
 	quitting
+	statusError
 )
 
 // menuChoice represents a chosen menu item
@@ -87,6 +88,7 @@ type Model struct {
 	menuIndex     int
 	menuChoice    menuChoice
 
+	spinner  spinner.Model
 	keygen   keygen.Model
 	info     info.Model
 	link     linkgen.Model
@@ -110,11 +112,8 @@ func initialize(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
 			state:         statusInit,
 			menuIndex:     0,
 			menuChoice:    unsetChoice,
+			spinner:       s,
 			keygen:        keygen.NewModel(),
-			//info:          info.NewModel(cc),
-			//link:          linkgen.NewModel(cc),
-			//username:      username.NewModel(cc),
-			//keys:          keys.NewModel(cc),
 		}
 		return m, newCharmClient
 	}
@@ -178,6 +177,14 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 				}
 			}
 		}
+
+	case tea.ErrMsg:
+		m.state = statusError
+		m.err = msg
+
+	case spinner.TickMsg:
+		m.spinner, _ = spinner.Update(msg, m.spinner)
+
 	case sshAuthErrorMsg:
 		m.state = statusKeygen
 		return m, keygen.GenerateKeys
@@ -190,11 +197,17 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		return m, newCharmClient
 
 	case newCharmClientMsg:
+		// Save reference to Charm client
 		m.cc = msg
+
+		// Initialize models that require a Charm client
 		m.info = info.NewModel(m.cc)
 		m.link = linkgen.NewModel(m.cc)
 		m.username = username.NewModel(m.cc)
 		m.keys = keys.NewModel(m.cc)
+
+		// Fetch user info
+		m.state = fetching
 		return m, tea.CmdMap(info.GetBio, m.info)
 
 	case info.GotBioMsg:
@@ -312,6 +325,8 @@ func view(model tea.Model) string {
 	s := charmLogoView()
 
 	switch m.state {
+	case statusInit:
+		s += spinner.View(m.spinner) + " Initializing..."
 	case statusKeygen:
 		s += keygen.View(m.keygen)
 	case fetching:
@@ -328,6 +343,8 @@ func view(model tea.Model) string {
 		s += username.View(m.username)
 	case quitting:
 		s += quitView(m)
+	case statusError:
+		s += m.err.Error()
 	}
 
 	return indent.String(s, padding)
@@ -421,6 +438,8 @@ func subscriptions(model tea.Model) tea.Subs {
 	subs := tea.Subs{}
 
 	switch m.state {
+	case statusInit:
+		subs["init-spinner-tick"] = tea.SubMap(spinner.Sub, m.spinner)
 	case statusKeygen:
 		s := keygen.Subscriptions(m.keygen)
 		for k, v := range s {

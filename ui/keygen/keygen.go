@@ -156,7 +156,7 @@ func Spin(model tea.Model) tea.Sub {
 }
 
 func Pause(model tea.Model) tea.Msg {
-	time.Sleep(time.Millisecond * 500)
+	time.Sleep(time.Millisecond * 200)
 	return DoneMsg{}
 }
 
