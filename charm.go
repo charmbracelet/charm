@@ -50,6 +50,7 @@ type Client struct {
 	config    *Config
 	sshConfig *ssh.ClientConfig
 	session   *ssh.Session
+	publicKey ssh.PublicKey
 	User      *User
 }
 
@@ -101,10 +102,10 @@ func NewClient(cfg *Config) (*Client, error) {
 
 	var pkam ssh.AuthMethod
 	// fmt.Printf("Using SSH key %s\n", cfg.SSHKeyPath)
-	pkam, err := publicKeyAuthMethod(cfg.SSHKeyPath)
+	pkam, pk, err := publicKeyAuthMethod(cfg.SSHKeyPath)
 	if err != nil {
 		// fmt.Printf("Couldn't find SSH key %s, trying ~/.ssh/id_rsa\n", cfg.SSHKeyPath)
-		pkam, err = publicKeyAuthMethod("~/.ssh/id_rsa")
+		pkam, pk, err = publicKeyAuthMethod("~/.ssh/id_rsa")
 		if err != nil {
 			return nil, ErrMissingSSHAuth
 		}
@@ -115,6 +116,7 @@ func NewClient(cfg *Config) (*Client, error) {
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 	cc.session, err = cc.sshSession()
+	cc.publicKey = pk
 	if err != nil {
 		return nil, err
 	}
@@ -393,11 +395,6 @@ func (cc *Client) CloseSession() error {
 	return cc.session.Close()
 }
 
-// ValidateName validates a given name
-func ValidateName(name string) bool {
-	return nameValidator.MatchString(name)
-}
-
 func (cc *Client) sshSession() (*ssh.Session, error) {
 	c, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cc.config.IDHost, cc.config.IDPort), cc.sshConfig)
 	if err != nil {
@@ -408,6 +405,11 @@ func (cc *Client) sshSession() (*ssh.Session, error) {
 		return nil, err
 	}
 	return s, nil
+}
+
+// ValidateName validates a given name
+func ValidateName(name string) bool {
+	return nameValidator.MatchString(name)
 }
 
 func fileExists(path string) bool {
@@ -421,20 +423,24 @@ func fileExists(path string) bool {
 	return true
 }
 
-func publicKeyAuthMethod(kp string) (ssh.AuthMethod, error) {
+func publicKeyAuthMethod(kp string) (ssh.AuthMethod, ssh.PublicKey, error) {
 	keyPath, err := homedir.Expand(kp)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	key, err := ioutil.ReadFile(keyPath)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	signer, err := ssh.ParsePrivateKey(key)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return ssh.PublicKeys(signer), nil
+	publicKey := signer.PublicKey()
+	if publicKey == nil {
+		return nil, nil, errors.New("no public key")
+	}
+	return ssh.PublicKeys(signer), publicKey, nil
 }
 
 func agentAuthMethod() (ssh.AuthMethod, error) {
