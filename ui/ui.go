@@ -294,7 +294,7 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		}
 	case statusBrowsingKeys:
 		var newModel tea.Model
-		newModel, cmd = keys.Update(msg, keys.Model(m.keys))
+		newModel, cmd = keys.Update(msg, m.keys)
 		newKeysModel, ok := newModel.(keys.Model)
 		if !ok {
 			m.err = errors.New("could not perform model assertion on keys model")
