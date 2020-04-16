@@ -29,11 +29,7 @@ func SelectableKeyValueView(selected bool, stuff ...string) string {
 		if i%2 == 0 {
 			// even
 			s += te.String("│ ").Foreground(Color(pipeColor)).String()
-			if selected {
-				s += stuff[i] + ": "
-			} else {
-				s += stuff[i] + ": "
-			}
+			s += stuff[i] + ": "
 			continue
 		}
 		// odd
