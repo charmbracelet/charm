@@ -137,7 +137,6 @@ func view(mdl tea.Model) string {
 	switch m.status {
 	case linkInit:
 		s += "Linking..."
-		break
 	case linkTokenSent:
 		s += "Token sent..."
 	case linkTokenValid:
