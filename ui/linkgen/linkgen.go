@@ -35,7 +35,7 @@ type errMsg struct {
 
 // Error statisfies the error interface
 func (err errMsg) Error() string {
-	return err.Error()
+	return err.error.Error()
 }
 
 // NewProgram is a simple wrapper for tea.NewProgram
