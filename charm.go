@@ -41,6 +41,7 @@ type Config struct {
 	BioPort     int    `env:"CHARM_BIO_PORT" default:"443"`
 	UseSSHAgent bool   `env:"CHARM_USE_SSH_AGENT" default:"true"`
 	SSHKeyPath  string `env:"CHARM_SSH_KEY_PATH" default:"~/.ssh/id_dsa"`
+	Debug       bool   `env:"CHARM_DEBUG" default:"false"`
 	ForceKey    bool
 }
 

@@ -50,6 +50,9 @@ var (
 		Run: func(_ *cobra.Command, _ []string) {
 			// Run the TUI
 			cfg := getCharmConfig()
+			if cfg.Debug {
+				tea.UseSysLog("charm")
+			}
 			if err := ui.NewProgram(cfg).Start(); err != nil {
 				fmt.Println(err)
 				os.Exit(1)
