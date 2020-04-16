@@ -33,19 +33,19 @@ func NewProgram(cfg *charm.Config) *tea.Program {
 	return tea.NewProgram(initialize(cfg), update, view, subscriptions)
 }
 
-// state is used to indicate a high level application state
-type state int
+// status is used to indicate a high level application state
+type status int
 
 const (
-	statusInit state = iota
+	statusInit status = iota
 	statusKeygen
 	statusKeygenComplete
-	fetching
-	ready
-	linking
-	browsingKeys
-	setUsername
-	quitting
+	statusFetching
+	statusReady
+	statusLinking
+	statusBrowsingKeys
+	statusSettingUsername
+	statusQuitting
 	statusError
 )
 
@@ -85,7 +85,7 @@ type Model struct {
 	user          *charm.User
 	err           error
 	statusMessage string
-	state         state
+	status        status
 	menuIndex     int
 	menuChoice    menuChoice
 
@@ -110,7 +110,7 @@ func initialize(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
 			user:          nil,
 			err:           nil,
 			statusMessage: "",
-			state:         statusInit,
+			status:        statusInit,
 			menuIndex:     0,
 			menuChoice:    unsetChoice,
 			spinner:       s,
@@ -135,7 +135,7 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	)
 
 	//if _, ok := msg.(spinner.TickMsg); !ok {
-	//log.Printf("STATE -> %d | MSG -> %#v\n", m.state, msg)
+	//log.Printf("STATUS -> %d | MSG -> %#v\n", m.status, msg)
 	//}
 
 	switch msg := msg.(type) {
@@ -144,11 +144,11 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 		switch msg.Type {
 		case tea.KeyCtrlC:
-			m.state = quitting
+			m.status = statusQuitting
 			return m, tea.Quit
 		}
 
-		if m.state == ready { // Process keys for the menu
+		if m.status == statusReady { // Process keys for the menu
 
 			switch msg.String() {
 
@@ -156,7 +156,7 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 			case "q":
 				fallthrough
 			case "esc":
-				m.state = quitting
+				m.status = statusQuitting
 				return m, tea.Quit
 
 			// Prev menu item
@@ -184,14 +184,14 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.ErrMsg:
-		m.state = statusError
+		m.status = statusError
 		m.err = msg
 
 	case spinner.TickMsg:
 		m.spinner, _ = spinner.Update(msg, m.spinner)
 
 	case sshAuthErrorMsg:
-		m.state = statusKeygen
+		m.status = statusKeygen
 		return m, keygen.GenerateKeys
 
 	case sshAuthFailedMsg:
@@ -199,7 +199,7 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case keygen.DoneMsg:
-		m.state = statusKeygenComplete
+		m.status = statusKeygenComplete
 		return m, newCharmClient
 
 	case newCharmClientMsg:
@@ -213,16 +213,16 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		m.keys = keys.NewModel(m.cc)
 
 		// Fetch user info
-		m.state = fetching
+		m.status = statusFetching
 		return m, tea.CmdMap(info.GetBio, m.info)
 
 	case info.GotBioMsg:
-		m.state = ready
+		m.status = statusReady
 		m.info, _ = info.Update(msg, m.info)
 		m.user = m.info.User
 
 	case username.NameSetMsg:
-		m.state = ready
+		m.status = statusReady
 		m.username = username.NewModel(m.cc) // reset the state
 		m.info.User.Name = string(msg)
 
@@ -240,7 +240,7 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	var cmd tea.Cmd
 
-	switch m.state {
+	switch m.status {
 	case statusKeygen:
 		keygenModel, newCmd := keygen.Update(msg, tea.Model(m.keygen))
 		mdl, ok := keygenModel.(keygen.Model)
@@ -250,15 +250,15 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		}
 		cmd = newCmd
 		m.keygen = mdl
-	case fetching:
+	case statusFetching:
 		m.info, _ = info.Update(msg, m.info)
 		if m.info.Quit {
-			m.state = quitting
+			m.status = statusQuitting
 			m.err = m.info.Err
 			return m, tea.Quit
 		}
 		return m, nil
-	case linking:
+	case statusLinking:
 		newModel, _ := linkgen.Update(msg, tea.Model(m.link))
 		newLinkModel, ok := newModel.(linkgen.Model)
 		if !ok {
@@ -268,12 +268,12 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		m.link = newLinkModel
 		if m.link.Exit {
 			m.link = linkgen.NewModel(m.cc) // reset the state
-			m.state = ready
+			m.status = statusReady
 		} else if m.link.Quit {
-			m.state = quitting
+			m.status = statusQuitting
 			return m, tea.Quit
 		}
-	case browsingKeys:
+	case statusBrowsingKeys:
 		var newModel tea.Model
 		newModel, cmd = keys.Update(msg, keys.Model(m.keys))
 		newKeysModel, ok := newModel.(keys.Model)
@@ -284,36 +284,36 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		m.keys = newKeysModel
 		if m.keys.Exit {
 			m.keys = keys.NewModel(m.cc)
-			m.state = ready
+			m.status = statusReady
 		} else if m.keys.Quit {
-			m.state = quitting
+			m.status = statusQuitting
 			return m, tea.Quit
 		}
-	case setUsername:
+	case statusSettingUsername:
 		m.username, cmd = username.Update(msg, m.username)
 		if m.username.Done {
 			m.username = username.NewModel(m.cc) // reset the state
-			m.state = ready
+			m.status = statusReady
 		} else if m.username.Quit {
-			m.state = quitting
+			m.status = statusQuitting
 			return m, tea.Quit
 		}
 	}
 
 	switch m.menuChoice {
 	case linkChoice:
-		m.state = linking
+		m.status = statusLinking
 		m.menuChoice = unsetChoice
 		cmd = tea.Batch(linkgen.HandleLinkRequest(m.link)...)
 	case keysChoice:
-		m.state = browsingKeys
+		m.status = statusBrowsingKeys
 		m.menuChoice = unsetChoice
 		cmd = tea.CmdMap(keys.LoadKeys, m.keys)
 	case setUsernameChoice:
-		m.state = setUsername
+		m.status = statusSettingUsername
 		m.menuChoice = unsetChoice
 	case exitChoice:
-		m.state = quitting
+		m.status = statusQuitting
 		cmd = tea.Quit
 	}
 
@@ -330,26 +330,26 @@ func view(model tea.Model) string {
 
 	s := charmLogoView()
 
-	switch m.state {
+	switch m.status {
 	case statusInit:
 		s += spinner.View(m.spinner) + " Initializing..."
 	case statusKeygen:
 		s += keygen.View(m.keygen)
 	case statusKeygenComplete:
 		s += spinner.View(m.spinner) + " Reinitializing..."
-	case fetching:
+	case statusFetching:
 		s += info.View(m.info)
-	case ready:
+	case statusReady:
 		s += info.View(m.info)
 		s += "\n\n" + menuView(m.menuIndex)
 		s += footerView(m)
-	case linking:
+	case statusLinking:
 		s += linkgen.View(m.link)
-	case browsingKeys:
+	case statusBrowsingKeys:
 		s += keys.View(m.keys)
-	case setUsername:
+	case statusSettingUsername:
 		s += username.View(m.username)
-	case quitting:
+	case statusQuitting:
 		s += quitView(m)
 	case statusError:
 		s += m.err.Error()
@@ -422,7 +422,7 @@ func newCharmClient(model tea.Model) tea.Msg {
 
 	cc, err := charm.NewClient(m.cfg)
 	if err == charm.ErrMissingSSHAuth {
-		if m.state != statusKeygenComplete {
+		if m.status != statusKeygenComplete {
 			return sshAuthErrorMsg{}
 		}
 		return sshAuthFailedMsg(err)
@@ -445,7 +445,7 @@ func subscriptions(model tea.Model) tea.Subs {
 
 	subs := tea.Subs{}
 
-	switch m.state {
+	switch m.status {
 	case statusInit:
 		subs["init-spinner-tick"] = tea.SubMap(spinner.Sub, m.spinner)
 	case statusKeygen:
@@ -453,14 +453,14 @@ func subscriptions(model tea.Model) tea.Subs {
 		for k, v := range s {
 			subs[k] = v
 		}
-	case fetching:
+	case statusFetching:
 		subs["info-spinner-tick"] = info.Tick(m.info)
-	case browsingKeys:
+	case statusBrowsingKeys:
 		subs["keys-spinner-tick"] = keys.Spin(m.keys)
-	case setUsername:
+	case statusSettingUsername:
 		subs["username-input-blink"] = username.Blink(m.username)
 		subs["username-spinner-tick"] = username.Spin(m.username)
-	case linking:
+	case statusLinking:
 		subs["link-setup-spinner-tick"] = linkgen.Spin(m.link)
 	}
 
