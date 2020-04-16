@@ -242,7 +242,7 @@ func loadingView(m Model) string {
 func keysView(m Model) string {
 	var (
 		s          string
-		state      = keyNormal
+		state      keyState
 		start, end = m.pager.GetSliceBounds(len(m.keys))
 		slice      = m.keys[start:end]
 	)
