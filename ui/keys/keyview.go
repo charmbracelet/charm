@@ -1,6 +1,8 @@
 package keys
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 
 	"github.com/charmbracelet/charm"
@@ -21,28 +23,31 @@ var (
 )
 
 type styledKey struct {
-	date      string
-	shortKey  string
-	line      string
-	keyLabel  string
-	keyVal    string
-	dateLabel string
-	dateVal   string
+	date        string
+	fingerprint string
+	line        string
+	keyLabel    string
+	keyVal      string
+	dateLabel   string
+	dateVal     string
 }
 
 func newStyledKey(key charm.Key) styledKey {
 	date := key.CreatedAt.Format("02 Jan 2006 15:04:05 MST")
-	shortKey := truncate(key.Key, 50)
+	fp, err := sha256Fingerprint(key.Key)
+	if err != nil {
+		fp = "[error generating fingerprint]"
+	}
 
 	// Default state
 	return styledKey{
-		date:      date,
-		shortKey:  shortKey,
-		line:      te.String(lineChar).Foreground(gray).String(),
-		keyLabel:  "Key:",
-		keyVal:    te.String(shortKey).Foreground(purpleFg).String(),
-		dateLabel: "Added:",
-		dateVal:   te.String(date).Foreground(purpleFg).String(),
+		date:        date,
+		fingerprint: fp,
+		line:        te.String(lineChar).Foreground(gray).String(),
+		keyLabel:    "Key:",
+		keyVal:      te.String(fp).Foreground(purpleFg).String(),
+		dateLabel:   "Added:",
+		dateVal:     te.String(date).Foreground(purpleFg).String(),
 	}
 }
 
@@ -55,7 +60,7 @@ func (k *styledKey) selected() {
 func (k *styledKey) deleting() {
 	k.line = te.String(lineChar).Foreground(yellowGreen).String()
 	k.keyLabel = te.String("Key:").Foreground(hotPink).String()
-	k.keyVal = te.String(k.shortKey).Foreground(dullHotPink).String()
+	k.keyVal = te.String(k.fingerprint).Foreground(dullHotPink).String()
 	k.dateLabel = te.String("Added:").Foreground(hotPink).String()
 	k.dateVal = te.String(k.date).Foreground(dullHotPink).String()
 }
@@ -82,4 +87,15 @@ func truncate(s string, n int) string {
 		return s[0:n] + "..."
 	}
 	return s
+}
+
+// sha256Fingerprint creates a SHA256 fingerprint from a given base 64 key
+func sha256Fingerprint(pubKey string) (string, error) {
+	b, err := base64.StdEncoding.DecodeString(pubKey)
+	if err != nil {
+		return "", err
+	}
+	h := sha256.New()
+	h.Write(b)
+	return fmt.Sprintf("SHA256:%x", h.Sum(nil)), nil
 }
