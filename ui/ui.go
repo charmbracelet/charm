@@ -259,13 +259,13 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		}
 		return m, nil
 	case statusLinking:
-		newModel, _ := linkgen.Update(msg, tea.Model(m.link))
-		newLinkModel, ok := newModel.(linkgen.Model)
+		linkModel, _ := linkgen.Update(msg, tea.Model(m.link))
+		mdl, ok := linkModel.(linkgen.Model)
 		if !ok {
 			m.err = errors.New("could not perform model assertion on link model")
 			return m, nil
 		}
-		m.link = newLinkModel
+		m.link = mdl
 		if m.link.Exit {
 			m.link = linkgen.NewModel(m.cc) // reset the state
 			m.status = statusReady

@@ -89,6 +89,7 @@ func NewModel(cc *charm.Client) Model {
 	s.ForegroundColor = "241"
 	return Model{
 		lh:            lh,
+		standalone:    false,
 		Quit:          false,
 		Exit:          false,
 		err:           nil,
@@ -99,17 +100,6 @@ func NewModel(cc *charm.Client) Model {
 		cc:            cc,
 		buttonIndex:   0,
 		spinner:       s,
-	}
-}
-
-// CancelRequest performs cleanup that should be done when canceling a linking
-// request.
-func (m *Model) CancelRequest() {
-	if m.cc == nil {
-		return
-	}
-	if err := m.cc.CloseSession(); err != nil {
-		m.err = err
 	}
 }
 
@@ -136,7 +126,6 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 		// General keybindings
 		case "ctrl+c":
-			m.CancelRequest()
 			if m.standalone {
 				m.status = quitting
 				return m, tea.Quit
@@ -146,7 +135,6 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		case "q":
 			fallthrough
 		case "esc":
-			m.CancelRequest()
 			if m.standalone {
 				m.status = quitting
 				return m, tea.Quit
