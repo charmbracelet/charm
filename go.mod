@@ -3,6 +3,7 @@ module github.com/charmbracelet/charm
 go 1.13
 
 require (
+	github.com/calmh/randomart v1.1.0
 	github.com/charmbracelet/tea v0.0.0-20200402161010-cd63ed1e4444
 	github.com/charmbracelet/teaparty v0.0.0-20200410021831-5dd360549610
 	github.com/mattn/go-isatty v0.0.12

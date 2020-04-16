@@ -2,6 +2,7 @@ package charm
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/calmh/randomart"
 	"github.com/meowgorithm/babyenv"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/ssh"
@@ -95,16 +97,17 @@ func NewClient(cfg *Config) (*Client, error) {
 			}
 			cc.session, err = cc.sshSession()
 			if err == nil {
+				//log.Println("Used SSH agent for auth")
 				return cc, nil
 			}
 		}
 	}
 
 	var pkam ssh.AuthMethod
-	// fmt.Printf("Using SSH key %s\n", cfg.SSHKeyPath)
+	//fmt.Printf("Using SSH key %s\n", cfg.SSHKeyPath)
 	pkam, pk, err := publicKeyAuthMethod(cfg.SSHKeyPath)
 	if err != nil {
-		// fmt.Printf("Couldn't find SSH key %s, trying ~/.ssh/id_rsa\n", cfg.SSHKeyPath)
+		//fmt.Printf("Couldn't find SSH key %s, trying ~/.ssh/id_rsa\n", cfg.SSHKeyPath)
 		pkam, pk, err = publicKeyAuthMethod("~/.ssh/id_rsa")
 		if err != nil {
 			return nil, ErrMissingSSHAuth
@@ -381,6 +384,13 @@ func (cc *Client) Bio() (*User, error) {
 		return nil, err
 	}
 	return u, nil
+}
+
+// RandomArt returns the randomart for the authenticated SSH key
+func (cc *Client) RandomArt() string {
+	h := sha256.New()
+	h.Write(cc.publicKey.Marshal())
+	return randomart.GenerateSubtitled(h.Sum(nil), "", "SHA256").String()
 }
 
 // RenewSession resets the session so we can perform another SSH-backed command
