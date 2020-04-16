@@ -44,6 +44,7 @@ type Model struct {
 	keys         []charm.Key
 	index        int
 	promptDelete bool // have we prompted to delete the item at the current index?
+	quitting     bool
 	spinner      spinner.Model
 	Exit         bool
 	Quit         bool
@@ -80,6 +81,7 @@ func NewModel(cc *charm.Client) Model {
 		index:        0,
 		promptDelete: false,
 		spinner:      s,
+		quitting:     false,
 		Exit:         false,
 		Quit:         false,
 	}
@@ -112,15 +114,12 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 
 		case "ctrl+c":
-			m.Quit = true
-			if m.standalone {
-				return m, tea.Quit
-			}
-			return m, nil
+			fallthrough
 		case "q":
 			fallthrough
 		case "esc":
 			if m.standalone {
+				m.quitting = true
 				return m, tea.Quit
 			}
 			m.Exit = true
@@ -210,23 +209,29 @@ func View(model tea.Model) string {
 
 	var s string
 
-	if m.loading {
-		s += loadingView(m)
+	if m.quitting {
+		s = "Thanks for using Charm!"
 	} else {
-		s += "Here are the keys linked to your Charm account.\n\n"
-	}
 
-	// Keys
-	s += keysView(m)
-	if m.pager.TotalPages > 1 {
-		s += pager.View(m.pager)
-	}
+		if m.loading {
+			s += loadingView(m)
+		} else {
+			s += "Here are the keys linked to your Charm account.\n\n"
+		}
 
-	// Footer
-	if m.promptDelete {
-		s += promptDeleteView()
-	} else {
-		s += helpView(m)
+		// Keys
+		s += keysView(m)
+		if m.pager.TotalPages > 1 {
+			s += pager.View(m.pager)
+		}
+
+		// Footer
+		if m.promptDelete {
+			s += promptDeleteView()
+		} else {
+			s += helpView(m)
+		}
+
 	}
 
 	if m.standalone {
