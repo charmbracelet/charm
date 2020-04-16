@@ -39,6 +39,7 @@ func isTTY() bool {
 var (
 	identityFile string
 	simpleOutput bool
+	forceKey     bool
 
 	rootCmd = &cobra.Command{
 		Use:   "charm",
@@ -228,6 +229,9 @@ func getCharmConfig() *charm.Config {
 		cfg.SSHKeyPath = identityFile
 		cfg.ForceKey = true
 	}
+	if forceKey {
+		cfg.ForceKey = true
+	}
 	return cfg
 }
 
@@ -245,6 +249,7 @@ func initCharmClient() *charm.Client {
 
 func main() {
 	rootCmd.PersistentFlags().StringVarP(&identityFile, "identity", "i", "", "path to identity file (that is, an ssh private key)")
+	rootCmd.Flags().BoolVarP(&forceKey, "force-key", "f", false, "for the use of the SSH key on disk (that is, ignore ssh-agent)")
 	keysCmd.Flags().BoolVarP(&simpleOutput, "simple", "s", false, "simple, non-interactive output (good for scripts)")
 	rootCmd.AddCommand(
 		bioCmd,
