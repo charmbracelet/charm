@@ -44,15 +44,18 @@ var (
 		Use:   "charm",
 		Short: "Do Charm stuff",
 		Long:  formatLong(fmt.Sprintf("Do %s stuff. Run without arguments for fancy mode or use the sub-commands like a pro.", common.Keyword("Charm"))),
-		Run: func(_ *cobra.Command, _ []string) {
-			// Run the TUI
-			cfg := getCharmConfig()
-			if cfg.Debug {
-				tea.UseSysLog("charm")
-			}
-			if err := ui.NewProgram(cfg).Start(); err != nil {
-				fmt.Println(err)
-				os.Exit(1)
+		Run: func(cmd *cobra.Command, args []string) {
+			if isTTY() {
+				cfg := getCharmConfig()
+				if cfg.Debug {
+					tea.UseSysLog("charm")
+				}
+				if err := ui.NewProgram(cfg).Start(); err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
+			} else {
+				cmd.Help()
 			}
 		},
 	}
