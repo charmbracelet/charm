@@ -173,9 +173,8 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 				case "enter":
 					if m.buttonIndex == 0 {
 						return m.acceptRequest()
-					} else {
-						return m.rejectRequest()
 					}
+					return m.rejectRequest()
 				case "y":
 					return m.acceptRequest()
 				case "n":
