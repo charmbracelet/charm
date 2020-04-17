@@ -1,8 +1,6 @@
 package keys
 
 import (
-	"crypto/sha256"
-	"encoding/base64"
 	"fmt"
 
 	"github.com/charmbracelet/charm"
@@ -35,7 +33,7 @@ type styledKey struct {
 
 func newStyledKey(key charm.Key, active bool) styledKey {
 	date := key.CreatedAt.Format("02 Jan 2006 15:04:05 MST")
-	fp, err := sha256Fingerprint(key.Key)
+	fp, err := key.FingerprintSHA256()
 	if err != nil {
 		fp = "[error generating fingerprint]"
 	}
@@ -95,15 +93,4 @@ func truncate(s string, n int) string {
 		return s[0:n] + "..."
 	}
 	return s
-}
-
-// sha256Fingerprint creates a SHA256 fingerprint from a given base 64 key
-func sha256Fingerprint(pubKey string) (string, error) {
-	b, err := base64.StdEncoding.DecodeString(pubKey)
-	sha256sum := sha256.Sum256(b)
-	hash := base64.RawStdEncoding.EncodeToString(sha256sum[:])
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("SHA256:%s", hash), nil
 }

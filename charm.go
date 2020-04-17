@@ -2,7 +2,6 @@ package charm
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,7 +12,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/calmh/randomart"
 	"github.com/meowgorithm/babyenv"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/ssh"
@@ -70,12 +68,6 @@ type User struct {
 type Keys struct {
 	ActiveKey int   `json:"active_key"`
 	Keys      []Key `json:"keys"`
-}
-
-// Key contains data and metadata for an SSH key
-type Key struct {
-	Key       string     `json:"key"`
-	CreatedAt *time.Time `json:"created_at,omitempty"`
 }
 
 type sshSession struct {
@@ -391,21 +383,6 @@ func (cc *Client) Bio() (*User, error) {
 		return nil, err
 	}
 	return u, nil
-}
-
-// Return the SHA256 fingerprint for the public key in use
-func (cc *Client) FingerprintSHA256() string {
-	if cc.publicKey == nil {
-		return ""
-	}
-	return ssh.FingerprintSHA256(cc.publicKey)
-}
-
-// RandomArt returns the randomart for the authenticated SSH key
-func (cc *Client) RandomArt() string {
-	h := sha256.New()
-	h.Write(cc.publicKey.Marshal())
-	return randomart.GenerateSubtitled(h.Sum(nil), "", "SHA256").String()
 }
 
 // RenewSession resets the session so we can perform another SSH-backed command
