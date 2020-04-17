@@ -30,13 +30,20 @@ type styledKey struct {
 	keyVal      string
 	dateLabel   string
 	dateVal     string
+	note        string
 }
 
-func newStyledKey(key charm.Key) styledKey {
+func newStyledKey(key charm.Key, authedFingerprint string) styledKey {
 	date := key.CreatedAt.Format("02 Jan 2006 15:04:05 MST")
 	fp, err := sha256Fingerprint(key.Key)
 	if err != nil {
 		fp = "[error generating fingerprint]"
+	}
+
+	var note string
+	if fp == authedFingerprint {
+		bullet := te.String("• ").Foreground(common.Color("241")).String()
+		note = bullet + te.String("Current Key").Foreground(common.Color("35")).String()
 	}
 
 	// Default state
@@ -48,6 +55,7 @@ func newStyledKey(key charm.Key) styledKey {
 		keyVal:      te.String(fp).Foreground(purpleFg).String(),
 		dateLabel:   "Added:",
 		dateVal:     te.String(date).Foreground(purpleFg).String(),
+		note:        note,
 	}
 }
 
@@ -73,9 +81,9 @@ func (k styledKey) render(state keyState) string {
 		k.deleting()
 	}
 	return fmt.Sprintf(
-		"%s %s %s\n%s %s %s\n\n",
+		"%s %s %s\n%s %s %s %s\n\n",
 		k.line, k.keyLabel, k.keyVal,
-		k.line, k.dateLabel, k.dateVal,
+		k.line, k.dateLabel, k.dateVal, k.note,
 	)
 }
 

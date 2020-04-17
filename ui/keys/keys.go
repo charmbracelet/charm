@@ -252,6 +252,8 @@ func keysView(m Model) string {
 		slice      = m.keys[start:end]
 	)
 
+	fp := m.cc.FingerprintSHA256()
+
 	// Render key info
 	for i, key := range slice {
 		if m.promptDelete && m.index == i {
@@ -261,7 +263,7 @@ func keysView(m Model) string {
 		} else {
 			state = keyNormal
 		}
-		s += newStyledKey(key).render(state)
+		s += newStyledKey(key, fp).render(state)
 	}
 
 	// If there aren't enough keys to fill the view, fill the missing parts

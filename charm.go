@@ -386,6 +386,14 @@ func (cc *Client) Bio() (*User, error) {
 	return u, nil
 }
 
+// Return the SHA256 fingerprint for the public key in use
+func (cc *Client) FingerprintSHA256() string {
+	if cc.publicKey == nil {
+		return ""
+	}
+	return ssh.FingerprintSHA256(cc.publicKey)
+}
+
 // RandomArt returns the randomart for the authenticated SSH key
 func (cc *Client) RandomArt() string {
 	h := sha256.New()
