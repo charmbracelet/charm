@@ -14,6 +14,15 @@ import (
 
 const keysPerPage = 4
 
+type state int
+
+const (
+	stateLoading state = iota
+	stateNormal
+	stateDeletingKey
+	stateQuitting
+)
+
 type keyState int
 
 const (
@@ -38,14 +47,12 @@ type unlinkedKeyMsg int
 type Model struct {
 	cc             *charm.Client
 	pager          pager.Model
+	state          state
 	err            error
 	standalone     bool
-	loading        bool
-	activeKeyIndex int
-	keys           []charm.Key
-	index          int
-	promptDelete   bool // have we prompted to delete the item at the current index?
-	quitting       bool
+	activeKeyIndex int         // index of the key in the below slice which is currently in use
+	keys           []charm.Key // keys linked to user's account
+	index          int         // index of selected key
 	spinner        spinner.Model
 	Exit           bool
 	Quit           bool
@@ -76,14 +83,12 @@ func NewModel(cc *charm.Client) Model {
 	return Model{
 		cc:             cc,
 		pager:          p,
+		state:          stateLoading,
 		err:            nil,
-		loading:        true,
 		activeKeyIndex: -1,
 		keys:           []charm.Key{},
 		index:          0,
-		promptDelete:   false,
 		spinner:        s,
-		quitting:       false,
 		Exit:           false,
 		Quit:           false,
 	}
@@ -121,7 +126,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 			fallthrough
 		case "esc":
 			if m.standalone {
-				m.quitting = true
+				m.state = stateQuitting
 				return m, tea.Quit
 			}
 			m.Exit = true
@@ -152,15 +157,15 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 		// Delete
 		case "x":
-			m.promptDelete = true
+			m.state = stateDeletingKey
 			m.UpdatePaging(msg)
 			return m, nil
 
 			// Confirm Delete
 		case "y":
-			if m.promptDelete {
+			if m.state == stateDeletingKey {
 				// TODO: return deletion command, actually delete, and so on
-				m.promptDelete = false
+				m.state = stateNormal
 				return m, tea.CmdMap(unlinkKey, m)
 			}
 		}
@@ -170,7 +175,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case keysLoadedMsg:
-		m.loading = false
+		m.state = stateNormal
 		m.index = 0
 		m.activeKeyIndex = msg.ActiveKey
 		m.keys = msg.Keys
@@ -190,7 +195,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	// used for confirmation above) cancels the deletion
 	k, ok := msg.(tea.KeyMsg)
 	if ok && k.String() != "x" {
-		m.promptDelete = false
+		m.state = stateNormal
 	}
 
 	return m, nil
@@ -212,15 +217,13 @@ func View(model tea.Model) string {
 
 	var s string
 
-	if m.quitting {
+	switch m.state {
+	case stateLoading:
+		s = loadingView(m)
+	case stateQuitting:
 		s = "Thanks for using Charm!"
-	} else {
-
-		if m.loading {
-			s += loadingView(m)
-		} else {
-			s += "Here are the keys linked to your Charm account.\n\n"
-		}
+	default:
+		s = "Here are the keys linked to your Charm account.\n\n"
 
 		// Keys
 		s += keysView(m)
@@ -229,7 +232,7 @@ func View(model tea.Model) string {
 		}
 
 		// Footer
-		if m.promptDelete {
+		if m.state == stateDeletingKey {
 			s += promptDeleteView()
 		} else {
 			s += helpView(m)
@@ -257,7 +260,7 @@ func keysView(m Model) string {
 
 	// Render key info
 	for i, key := range slice {
-		if m.promptDelete && m.index == i {
+		if m.state == stateDeletingKey && m.index == i {
 			state = keyDeleting
 		} else if m.index == i {
 			state = keySelected
@@ -304,7 +307,7 @@ func Subscriptions(model tea.Model) tea.Subs {
 	if !ok {
 		return nil
 	}
-	if m.loading {
+	if m.state == stateLoading {
 		return tea.Subs{
 			"spinner-tick": Spin(m),
 		}
@@ -317,7 +320,7 @@ func Spin(model tea.Model) tea.Sub {
 	if !ok {
 		return nil
 	}
-	if m.loading {
+	if m.state == stateLoading {
 		return tea.SubMap(spinner.Sub, m.spinner)
 	}
 	return nil
