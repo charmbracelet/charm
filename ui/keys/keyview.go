@@ -92,10 +92,10 @@ func truncate(s string, n int) string {
 // sha256Fingerprint creates a SHA256 fingerprint from a given base 64 key
 func sha256Fingerprint(pubKey string) (string, error) {
 	b, err := base64.StdEncoding.DecodeString(pubKey)
+	sha256sum := sha256.Sum256(b)
+	hash := base64.RawStdEncoding.EncodeToString(sha256sum[:])
 	if err != nil {
 		return "", err
 	}
-	h := sha256.New()
-	h.Write(b)
-	return fmt.Sprintf("SHA256:%x", h.Sum(nil)), nil
+	return fmt.Sprintf("SHA256:%s", hash), nil
 }
