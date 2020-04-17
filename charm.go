@@ -50,7 +50,6 @@ type Client struct {
 	config    *Config
 	sshConfig *ssh.ClientConfig
 	session   *ssh.Session
-	publicKey ssh.PublicKey
 	User      *User
 }
 
@@ -104,10 +103,10 @@ func NewClient(cfg *Config) (*Client, error) {
 
 	var pkam ssh.AuthMethod
 	//fmt.Printf("Using SSH key %s\n", cfg.SSHKeyPath)
-	pkam, pk, err := publicKeyAuthMethod(cfg.SSHKeyPath)
+	pkam, err := publicKeyAuthMethod(cfg.SSHKeyPath)
 	if err != nil {
 		//fmt.Printf("Couldn't find SSH key %s, trying ~/.ssh/id_rsa\n", cfg.SSHKeyPath)
-		pkam, pk, err = publicKeyAuthMethod("~/.ssh/id_rsa")
+		pkam, err = publicKeyAuthMethod("~/.ssh/id_rsa")
 		if err != nil {
 			return nil, ErrMissingSSHAuth
 		}
@@ -118,7 +117,6 @@ func NewClient(cfg *Config) (*Client, error) {
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 	cc.session, err = cc.sshSession()
-	cc.publicKey = pk
 	if err != nil {
 		return nil, err
 	}
@@ -425,24 +423,20 @@ func fileExists(path string) bool {
 	return true
 }
 
-func publicKeyAuthMethod(kp string) (ssh.AuthMethod, ssh.PublicKey, error) {
+func publicKeyAuthMethod(kp string) (ssh.AuthMethod, error) {
 	keyPath, err := homedir.Expand(kp)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	key, err := ioutil.ReadFile(keyPath)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	signer, err := ssh.ParsePrivateKey(key)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	publicKey := signer.PublicKey()
-	if publicKey == nil {
-		return nil, nil, errors.New("no public key")
-	}
-	return ssh.PublicKeys(signer), publicKey, nil
+	return ssh.PublicKeys(signer), nil
 }
 
 func agentAuthMethod() (ssh.AuthMethod, error) {
