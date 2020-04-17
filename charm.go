@@ -65,6 +65,13 @@ type User struct {
 	CreatedAt *time.Time `json:"created_at"`
 }
 
+// Keys is a server response returned when the user queries for the keys linked
+// to her account.
+type Keys struct {
+	ActiveKey int   `json:"active_key"`
+	Keys      []Key `json:"keys"`
+}
+
 // Key contains data and metadata for an SSH key
 type Key struct {
 	Key       string     `json:"key"`
@@ -157,15 +164,15 @@ func (cc *Client) AuthorizedKeys() (string, error) {
 }
 
 // AuthorizedKeys fetches keys linked to a user's account, with metadata
-func (cc *Client) AuthorizedKeysWithMetadata() ([]Key, error) {
+func (cc *Client) AuthorizedKeysWithMetadata() (*Keys, error) {
 	defer cc.session.Close()
 	b, err := cc.session.Output("api-keys")
 	if err != nil {
 		return nil, err
 	}
-	var k []Key
+	var k Keys
 	err = json.Unmarshal(b, &k)
-	return k, err
+	return &k, err
 }
 
 func (cc *Client) UnlinkAuthorizedKey(s string) error {

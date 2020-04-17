@@ -127,7 +127,7 @@ var (
 					fmt.Println(err)
 					os.Exit(1)
 				}
-				for _, v := range ak {
+				for _, v := range ak.Keys {
 					fmt.Println(v.Key)
 				}
 			}

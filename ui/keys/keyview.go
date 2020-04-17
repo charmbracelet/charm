@@ -33,7 +33,7 @@ type styledKey struct {
 	note        string
 }
 
-func newStyledKey(key charm.Key, authedFingerprint string) styledKey {
+func newStyledKey(key charm.Key, active bool) styledKey {
 	date := key.CreatedAt.Format("02 Jan 2006 15:04:05 MST")
 	fp, err := sha256Fingerprint(key.Key)
 	if err != nil {
@@ -41,7 +41,7 @@ func newStyledKey(key charm.Key, authedFingerprint string) styledKey {
 	}
 
 	var note string
-	if fp == authedFingerprint {
+	if active {
 		bullet := te.String("• ").Foreground(common.Color("241")).String()
 		note = bullet + te.String("Current Key").Foreground(common.Color("35")).String()
 	}

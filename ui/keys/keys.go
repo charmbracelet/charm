@@ -29,25 +29,26 @@ func NewProgram(cc *charm.Client) *tea.Program {
 
 // MSG
 
-type keysLoadedMsg []charm.Key
+type keysLoadedMsg charm.Keys
 type unlinkedKeyMsg int
 
 // MODEL
 
 // Model is the Tea state model for this user interface
 type Model struct {
-	cc           *charm.Client
-	pager        pager.Model
-	err          error
-	standalone   bool
-	loading      bool
-	keys         []charm.Key
-	index        int
-	promptDelete bool // have we prompted to delete the item at the current index?
-	quitting     bool
-	spinner      spinner.Model
-	Exit         bool
-	Quit         bool
+	cc             *charm.Client
+	pager          pager.Model
+	err            error
+	standalone     bool
+	loading        bool
+	activeKeyIndex int
+	keys           []charm.Key
+	index          int
+	promptDelete   bool // have we prompted to delete the item at the current index?
+	quitting       bool
+	spinner        spinner.Model
+	Exit           bool
+	Quit           bool
 }
 
 func (m *Model) UpdatePaging(msg tea.Msg) {
@@ -73,17 +74,18 @@ func NewModel(cc *charm.Client) Model {
 	s.ForegroundColor = "241"
 
 	return Model{
-		cc:           cc,
-		pager:        p,
-		err:          nil,
-		loading:      true,
-		keys:         []charm.Key{},
-		index:        0,
-		promptDelete: false,
-		spinner:      s,
-		quitting:     false,
-		Exit:         false,
-		Quit:         false,
+		cc:             cc,
+		pager:          p,
+		err:            nil,
+		loading:        true,
+		activeKeyIndex: -1,
+		keys:           []charm.Key{},
+		index:          0,
+		promptDelete:   false,
+		spinner:        s,
+		quitting:       false,
+		Exit:           false,
+		Quit:           false,
 	}
 }
 
@@ -170,7 +172,8 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	case keysLoadedMsg:
 		m.loading = false
 		m.index = 0
-		m.keys = msg
+		m.activeKeyIndex = msg.ActiveKey
+		m.keys = msg.Keys
 
 	case unlinkedKeyMsg:
 		m.keys = append(m.keys[:m.index], m.keys[m.index+1:]...)
@@ -252,8 +255,6 @@ func keysView(m Model) string {
 		slice      = m.keys[start:end]
 	)
 
-	fp := m.cc.FingerprintSHA256()
-
 	// Render key info
 	for i, key := range slice {
 		if m.promptDelete && m.index == i {
@@ -263,7 +264,7 @@ func keysView(m Model) string {
 		} else {
 			state = keyNormal
 		}
-		s += newStyledKey(key, fp).render(state)
+		s += newStyledKey(key, i == m.activeKeyIndex).render(state)
 	}
 
 	// If there aren't enough keys to fill the view, fill the missing parts
@@ -335,7 +336,7 @@ func LoadKeys(model tea.Model) tea.Msg {
 	if err != nil {
 		return tea.NewErrMsgFromErr(err)
 	}
-	return keysLoadedMsg(ak)
+	return keysLoadedMsg(*ak)
 }
 
 // unlinkKey deletes the selected key
