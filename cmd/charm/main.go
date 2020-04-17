@@ -46,19 +46,20 @@ var (
 		Use:   "charm",
 		Short: "Do Charm stuff",
 		Long:  formatLong(fmt.Sprintf("Do %s stuff. Run without arguments for fancy mode or use the sub-commands like a pro.", common.Keyword("Charm"))),
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if isTTY() {
 				cfg := getCharmConfig()
 				if cfg.Debug {
-					tea.UseSysLog("charm")
+					err := tea.UseSysLog("charm")
+					if err != nil {
+						return err
+					}
 				}
-				if err := ui.NewProgram(cfg).Start(); err != nil {
-					fmt.Println(err)
-					os.Exit(1)
-				}
-			} else {
-				cmd.Help()
+
+				return ui.NewProgram(cfg).Start()
 			}
+
+			return cmd.Help()
 		},
 	}
 
@@ -68,14 +69,15 @@ var (
 		Short:  "",
 		Long:   formatLong(""),
 		Args:   cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			cc := initCharmClient()
 			u, err := cc.Bio()
 			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
+				return err
 			}
+
 			fmt.Println(u)
+			return nil
 		},
 	}
 
@@ -84,14 +86,15 @@ var (
 		Short: "Print your Charm ID",
 		Long:  formatLong("Want to know your " + common.Keyword("Charm ID") + "? You’re in luck, kiddo."),
 		Args:  cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			cc := initCharmClient()
 			id, err := cc.ID()
 			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
+				return err
 			}
+
 			fmt.Println(id)
+			return nil
 		},
 	}
 
@@ -100,13 +103,15 @@ var (
 		Short: "Print a JWT token",
 		Long:  formatLong(common.Keyword("JWT tokens") + " are a way to authenticate to different web services that utilize your Charm account. If you’re a nerd you can use " + common.Code("jwt") + " to get one for yourself."),
 		Args:  cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			cc := initCharmClient()
 			jwt, err := cc.JWT()
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
+
 			fmt.Printf("%s\n", jwt)
+			return nil
 		},
 	}
 
@@ -115,20 +120,17 @@ var (
 		Short: "Print linked keys",
 		Long:  formatLong("Charm accounts are powered by " + common.Keyword("SSH keys") + ". This command prints all of the keys linked to your account. To remove keys use the main " + common.Code("charm") + " interface."),
 		Args:  cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			cc := initCharmClient()
 			if isTTY() && !simpleOutput && !randomart {
-				if err := keys.NewProgram(cc).Start(); err != nil {
-					fmt.Println(err)
-					os.Exit(1)
-				}
+				return keys.NewProgram(cc).Start()
 			} else {
 				// Print randomart with fingerprints
 				k, err := cc.AuthorizedKeysWithMetadata()
 				if err != nil {
-					fmt.Println(err)
-					os.Exit(1)
+					return err
 				}
+
 				keys := k.Keys
 				for i := 0; i < len(keys); i++ {
 					if !randomart {
@@ -149,6 +151,7 @@ var (
 					}
 					fmt.Printf("%s\n%s%s", fp, board, cr)
 				}
+				return nil
 			}
 		},
 	}
@@ -159,16 +162,14 @@ var (
 		Short:  "Generate SSH keys",
 		Long:   formatLong("Charm accounts are powered by " + common.Keyword("SSH keys") + ". This command will create them for you."),
 		Args:   cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if isTTY() && !simpleOutput {
-				err := tea.NewProgram(keygen.Init, keygen.Update, keygen.View, keygen.Subscriptions).Start()
-				if err != nil {
-					fmt.Println(err)
-					os.Exit(1)
-				}
+				return tea.NewProgram(keygen.Init, keygen.Update, keygen.View, keygen.Subscriptions).Start()
 			} else {
 				// TODO
 			}
+
+			return nil
 		},
 	}
 
@@ -178,24 +179,17 @@ var (
 		Long:    formatLong("It’s easy to " + common.Keyword("link") + " multiple machines or keys to your Charm account. Just run " + common.Code("charm link") + " on a machine connected to the account to want to link to start the process."),
 		Example: indent.String("charm link\ncharm link XXXXXX", indentBy),
 		Args:    cobra.RangeArgs(0, 1),
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			cc := initCharmClient()
 			switch len(args) {
 			case 0:
 				// Initialize a linking session
 				p := linkgen.NewProgram(cc)
-				if err := p.Start(); err != nil {
-					fmt.Println(err)
-					os.Exit(1)
-				}
-				return
+				return p.Start()
 			default:
 				// Join in on a linking session
 				p := link.NewProgram(cc, args[0])
-				if err := p.Start(); err != nil {
-					fmt.Println(err)
-					os.Exit(1)
-				}
+				return p.Start()
 			}
 		},
 	}
@@ -206,16 +200,17 @@ var (
 		Long:    formatLong("Print or set your " + common.Keyword("username") + ". If the name is already taken, just run it again with a different, cooler name. Basic latin letters and numbers only, 50 characters max."),
 		Args:    cobra.RangeArgs(0, 1),
 		Example: indent.String("charm name\ncharm name beatrix", indentBy),
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			cc := initCharmClient()
 			switch len(args) {
 			case 0:
 				u, err := cc.Bio()
 				if err != nil {
-					fmt.Print(err)
-					os.Exit(1)
+					return err
 				}
+
 				fmt.Println(u.Name)
+				return nil
 			default:
 				n := args[0]
 				if !charm.ValidateName(n) {
@@ -230,10 +225,11 @@ var (
 				}
 				if err != nil {
 					printFormatted(fmt.Sprintf("Welp, there’s been an error. %s", common.Subtle(err.Error())))
-					fmt.Println(err)
-					os.Exit(1)
+					return err
 				}
+
 				printFormatted(fmt.Sprintf("OK! Your new username is %s", common.Code(u.Name)))
+				return nil
 			}
 		},
 	}
