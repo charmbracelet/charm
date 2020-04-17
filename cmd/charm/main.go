@@ -132,7 +132,7 @@ var (
 				keys := k.Keys
 				for i := 0; i < len(keys); i++ {
 					if !randomart {
-						fmt.Println(keys[i])
+						fmt.Println(keys[i].Key)
 						continue
 					}
 					fp, err := keys[i].FingerprintSHA256()
