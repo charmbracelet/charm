@@ -39,6 +39,7 @@ func isTTY() bool {
 var (
 	identityFile string
 	simpleOutput bool
+	randomart    bool
 	forceKey     bool
 
 	rootCmd = &cobra.Command{
@@ -116,19 +117,37 @@ var (
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			cc := initCharmClient()
-			if isTTY() && !simpleOutput {
+			if isTTY() && !simpleOutput && !randomart {
 				if err := keys.NewProgram(cc).Start(); err != nil {
 					fmt.Println(err)
 					os.Exit(1)
 				}
 			} else {
-				ak, err := cc.AuthorizedKeysWithMetadata()
+				// Print randomart with fingerprints
+				k, err := cc.AuthorizedKeysWithMetadata()
 				if err != nil {
 					fmt.Println(err)
 					os.Exit(1)
 				}
-				for _, v := range ak.Keys {
-					fmt.Println(v.Key)
+				keys := k.Keys
+				for i := 0; i < len(keys); i++ {
+					if !randomart {
+						fmt.Println(keys[i])
+						continue
+					}
+					fp, err := keys[i].FingerprintSHA256()
+					if err != nil {
+						fp = fmt.Sprintf("Could not generate fingerprint for key %s: %v\n\n", keys[i].Key, err)
+					}
+					board, err := keys[i].RandomArt()
+					if err != nil {
+						board = fmt.Sprintf("Could not generate randomart for key %s: %v\n\n", keys[i].Key, err)
+					}
+					cr := "\n\n"
+					if i == len(keys)-1 {
+						cr = "\n"
+					}
+					fmt.Printf("%s\n%s%s", fp, board, cr)
 				}
 			}
 		},
@@ -251,6 +270,7 @@ func main() {
 	rootCmd.PersistentFlags().StringVarP(&identityFile, "identity", "i", "", "path to identity file (that is, an ssh private key)")
 	rootCmd.Flags().BoolVarP(&forceKey, "force-key", "f", false, "for the use of the SSH key on disk (that is, ignore ssh-agent)")
 	keysCmd.Flags().BoolVarP(&simpleOutput, "simple", "s", false, "simple, non-interactive output (good for scripts)")
+	keysCmd.Flags().BoolVarP(&randomart, "randomart", "r", false, "print SSH 5.1 randomart for each key (the Drunken Bishop algorithm)")
 	rootCmd.AddCommand(
 		bioCmd,
 		idCmd,
