@@ -20,6 +20,8 @@ const (
 	stateLoading state = iota
 	stateNormal
 	stateDeletingKey
+	stateDeletingActiveKey
+	stateDeletingAccount
 	stateQuitting
 )
 
@@ -108,7 +110,7 @@ func Init(cc *charm.Client) func() (tea.Model, tea.Cmd) {
 
 // UPDATE
 
-// Update is the Tea update function which handles incoming IO
+// Update is the Tea update function which handles incoming messages
 func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	m, ok := model.(Model)
 	if !ok {
@@ -163,9 +165,26 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 			// Confirm Delete
 		case "y":
-			if m.state == stateDeletingKey {
-				// TODO: return deletion command, actually delete, and so on
+			switch m.state {
+			case stateDeletingKey:
+				if len(m.keys) == 1 {
+					// The user is about to delete her account. Double confirm.
+					m.state = stateDeletingAccount
+					return m, nil
+				}
+				if m.index == m.activeKeyIndex {
+					// The user is going to delete
+					m.state = stateDeletingActiveKey
+					return m, nil
+				}
 				m.state = stateNormal
+				return m, tea.CmdMap(unlinkKey, m)
+			case stateDeletingActiveKey:
+				// Active key will be deleted. Remove the key and exit.
+				fallthrough
+			case stateDeletingAccount:
+				// Account will be deleted. Remove the key and exit.
+				m.state = stateQuitting
 				return m, tea.CmdMap(unlinkKey, m)
 			}
 		}
@@ -181,6 +200,9 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		m.keys = msg.Keys
 
 	case unlinkedKeyMsg:
+		if m.state == stateQuitting {
+			return m, tea.Quit
+		}
 		m.keys = append(m.keys[:m.index], m.keys[m.index+1:]...)
 		return m, nil
 
@@ -221,7 +243,7 @@ func View(model tea.Model) string {
 	case stateLoading:
 		s = loadingView(m)
 	case stateQuitting:
-		s = "Thanks for using Charm!"
+		s = "Thanks for using Charm!\n"
 	default:
 		s = "Here are the keys linked to your Charm account.\n\n"
 
@@ -232,9 +254,14 @@ func View(model tea.Model) string {
 		}
 
 		// Footer
-		if m.state == stateDeletingKey {
+		switch m.state {
+		case stateDeletingKey:
 			s += promptDeleteView()
-		} else {
+		case stateDeletingActiveKey:
+			s += promptDeleteActiveKeyView()
+		case stateDeletingAccount:
+			s += promptDeleteAccountView()
+		default:
 			s += helpView(m)
 		}
 
@@ -258,9 +285,14 @@ func keysView(m Model) string {
 		slice      = m.keys[start:end]
 	)
 
+	destructiveState :=
+		(m.state == stateDeletingKey ||
+			m.state == stateDeletingActiveKey ||
+			m.state == stateDeletingAccount)
+
 	// Render key info
 	for i, key := range slice {
-		if m.state == stateDeletingKey && m.index == i {
+		if destructiveState && m.index == i {
 			state = keyDeleting
 		} else if m.index == i {
 			state = keySelected
@@ -297,6 +329,16 @@ func helpView(m Model) string {
 
 func promptDeleteView() string {
 	return te.String("\n\nDelete this key? ").Foreground(hotPink).String() +
+		te.String("(y/N)").Foreground(dullHotPink).String()
+}
+
+func promptDeleteActiveKeyView() string {
+	return te.String("\n\nThis is the key currently in use. Are you, like, for-sure-for-sure? ").Foreground(hotPink).String() +
+		te.String("(y/N)").Foreground(dullHotPink).String()
+}
+
+func promptDeleteAccountView() string {
+	return te.String("\n\nSure? This will delete your account. Are you absolutely positive? ").Foreground(hotPink).String() +
 		te.String("(y/N)").Foreground(dullHotPink).String()
 }
 
