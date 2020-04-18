@@ -321,9 +321,7 @@ func helpView(m Model) string {
 	if m.pager.TotalPages > 1 {
 		s += "h/l, ←/→: page • "
 	}
-	if len(m.keys) > 1 {
-		s += "x: delete • "
-	}
+	s += "x: delete • "
 	return common.HelpView(s + "esc: exit")
 }
 
