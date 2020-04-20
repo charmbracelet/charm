@@ -178,7 +178,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 					m.state = stateDeletingAccount
 					return m, nil
 				}
-				if m.index == m.activeKeyIndex {
+				if m.getSelectedIndex() == m.activeKeyIndex {
 					// The user is going to delete
 					m.state = stateDeletingActiveKey
 					return m, nil
@@ -209,7 +209,11 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		if m.state == stateQuitting {
 			return m, tea.Quit
 		}
-		m.keys = append(m.keys[:m.index], m.keys[m.index+1:]...)
+		i := m.getSelectedIndex()
+		m.keys = append(m.keys[:i], m.keys[i+1:]...)
+		m.pager.SetTotalPages(len(m.keys))
+		m.pager.Page = min(m.pager.Page, m.pager.TotalPages-1)
+		m.index = min(m.index, m.pager.ItemsOnPage(len(m.keys)-1))
 		return m, nil
 
 	case spinner.TickMsg:
