@@ -305,7 +305,7 @@ func keysView(m Model) string {
 		} else {
 			state = keyNormal
 		}
-		s += newStyledKey(key, i == m.activeKeyIndex).render(state)
+		s += newStyledKey(key, i+start == m.activeKeyIndex).render(state)
 	}
 
 	// If there aren't enough keys to fill the view, fill the missing parts
