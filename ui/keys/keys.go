@@ -54,10 +54,16 @@ type Model struct {
 	standalone     bool
 	activeKeyIndex int         // index of the key in the below slice which is currently in use
 	keys           []charm.Key // keys linked to user's account
-	index          int         // index of selected key
+	index          int         // index of selected key in relation to the current page
 	spinner        spinner.Model
 	Exit           bool
 	Quit           bool
+}
+
+// getSelectedIndex returns the index of the cursor in relation to the total
+// number of items.
+func (m *Model) getSelectedIndex() int {
+	return m.index + m.pager.Page*m.pager.PerPage
 }
 
 func (m *Model) UpdatePaging(msg tea.Msg) {
@@ -149,13 +155,13 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 			fallthrough
 		case "j":
 			// Move down
-			numItems := m.pager.ItemsOnPage(len(m.keys))
+			itemsOnPage := m.pager.ItemsOnPage(len(m.keys))
 			m.index++
-			if m.index > numItems-1 && m.pager.Page < m.pager.TotalPages-1 {
+			if m.index > itemsOnPage-1 && m.pager.Page < m.pager.TotalPages-1 {
 				m.index = 0
 				m.pager.NextPage()
 			}
-			m.index = min(numItems-1, m.index)
+			m.index = min(itemsOnPage-1, m.index)
 
 		// Delete
 		case "x":
@@ -389,7 +395,7 @@ func unlinkKey(model tea.Model) tea.Msg {
 		return tea.ModelAssertionErr
 	}
 	m.cc.RenewSession()
-	err := m.cc.UnlinkAuthorizedKey(m.keys[m.index].Key)
+	err := m.cc.UnlinkAuthorizedKey(m.keys[m.getSelectedIndex()].Key)
 	if err != nil {
 		return tea.NewErrMsgFromErr(err)
 	}
