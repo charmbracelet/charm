@@ -210,10 +210,17 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 		i := m.getSelectedIndex()
+
+		// Remove key from array
 		m.keys = append(m.keys[:i], m.keys[i+1:]...)
+
+		// Update pagination
 		m.pager.SetTotalPages(len(m.keys))
 		m.pager.Page = min(m.pager.Page, m.pager.TotalPages-1)
+
+		// Update cursor
 		m.index = min(m.index, m.pager.ItemsOnPage(len(m.keys)-1))
+
 		return m, nil
 
 	case spinner.TickMsg:
