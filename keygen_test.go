@@ -21,7 +21,7 @@ func TestSSHKeyGeneration(t *testing.T) {
 	// Create temp directory for keys
 	dir, err := ioutil.TempDir("", "*")
 	if err != nil {
-		t.Errorf("error creating temp directory (%s): %v\n", dir, err)
+		t.Fatalf("error creating temp directory (%s): %v\n", dir, err)
 	}
 
 	// Cleanup temp directory after testing
