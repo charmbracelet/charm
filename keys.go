@@ -33,8 +33,9 @@ func (k Key) RandomArt() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	h := sha256.New()
-	h.Write(b)
+	_, _ = h.Write(b)
 	board := randomart.GenerateSubtitled(h.Sum(nil), "", "SHA256").String()
 	return strings.TrimSpace(board), nil
 }
