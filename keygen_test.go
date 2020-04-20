@@ -26,11 +26,11 @@ func TestSSHKeyGeneration(t *testing.T) {
 
 	// Cleanup temp directory after testing
 	// NOTE: this is Go 1.14+ only
-	t.Cleanup(func() {
+	defer func() {
 		if err := os.RemoveAll(dir); err != nil {
 			t.Errorf("error cleaning up temp directory (%s): %v\n", dir, err)
 		}
-	})
+	}()
 
 	t.Run("test generate SSH keys", func(t *testing.T) {
 		k = newSSHKeyPairWithBitSize(bitSize)
