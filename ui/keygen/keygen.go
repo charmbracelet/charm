@@ -155,7 +155,7 @@ func Spin(model tea.Model) tea.Sub {
 
 // GenerateKeys is a Tea command that generates a pair of SSH keys and writes
 // them to disk
-func GenerateKeys(model tea.Model) tea.Msg {
+func GenerateKeys() tea.Msg {
 	_, err := charm.NewSSHKeyPair()
 	if err != nil {
 		return failedMsg(err)
@@ -164,7 +164,7 @@ func GenerateKeys(model tea.Model) tea.Msg {
 }
 
 // pause runs the final pause before we wrap things up
-func pause(model tea.Model) tea.Msg {
+func pause() tea.Msg {
 	time.Sleep(time.Millisecond * 500)
 	return DoneMsg{}
 }

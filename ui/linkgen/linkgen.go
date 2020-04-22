@@ -28,15 +28,7 @@ type linkTokenCreatedMsg string
 type linkRequestMsg linkRequest
 type linkSuccessMsg bool // true if this account's already been linked
 type linkTimeoutMsg struct{}
-
-type errMsg struct {
-	error
-}
-
-// Error statisfies the error interface
-func (err errMsg) Error() string {
-	return err.error.Error()
-}
+type errMsg error
 
 // NewProgram is a simple wrapper for tea.NewProgram
 func NewProgram(cc *charm.Client) *tea.Program {
@@ -346,13 +338,7 @@ func Spin(model tea.Model) tea.Sub {
 //
 //     tea.Batch(HandleLinkRequest(model)...)
 //
-func HandleLinkRequest(model tea.Model) []tea.Cmd {
-	m, ok := model.(Model)
-	if !ok {
-		return []tea.Cmd{func(_ tea.Model) tea.Msg {
-			return tea.ModelAssertionErr
-		}}
-	}
+func HandleLinkRequest(m Model) []tea.Cmd {
 
 	go func() {
 		m.cc.RenewSession()
@@ -374,10 +360,10 @@ func HandleLinkRequest(model tea.Model) []tea.Cmd {
 
 // generateLink waits for either a link to be generated, or an error.
 func generateLink(lh *linkHandler) tea.Cmd {
-	return func(_ tea.Model) tea.Msg {
+	return func() tea.Msg {
 		select {
 		case err := <-lh.err:
-			return errMsg{err}
+			return errMsg(err)
 		case tok := <-lh.token:
 			return linkTokenCreatedMsg(tok)
 		}
@@ -386,21 +372,21 @@ func generateLink(lh *linkHandler) tea.Cmd {
 
 // handleLinkRequest waits for a link request code.
 func handleLinkRequest(lh *linkHandler) tea.Cmd {
-	return func(_ tea.Model) tea.Msg {
+	return func() tea.Msg {
 		return linkRequestMsg(<-lh.request)
 	}
 }
 
 // handleLinkSuccess waits for data in the link success channel.
 func handleLinkSuccess(lh *linkHandler) tea.Cmd {
-	return func(_ tea.Model) tea.Msg {
+	return func() tea.Msg {
 		return linkSuccessMsg(<-lh.success)
 	}
 }
 
 // handleLinkTimeout waits for a timeout in the linking process.
 func handleLinkTimeout(lh *linkHandler) tea.Cmd {
-	return func(_ tea.Model) tea.Msg {
+	return func() tea.Msg {
 		<-lh.timeout
 		return linkTimeoutMsg{}
 	}
@@ -408,7 +394,7 @@ func handleLinkTimeout(lh *linkHandler) tea.Cmd {
 
 // handleLinkError responds when a linking error is reported
 func handleLinkError(lh *linkHandler) tea.Cmd {
-	return func(_ tea.Model) tea.Msg {
-		return errMsg{<-lh.err}
+	return func() tea.Msg {
+		return errMsg(<-lh.err)
 	}
 }

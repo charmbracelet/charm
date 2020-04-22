@@ -35,7 +35,7 @@ type validTokenMsg bool
 type requestDeniedMsg struct{}
 type successMsg bool
 type timeoutMsg struct{}
-type errMsg struct{ error }
+type errMsg error
 
 type model struct {
 	lh            *linkHandler
@@ -68,7 +68,9 @@ func initialize(cc *charm.Client, code string) func() (tea.Model, tea.Cmd) {
 func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
 	m, ok := mdl.(model)
 	if !ok {
-		return tea.ModelAssertionErr, nil
+		return model{
+			err: errors.New("could not perform model assertion in update"),
+		}, nil
 	}
 
 	switch msg := msg.(type) {
@@ -166,7 +168,7 @@ func subscriptions(mdl tea.Model) tea.Subs {
 		"tick": func(mdl tea.Model) tea.Msg {
 			m, ok := mdl.(model)
 			if !ok {
-				return tea.ModelAssertionErr
+				return errMsg(errors.New("could not perform assertion on model in tick subscription"))
 			}
 			return spinner.Sub(m.spinner)
 		},
@@ -175,15 +177,7 @@ func subscriptions(mdl tea.Model) tea.Subs {
 
 // COMMANDS
 
-func handleLinkRequest(mdl tea.Model) tea.Cmd {
-	m, ok := mdl.(model)
-	if !ok {
-		// TODO: We should probably but a model assertion error command in Tea
-		// core
-		return func(_ tea.Model) tea.Msg {
-			return tea.ModelAssertionErr
-		}
-	}
+func handleLinkRequest(m model) tea.Cmd {
 
 	go func() {
 		if err := m.cc.Link(m.lh, m.code); err != nil {
@@ -202,40 +196,40 @@ func handleLinkRequest(mdl tea.Model) tea.Cmd {
 }
 
 func handleTokenSent(lh *linkHandler) tea.Cmd {
-	return func(_ tea.Model) tea.Msg {
+	return func() tea.Msg {
 		<-lh.tokenSent
 		return tokenSentMsg{}
 	}
 }
 
 func handleValidToken(lh *linkHandler) tea.Cmd {
-	return func(_ tea.Model) tea.Msg {
+	return func() tea.Msg {
 		return validTokenMsg(<-lh.validToken)
 	}
 }
 
 func handleRequestDenied(lh *linkHandler) tea.Cmd {
-	return func(_ tea.Model) tea.Msg {
+	return func() tea.Msg {
 		<-lh.requestDenied
 		return requestDeniedMsg{}
 	}
 }
 
 func handleLinkSuccess(lh *linkHandler) tea.Cmd {
-	return func(_ tea.Model) tea.Msg {
+	return func() tea.Msg {
 		return successMsg(<-lh.success)
 	}
 }
 
 func handleTimeout(lh *linkHandler) tea.Cmd {
-	return func(_ tea.Model) tea.Msg {
+	return func() tea.Msg {
 		<-lh.timeout
 		return timeoutMsg{}
 	}
 }
 
 func handleErr(lh *linkHandler) tea.Cmd {
-	return func(_ tea.Model) tea.Msg {
-		return errMsg{<-lh.err}
+	return func() tea.Msg {
+		return errMsg(<-lh.err)
 	}
 }

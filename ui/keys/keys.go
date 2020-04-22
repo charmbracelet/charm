@@ -42,6 +42,7 @@ func NewProgram(cc *charm.Client) *tea.Program {
 
 type keysLoadedMsg charm.Keys
 type unlinkedKeyMsg int
+type errMsg error
 
 // MODEL
 
@@ -110,7 +111,7 @@ func Init(cc *charm.Client) func() (tea.Model, tea.Cmd) {
 	return func() (tea.Model, tea.Cmd) {
 		m := NewModel(cc)
 		m.standalone = true
-		return m, LoadKeys
+		return m, LoadKeys(cc)
 	}
 }
 
@@ -184,18 +185,18 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 				m.state = stateNormal
-				return m, tea.CmdMap(unlinkKey, m)
+				return m, unlinkKey(m)
 			case stateDeletingActiveKey:
 				// Active key will be deleted. Remove the key and exit.
 				fallthrough
 			case stateDeletingAccount:
 				// Account will be deleted. Remove the key and exit.
 				m.state = stateQuitting
-				return m, tea.CmdMap(unlinkKey, m)
+				return m, unlinkKey(m)
 			}
 		}
 
-	case tea.ErrMsg:
+	case errMsg:
 		m.err = msg
 		return m, nil
 
@@ -386,31 +387,27 @@ func Spin(model tea.Model) tea.Sub {
 // COMMANDS
 
 // LoadKeys loads the current set of keys from the server
-func LoadKeys(model tea.Model) tea.Msg {
-	m, ok := model.(Model)
-	if !ok {
-		return tea.ModelAssertionErr
+func LoadKeys(cc *charm.Client) tea.Cmd {
+	return func() tea.Msg {
+		cc.RenewSession()
+		ak, err := cc.AuthorizedKeysWithMetadata()
+		if err != nil {
+			return errMsg(err)
+		}
+		return keysLoadedMsg(*ak)
 	}
-	m.cc.RenewSession()
-	ak, err := m.cc.AuthorizedKeysWithMetadata()
-	if err != nil {
-		return tea.NewErrMsgFromErr(err)
-	}
-	return keysLoadedMsg(*ak)
 }
 
 // unlinkKey deletes the selected key
-func unlinkKey(model tea.Model) tea.Msg {
-	m, ok := model.(Model)
-	if !ok {
-		return tea.ModelAssertionErr
+func unlinkKey(m Model) tea.Cmd {
+	return func() tea.Msg {
+		m.cc.RenewSession()
+		err := m.cc.UnlinkAuthorizedKey(m.keys[m.getSelectedIndex()].Key)
+		if err != nil {
+			return errMsg(err)
+		}
+		return unlinkedKeyMsg(m.index)
 	}
-	m.cc.RenewSession()
-	err := m.cc.UnlinkAuthorizedKey(m.keys[m.getSelectedIndex()].Key)
-	if err != nil {
-		return tea.NewErrMsgFromErr(err)
-	}
-	return unlinkedKeyMsg(m.index)
 }
 
 // Utils

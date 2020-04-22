@@ -93,6 +93,8 @@ type sshAuthFailedMsg error
 
 type newCharmClientMsg *charm.Client
 
+type errMsg error
+
 // MODEL
 
 // Model holds the state for this program
@@ -133,7 +135,7 @@ func initialize(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
 			spinner:       s,
 			keygen:        keygen.NewModel(),
 		}
-		return m, newCharmClient
+		return m, newCharmClient(m)
 	}
 }
 
@@ -142,8 +144,9 @@ func initialize(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
 func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	m, ok := model.(Model)
 	if !ok {
-		m.err = tea.ModelAssertionErr
-		return m, nil
+		return Model{
+			err: errors.New("could not perform assertion on model in update"),
+		}, nil
 	}
 
 	var (
@@ -202,7 +205,7 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 			}
 		}
 
-	case tea.ErrMsg:
+	case errMsg:
 		m.status = statusError
 		m.err = msg
 
@@ -219,7 +222,7 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 	case keygen.DoneMsg:
 		m.status = statusKeygenComplete
-		return m, newCharmClient
+		return m, newCharmClient(m)
 
 	case newCharmClientMsg:
 		// Save reference to Charm client
@@ -233,7 +236,7 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 		// Fetch user info
 		m.status = statusFetching
-		return m, tea.CmdMap(info.GetBio, m.info)
+		return m, info.GetBio(m.cc)
 
 	case info.GotBioMsg:
 		m.status = statusReady
@@ -327,7 +330,7 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	case keysChoice:
 		m.status = statusBrowsingKeys
 		m.menuChoice = unsetChoice
-		cmd = tea.CmdMap(keys.LoadKeys, m.keys)
+		cmd = keys.LoadKeys(m.cc)
 	case setUsernameChoice:
 		m.status = statusSettingUsername
 		m.menuChoice = unsetChoice
@@ -344,7 +347,8 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 func view(model tea.Model) string {
 	m, ok := model.(Model)
 	if !ok {
-		m.err = tea.ModelAssertionErr
+		m.err = errors.New("could not perform assertion on model in view")
+		m.status = statusError
 	}
 
 	s := charmLogoView()
@@ -433,24 +437,21 @@ func errorView(err error) string {
 
 // COMMANDS
 
-func newCharmClient(model tea.Model) tea.Msg {
-	m, ok := model.(Model)
-	if !ok {
-		return tea.ModelAssertionErr
-	}
-
-	cc, err := charm.NewClient(m.cfg)
-	if err == charm.ErrMissingSSHAuth {
-		if m.status != statusKeygenComplete {
-			return sshAuthErrorMsg{}
+func newCharmClient(m Model) tea.Cmd {
+	return func() tea.Msg {
+		cc, err := charm.NewClient(m.cfg)
+		if err == charm.ErrMissingSSHAuth {
+			if m.status != statusKeygenComplete {
+				return sshAuthErrorMsg{}
+			}
+			return sshAuthFailedMsg(err)
+		} else if err != nil {
+			// TODO: make this fatal
+			return errMsg(err)
 		}
-		return sshAuthFailedMsg(err)
-	} else if err != nil {
-		// TODO: make this fatal
-		return tea.NewErrMsgFromErr(err)
-	}
 
-	return newCharmClientMsg(cc)
+		return newCharmClientMsg(cc)
+	}
 }
 
 // SUBSCRIPTIONS

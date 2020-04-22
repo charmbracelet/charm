@@ -44,9 +44,13 @@ const (
 // the new name.
 type NameSetMsg string
 
+// NameTakenMsg is sent when the requested username has already been taken
 type NameTakenMsg struct{}
 
+// NameInvalidMsg is sent when the requested username has failed validation
 type NameInvalidMsg struct{}
+
+type errMsg error
 
 // MODEL
 
@@ -177,7 +181,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 					m.state = submitting
 					m.errMsg = ""
 					m.newName = strings.TrimSpace(m.input.Value)
-					return m, tea.CmdMap(setName, m) // fire off the command, too
+					return m, setName(m) // fire off the command, too
 				case cancelButton: // Exit this mini-app
 					m.Done = true
 					return m, nil
@@ -211,11 +215,11 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		)).Foreground(color("203")).String()
 		return m, nil
 
-	case tea.ErrMsg:
+	case errMsg:
 		m.state = ready
 		errMsg := common.Wrap(
 			te.String("Oh, what? There was a curious error we were not expecting. ").Foreground(color("203")).String() +
-				te.String(msg.String()).Foreground(color("241")).String(),
+				te.String(msg.Error()).Foreground(color("241")).String(),
 		)
 		m.errMsg = errMsg
 		return m, nil
@@ -294,32 +298,30 @@ func Spin(model tea.Model) tea.Sub {
 // COMMANDS
 
 // Attempt to update the username on the server
-func setName(model tea.Model) tea.Msg {
-	m, ok := model.(Model)
-	if !ok {
-		return tea.ModelAssertionErr
-	}
+func setName(m Model) tea.Cmd {
+	return func() tea.Msg {
 
-	// Validate before resetting the session to speed things up and keep us
-	// from pounding charm.RenewSession().
-	if !charm.ValidateName(m.newName) {
-		return NameInvalidMsg{}
-	}
+		// Validate before resetting the session to speed things up and keep us
+		// from pounding charm.RenewSession().
+		if !charm.ValidateName(m.newName) {
+			return NameInvalidMsg{}
+		}
 
-	// We must renew the session for every subsequent SSH-backed command we
-	// run. In the case below, we request a new JWT when setting the username.
-	if err := m.cc.RenewSession(); err != nil {
-		return tea.NewErrMsgFromErr(err)
-	}
+		// We must renew the session for every subsequent SSH-backed command we
+		// run. In the case below, we request a new JWT when setting the username.
+		if err := m.cc.RenewSession(); err != nil {
+			return errMsg(err)
+		}
 
-	u, err := m.cc.SetName(m.newName)
-	if err == charm.ErrNameTaken {
-		return NameTakenMsg{}
-	} else if err == charm.ErrNameInvalid {
-		return NameInvalidMsg{}
-	} else if err != nil {
-		return tea.NewErrMsgFromErr(err)
-	}
+		u, err := m.cc.SetName(m.newName)
+		if err == charm.ErrNameTaken {
+			return NameTakenMsg{}
+		} else if err == charm.ErrNameInvalid {
+			return NameInvalidMsg{}
+		} else if err != nil {
+			return errMsg(err)
+		}
 
-	return NameSetMsg(u.Name)
+		return NameSetMsg(u.Name)
+	}
 }

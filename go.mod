@@ -4,8 +4,8 @@ go 1.13
 
 require (
 	github.com/calmh/randomart v1.1.0
-	github.com/charmbracelet/tea v0.0.0-20200402161010-cd63ed1e4444
-	github.com/charmbracelet/teaparty v0.0.0-20200410021831-5dd360549610
+	github.com/charmbracelet/tea v0.2.0
+	github.com/charmbracelet/teaparty v0.0.0-20200422182958-5d987f793350
 	github.com/mattn/go-isatty v0.0.12
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/meowgorithm/babyenv v1.2.1
@@ -15,5 +15,5 @@ require (
 	github.com/spf13/cobra v0.0.7
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/crypto v0.0.0-20200128174031-69ecbb4d6d5d
-	golang.org/x/sys v0.0.0-20200409092240-59c9f1ba88fa // indirect
+	golang.org/x/sys v0.0.0-20200420163511-1957bb5e6d1f // indirect
 )

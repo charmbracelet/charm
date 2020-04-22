@@ -20,6 +20,8 @@ var (
 
 type GotBioMsg *charm.User
 
+type errMsg error
+
 // MODEL
 
 type Model struct {
@@ -59,7 +61,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		}
 	case GotBioMsg:
 		m.User = msg
-	case tea.ErrMsg:
+	case errMsg:
 		// If there's an error we print the error and exit
 		m.Err = msg
 		m.Quit = true
@@ -111,16 +113,13 @@ func Tick(model tea.Model) tea.Sub {
 
 // COMMANDS
 
-func GetBio(model tea.Model) tea.Msg {
-	m, ok := model.(Model)
-	if !ok {
-		return tea.ModelAssertionErr
-	}
+func GetBio(cc *charm.Client) tea.Cmd {
+	return func() tea.Msg {
+		user, err := cc.Bio()
+		if err != nil {
+			return errMsg(err)
+		}
 
-	user, err := m.cc.Bio()
-	if err != nil {
-		return tea.NewErrMsgFromErr(err)
+		return GotBioMsg(user)
 	}
-
-	return GotBioMsg(user)
 }
