@@ -39,6 +39,9 @@ type Config struct {
 	IDPort      int    `env:"CHARM_ID_PORT" default:"5555"`
 	BioHost     string `env:"CHARM_BIO_HOST" default:"https://bio.dev.charm.sh"`
 	BioPort     int    `env:"CHARM_BIO_PORT" default:"443"`
+	GlowHost    string `env:"CHARM_GLOW_HOST" default:"https://glow.dev.charm.sh"`
+	GlowPort    int    `env:"CHARM_GLOW_PORT" default:"443"`
+	JWTKey      string `env:"CHARM_JWT_KEY" default:""`
 	UseSSHAgent bool   `env:"CHARM_USE_SSH_AGENT" default:"true"`
 	SSHKeyPath  string `env:"CHARM_SSH_KEY_PATH" default:"~/.ssh/id_dsa"`
 	Debug       bool   `env:"CHARM_DEBUG" default:"false"`
@@ -47,10 +50,11 @@ type Config struct {
 
 // Client is the Charm client
 type Client struct {
-	config    *Config
-	sshConfig *ssh.ClientConfig
-	session   *ssh.Session
-	User      *User
+	auth         *Auth
+	config       *Config
+	sshConfig    *ssh.ClientConfig
+	session      *ssh.Session
+	jwtPublicKey []byte
 }
 
 // User represents a Charm user
@@ -84,7 +88,7 @@ func ConfigFromEnv() (*Config, error) {
 
 // NewClient creates a new Charm client
 func NewClient(cfg *Config) (*Client, error) {
-	cc := &Client{config: cfg}
+	cc := &Client{config: cfg, auth: &Auth{}}
 	if !cfg.ForceKey {
 		am, err := agentAuthMethod()
 		if err == nil {
@@ -99,6 +103,15 @@ func NewClient(cfg *Config) (*Client, error) {
 				return cc, nil
 			}
 		}
+	}
+	if cfg.JWTKey != "" {
+		jk, err := ioutil.ReadFile(cfg.JWTKey)
+		if err != nil {
+			return nil, err
+		}
+		cc.jwtPublicKey = jk
+	} else {
+		cc.jwtPublicKey = []byte(jwtPublicKey)
 	}
 
 	var pkam ssh.AuthMethod
@@ -395,6 +408,11 @@ func (cc *Client) CloseSession() error {
 	return cc.session.Close()
 }
 
+// ValidateName validates a given name
+func ValidateName(name string) bool {
+	return nameValidator.MatchString(name)
+}
+
 func (cc *Client) sshSession() (*ssh.Session, error) {
 	c, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cc.config.IDHost, cc.config.IDPort), cc.sshConfig)
 	if err != nil {
@@ -407,9 +425,14 @@ func (cc *Client) sshSession() (*ssh.Session, error) {
 	return s, nil
 }
 
-// ValidateName validates a given name
-func ValidateName(name string) bool {
-	return nameValidator.MatchString(name)
+func (cc *Client) Auth() (*Auth, error) {
+	if cc.auth.claims == nil || cc.auth.claims.Valid() == nil {
+		err := cc.renewAuth()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return cc.auth, nil
 }
 
 func fileExists(path string) bool {

@@ -6,6 +6,7 @@ require (
 	github.com/calmh/randomart v1.1.0
 	github.com/charmbracelet/tea v0.2.0
 	github.com/charmbracelet/teaparty v0.0.0-20200423161053-7ef18ab69e57
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/mattn/go-isatty v0.0.12
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/meowgorithm/babyenv v1.2.1
