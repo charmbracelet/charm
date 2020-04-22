@@ -1,6 +1,7 @@
 package charm
 
 import (
+	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -92,6 +93,39 @@ func (s *SSHKeyPair) GenerateKeys() error {
 	return nil
 }
 
+// GenerateEd25519Keys creates a pair of EdD25519 keys suitable for SSH auth
+func (s *SSHKeyPair) GenerateEd25519Keys() error {
+	// Generate keys
+	_, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		return err
+	}
+
+	// Get ASN.1 DER format
+	x509Encoded, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	if err != nil {
+		return err
+	}
+
+	// Encode PEM
+	pemBlock := pem.EncodeToMemory(&pem.Block{
+		Type:  "OPENSSH PRIVATE KEY",
+		Bytes: x509Encoded,
+	})
+
+	// Prepare public key
+	publicKey, err := ssh.NewPublicKey(privateKey.Public())
+	if err != nil {
+		return err
+	}
+
+	s.PrivateKeyPEM = pemBlock
+	s.PublicKey = ssh.MarshalAuthorizedKey(publicKey) // serialize for public key file on disk
+	s.keyDir = "~/.ssh/"
+	s.filename = "id_ed25519"
+	return nil
+}
+
 // PrepFilesystem makes sure state of the filesystem is as it needs to be in
 // order to write our keys to disk. It will create and/or set permissions on
 // the SSH directory we're going to write our keys to (generally ~/.ssh) as
@@ -179,13 +213,13 @@ func generatePrivateKey(bitSize int) (*rsa.PrivateKey, error) {
 // encodePrivateKeyToPEM encodes a private key from RSA to PEM format
 func encodePrivateKeyToPEM(privateKey *rsa.PrivateKey) []byte {
 	// Get ASN.1 DER format
-	privDir := x509.MarshalPKCS1PrivateKey(privateKey)
+	privDer := x509.MarshalPKCS1PrivateKey(privateKey)
 
 	// pem.Block
 	privBlock := pem.Block{
 		Type:    "RSA PRIVATE KEY",
 		Headers: nil,
-		Bytes:   privDir,
+		Bytes:   privDer,
 	}
 
 	// Private key in PEM format
