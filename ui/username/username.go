@@ -6,8 +6,8 @@ import (
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/tea"
-	"github.com/charmbracelet/teaparty/input"
 	"github.com/charmbracelet/teaparty/spinner"
+	input "github.com/charmbracelet/teaparty/textinput"
 	te "github.com/muesli/termenv"
 )
 
@@ -99,7 +99,7 @@ func (m *Model) indexBackward() {
 
 func NewModel(cc *charm.Client) Model {
 
-	inputModel := input.DefaultModel()
+	inputModel := input.NewModel()
 	inputModel.CursorColor = fuschia
 	inputModel.Placeholder = "divagurl2000"
 	inputModel.Prompt = focusedPrompt

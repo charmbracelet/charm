@@ -9,14 +9,10 @@ github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+Ce
 github.com/calmh/randomart v1.1.0 h1:evl+iwc10LXtHdMZhzLxmsCQVmWnkXs44SbC6Uk0Il8=
 github.com/calmh/randomart v1.1.0/go.mod h1:DQUbPVyP+7PAs21w/AnfMKG5NioxS3TbZ2F9MSK/jFM=
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=
-github.com/charmbracelet/tea v0.0.0-20200220032354-23432f30dd46 h1:ZRxnZ9WA8+DX7IpIrUjaAzue12wCA8bHgDWSrqARvGY=
-github.com/charmbracelet/tea v0.0.0-20200220032354-23432f30dd46/go.mod h1:96S8RyGdd7HfPcgDC8XqPKe+eH/1etFkw6lfhQCesgU=
 github.com/charmbracelet/tea v0.2.0 h1:PvoNZa2N5HeHnUELfEmZxLO+gmDgjNcrDLNHUMsSuXM=
 github.com/charmbracelet/tea v0.2.0/go.mod h1:lADjwO2mMub9qvXSCA9vAkabVWO0HeUrv4uO/lG3C+k=
-github.com/charmbracelet/teaparty v0.0.0-20200410021831-5dd360549610 h1:72SgF0v1orORZfrzjeKjLOC3s3jd01/jrgxM5mVpSRQ=
-github.com/charmbracelet/teaparty v0.0.0-20200410021831-5dd360549610/go.mod h1:DSGqzGz0x4loaifo2VWgOWnLegKiFgo7G3i0k3TiYM4=
-github.com/charmbracelet/teaparty v0.0.0-20200422182958-5d987f793350 h1:3oR9194rF6QZx+uYtih2TNl+brWiEFE3+XxislQguQw=
-github.com/charmbracelet/teaparty v0.0.0-20200422182958-5d987f793350/go.mod h1:fZUqnZAerM0u72s1cqyaBh1zG4CIx6LuIrnGDzrk8wE=
+github.com/charmbracelet/teaparty v0.0.0-20200423161053-7ef18ab69e57 h1:ukiz+Ys4HH0pdVH0CUH4+6du6XyiFSCjDjoNUXInTew=
+github.com/charmbracelet/teaparty v0.0.0-20200423161053-7ef18ab69e57/go.mod h1:9imOygZqdiciPbgk8TGAwRyi40o4MXpHqpkn4t+IZkg=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/coreos/bbolt v1.3.2/go.mod h1:iRUV2dpdMOn7Bo10OQBFzIJO9kkE559Wcmn+qkEiiKk=
 github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
@@ -81,8 +77,6 @@ github.com/mitchellh/mapstructure v1.1.2 h1:fmNYVwqnSfB9mZU6OS2O6GsXM+wcskZDuKQz
 github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
 github.com/muesli/reflow v0.1.0 h1:oQdpLfO56lr5pgLvqD0TcjW85rDjSYSBVdiG1Ch1ddM=
 github.com/muesli/reflow v0.1.0/go.mod h1:I9bWAt7QTg/que/qmUCJBGlj7wEq8OAFBjPNjc6xK4I=
-github.com/muesli/termenv v0.4.1-0.20200131124310-936567584c3e h1:6exaizu60WAeTP998SgBox6eaSs6rT36fR/0ebsrnOQ=
-github.com/muesli/termenv v0.4.1-0.20200131124310-936567584c3e/go.mod h1:O1/I6sw+6KcrgAmcs6uiUVr7Lui+DNVbHTzt9Lm/PlI=
 github.com/muesli/termenv v0.5.0 h1:7uYkBUJ2EE+CdWlBoYzO70I/cq/r3bOm4a40/lvmiAU=
 github.com/muesli/termenv v0.5.0/go.mod h1:O1/I6sw+6KcrgAmcs6uiUVr7Lui+DNVbHTzt9Lm/PlI=
 github.com/muesli/termenv v0.5.1-0.20200410155127-6515b86a77fe h1:PQ6sJa+zzJ+IhUnJbHhOD9wNHFog48hWvfsVu9puraQ=
@@ -158,8 +152,6 @@ golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5h
 golang.org/x/sys v0.0.0-20190412213103-97732733099d h1:+R4KGOnez64A81RvjARKc4UT5/tI9ujCIVX+P5KiHuI=
 golang.org/x/sys v0.0.0-20190412213103-97732733099d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200116001909-b77594299b42/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
-golang.org/x/sys v0.0.0-20200120151820-655fe14d7479 h1:LhLiKguPgZL+Tglay4GhVtfF0kb8cvOJ0dHTCBO8YNI=
-golang.org/x/sys v0.0.0-20200120151820-655fe14d7479/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200331124033-c3d80250170d h1:nc5K6ox/4lTFbMVSL9WRR81ixkcwXThoiF6yf+R9scA=
 golang.org/x/sys v0.0.0-20200331124033-c3d80250170d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200420163511-1957bb5e6d1f h1:gWF768j/LaZugp8dyS4UwsslYCYz9XgFxvlgsn0n9H8=
