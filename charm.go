@@ -419,7 +419,7 @@ func (cc *Client) sshSession() (*ssh.Session, error) {
 }
 
 func (cc *Client) Auth() (*Auth, error) {
-	if cc.auth.claims == nil || cc.auth.claims.Valid() == nil {
+	if cc.auth.claims == nil || cc.auth.claims.Valid() != nil {
 		err := cc.renewAuth()
 		if err != nil {
 			return nil, err
