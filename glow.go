@@ -102,7 +102,8 @@ func (cc *Client) StashMarkdown(note string, body string) error {
 	if err != nil {
 		return err
 	}
-	if cc.authorizeRequest(req) != nil {
+	err = cc.authorizeRequest(req)
+	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
