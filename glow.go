@@ -24,7 +24,7 @@ func (cc *Client) authorizeRequest(req *http.Request) error {
 	return nil
 }
 
-func (cc *Client) GetStash(charmID string, jwt string) ([]*Markdown, error) {
+func (cc *Client) GetStash() ([]*Markdown, error) {
 	var stash []*Markdown
 	client := &http.Client{}
 	auth, err := cc.Auth()
@@ -55,7 +55,7 @@ func (cc *Client) GetStash(charmID string, jwt string) ([]*Markdown, error) {
 	return stash, nil
 }
 
-func (cc *Client) GetMarkdown(charmID string, jwt string, markdownID int) (*Markdown, error) {
+func (cc *Client) GetMarkdown(markdownID int) (*Markdown, error) {
 	var md Markdown
 	client := &http.Client{}
 	auth, err := cc.Auth()
@@ -86,7 +86,7 @@ func (cc *Client) GetMarkdown(charmID string, jwt string, markdownID int) (*Mark
 	return &md, nil
 }
 
-func (cc *Client) StashMarkdown(charmID string, jwt string, note string, body string) error {
+func (cc *Client) StashMarkdown(note string, body string) error {
 	md := &Markdown{Note: note, Body: body}
 	buf := &bytes.Buffer{}
 	err := json.NewEncoder(buf).Encode(md)
@@ -116,7 +116,7 @@ func (cc *Client) StashMarkdown(charmID string, jwt string, note string, body st
 	return nil
 }
 
-func (cc *Client) DeleteMarkdown(charmID string, jwt string, markdownID int) error {
+func (cc *Client) DeleteMarkdown(markdownID int) error {
 	client := &http.Client{}
 	auth, err := cc.Auth()
 	if err != nil {
