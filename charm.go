@@ -2,6 +2,7 @@ package charm
 
 import (
 	"bytes"
+	"crypto/rsa"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -54,7 +55,7 @@ type Client struct {
 	config       *Config
 	sshConfig    *ssh.ClientConfig
 	session      *ssh.Session
-	jwtPublicKey []byte
+	jwtPublicKey *rsa.PublicKey
 }
 
 // User represents a Charm user
@@ -89,6 +90,10 @@ func ConfigFromEnv() (*Config, error) {
 // NewClient creates a new Charm client
 func NewClient(cfg *Config) (*Client, error) {
 	cc := &Client{config: cfg, auth: &Auth{}}
+	err := cc.setJWTKey()
+	if err != nil {
+		return nil, err
+	}
 	if !cfg.ForceKey {
 		am, err := agentAuthMethod()
 		if err == nil {
@@ -104,21 +109,9 @@ func NewClient(cfg *Config) (*Client, error) {
 			}
 		}
 	}
-	if cfg.JWTKey != "" {
-		jk, err := ioutil.ReadFile(cfg.JWTKey)
-		if err != nil {
-			return nil, err
-		}
-		cc.jwtPublicKey = jk
-	} else {
-		cc.jwtPublicKey = []byte(jwtPublicKey)
-	}
-
 	var pkam ssh.AuthMethod
-	//fmt.Printf("Using SSH key %s\n", cfg.SSHKeyPath)
-	pkam, err := publicKeyAuthMethod(cfg.SSHKeyPath)
+	pkam, err = publicKeyAuthMethod(cfg.SSHKeyPath)
 	if err != nil {
-		//fmt.Printf("Couldn't find SSH key %s, trying ~/.ssh/id_rsa\n", cfg.SSHKeyPath)
 		pkam, err = publicKeyAuthMethod("~/.ssh/id_rsa")
 		if err != nil {
 			return nil, ErrMissingSSHAuth

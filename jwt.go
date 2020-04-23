@@ -2,6 +2,7 @@ package charm
 
 import (
 	"encoding/json"
+	"io/ioutil"
 
 	"github.com/dgrijalva/jwt-go"
 )
@@ -23,6 +24,25 @@ type Auth struct {
 	CharmID string `json:"charm_id"`
 	JWT     string `json:"jwt"`
 	claims  *jwt.StandardClaims
+}
+
+func (cc *Client) setJWTKey() error {
+	var bk []byte
+	var err error
+	if cc.config.JWTKey != "" {
+		bk, err = ioutil.ReadFile(cc.config.JWTKey)
+		if err != nil {
+			return err
+		}
+	} else {
+		bk = []byte(jwtPublicKey)
+	}
+	pk, err := jwt.ParseRSAPublicKeyFromPEM(bk)
+	if err != nil {
+		return err
+	}
+	cc.jwtPublicKey = pk
+	return nil
 }
 
 func (cc *Client) renewAuth() error {
