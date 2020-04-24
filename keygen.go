@@ -16,6 +16,10 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+const (
+	rsaDefaultBits = 4096
+)
+
 var (
 	// MissingSSHKeysErr indicates we're missing
 	MissingSSHKeysErr = errors.New("missing one or more keys; did you forget to generate them?")
@@ -52,7 +56,7 @@ func (s SSHKeyPair) publicKeyPath() string {
 // NewSSHKeyPair generates an SSHKeyPair, which contains a pair of SSH keys.
 func NewSSHKeyPair() (*SSHKeyPair, error) {
 	s := &SSHKeyPair{}
-	if err := s.GenerateRSAKeys(4096); err != nil {
+	if err := s.GenerateRSAKeys(rsaDefaultBits); err != nil {
 		return nil, err
 	}
 	if err := s.WriteKeys(); err != nil {

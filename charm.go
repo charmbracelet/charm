@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"time"
 
@@ -44,7 +45,7 @@ type Config struct {
 	GlowPort    int    `env:"CHARM_GLOW_PORT" default:"443"`
 	JWTKey      string `env:"CHARM_JWT_KEY" default:""`
 	UseSSHAgent bool   `env:"CHARM_USE_SSH_AGENT" default:"true"`
-	SSHKeyPath  string `env:"CHARM_SSH_KEY_PATH" default:"~/.ssh/id_dsa"`
+	SSHKeyPath  string `env:"CHARM_SSH_KEY_PATH" default:"~/.ssh/id_rsa"`
 	Debug       bool   `env:"CHARM_DEBUG" default:"false"`
 	ForceKey    bool
 }
@@ -94,7 +95,9 @@ func NewClient(cfg *Config) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if !cfg.ForceKey {
+		// Try and use SSH agent for auth
 		am, err := agentAuthMethod()
 		if err == nil {
 			cc.sshConfig = &ssh.ClientConfig{
@@ -104,19 +107,30 @@ func NewClient(cfg *Config) (*Client, error) {
 			}
 			cc.session, err = cc.sshSession()
 			if err == nil {
-				//log.Println("Used SSH agent for auth")
+				// Used SSH agent for auth!
 				return cc, nil
 			}
 		}
 	}
-	var pkam ssh.AuthMethod
-	pkam, err = publicKeyAuthMethod(cfg.SSHKeyPath)
+
+	// Look for default SSH keys
+	defaultSSHKeys, err := findSSHKeys()
 	if err != nil {
-		pkam, err = publicKeyAuthMethod("~/.ssh/id_rsa")
-		if err != nil {
+		return nil, err
+	}
+	if len(defaultSSHKeys) == 0 {
+		return nil, ErrMissingSSHAuth
+	}
+
+	// Try and use the keys we found
+	var pkam ssh.AuthMethod
+	for i := 0; i < len(defaultSSHKeys); i++ {
+		pkam, err = publicKeyAuthMethod(defaultSSHKeys[i])
+		if err != nil && i == len(defaultSSHKeys)-1 {
 			return nil, ErrMissingSSHAuth
 		}
 	}
+
 	cc.sshConfig = &ssh.ClientConfig{
 		User:            "charm",
 		Auth:            []ssh.AuthMethod{pkam},
@@ -171,6 +185,7 @@ func (cc *Client) AuthorizedKeysWithMetadata() (*Keys, error) {
 	return &k, err
 }
 
+// UnlinkAuthorizedKey removes an authorized key from the user's Charm account
 func (cc *Client) UnlinkAuthorizedKey(s string) error {
 	defer cc.session.Close()
 	k := Key{Key: s}
@@ -468,4 +483,38 @@ func agentAuthMethod() (ssh.AuthMethod, error) {
 	}
 	agentClient := agent.NewClient(conn)
 	return ssh.PublicKeysCallback(agentClient.Signers), nil
+}
+
+// findSSHKeys looks in a user's ~/.ssh dir for possible SSH keys. If no keys
+// are found we return an empty slice.
+func findSSHKeys() (pathsToKeys []string, err error) {
+	path, err := homedir.Expand("~/.ssh")
+	if err != nil {
+		return nil, err
+	}
+
+	m, err := filepath.Glob(filepath.Join(path, "id_*"))
+	if err != nil {
+		return nil, err
+	}
+
+	if len(m) == 0 {
+		return nil, nil
+	}
+
+	var found []string
+	for _, f := range m {
+		switch filepath.Base(f) {
+		case "id_dsa":
+			fallthrough
+		case "id_rsa":
+			fallthrough
+		case "id_ecdsa":
+			fallthrough
+		case "id_ed25519":
+			found = append(found, f)
+		}
+	}
+
+	return found, nil
 }
