@@ -50,7 +50,7 @@ func Init() (tea.Model, tea.Cmd) {
 func NewModel() Model {
 	s := spinner.NewModel()
 	s.Type = spinner.Dot
-	s.ForegroundColor = "241"
+	s.ForegroundColor = common.SpinnerColor
 	return Model{
 		status:     statusRunning,
 		err:        nil,
@@ -113,7 +113,7 @@ func View(model tea.Model) string {
 	case statusRunning:
 		s += fmt.Sprintf("%s Generating keys...", spinner.View(m.spinner))
 	case statusSuccess:
-		s += termenv.String("✔").Foreground(common.Color("35")).String()
+		s += termenv.String("✔").Foreground(common.Green).String()
 		s += "  Done!"
 	case statusError:
 		s += fmt.Sprintf("Uh oh, there's been an error: %v", m.err)

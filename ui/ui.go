@@ -20,15 +20,6 @@ import (
 
 const padding = 2
 
-var (
-	color       = te.ColorProfile().Color
-	cream       = "#FFFDF5"
-	purpleBg    = "#5A56E0"
-	purpleFg    = "#7571F9"
-	fuschia     = "#EE6FF8"
-	yellowGreen = "#ECFD65"
-)
-
 // NewProgram returns a new tea program
 func NewProgram(cfg *charm.Config) *tea.Program {
 	return tea.NewProgram(initialize(cfg), update, view, subscriptions)
@@ -99,14 +90,13 @@ type errMsg error
 
 // Model holds the state for this program
 type Model struct {
-	cfg           *charm.Config
-	cc            *charm.Client
-	user          *charm.User
-	err           error
-	statusMessage string
-	status        status
-	menuIndex     int
-	menuChoice    menuChoice
+	cfg        *charm.Config
+	cc         *charm.Client
+	user       *charm.User
+	err        error
+	status     status
+	menuIndex  int
+	menuChoice menuChoice
 
 	spinner  spinner.Model
 	keygen   keygen.Model
@@ -124,16 +114,15 @@ func initialize(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
 		s.Type = spinner.Dot
 		s.ForegroundColor = "244"
 		m := Model{
-			cfg:           cfg,
-			cc:            nil,
-			user:          nil,
-			err:           nil,
-			statusMessage: "",
-			status:        statusInit,
-			menuIndex:     0,
-			menuChoice:    unsetChoice,
-			spinner:       s,
-			keygen:        keygen.NewModel(),
+			cfg:        cfg,
+			cc:         nil,
+			user:       nil,
+			err:        nil,
+			status:     statusInit,
+			menuIndex:  0,
+			menuChoice: unsetChoice,
+			spinner:    s,
+			keygen:     keygen.NewModel(),
 		}
 		return m, newCharmClient(m)
 	}
@@ -250,7 +239,6 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 	}
 
-	m.statusMessage = ""
 	m, cmd = updateChilden(msg, m)
 	if cmd != nil {
 		cmds = append(cmds, cmd)
@@ -382,7 +370,7 @@ func view(model tea.Model) string {
 }
 
 func charmLogoView() string {
-	title := te.String(" Charm ").Foreground(color(cream)).Background(color(purpleBg)).String()
+	title := te.String(" Charm ").Foreground(common.Cream).Background(common.Color("#5A56E0")).String()
 	return "\n" + title + "\n\n"
 }
 
@@ -391,8 +379,8 @@ func menuView(currentIndex int) string {
 	for i := 0; i < len(menuChoices); i++ {
 		e := "  "
 		if i == currentIndex {
-			e = te.String("> ").Foreground(color(purpleBg)).String()
-			e += te.String(menuChoices[menuChoice(i)]).Foreground(color(purpleFg)).String()
+			e = te.String("> ").Foreground(common.Fuschia).String()
+			e += te.String(menuChoices[menuChoice(i)]).Foreground(common.Fuschia).String()
 		} else {
 			e += menuChoices[menuChoice(i)]
 		}
@@ -415,24 +403,14 @@ func footerView(m Model) string {
 	if m.err != nil {
 		return errorView(m.err)
 	}
-	if m.statusMessage != "" {
-		return statusMessageView(m.statusMessage)
-	}
-	return helpView()
-}
-
-func helpView() string {
-	return common.HelpView("j/k, ↑/↓: choose • enter: select")
-}
-
-func statusMessageView(s string) string {
-	return te.String(s).Foreground(color(fuschia)).String()
+	return common.HelpView("j/k, ↑/↓: choose", "enter: select")
 }
 
 func errorView(err error) string {
-	head := te.String("Error: ").Foreground(color("203")).String()
-	msg := te.String(common.Wrap(err.Error())).Foreground(color("241")).String()
-	return "\n\n" + indent.String(head+msg, 2)
+	head := te.String("Error: ").Foreground(common.Red).String()
+	body := common.Subtle(err.Error())
+	msg := common.Wrap(head + body)
+	return "\n\n" + indent.String(msg, 2)
 }
 
 // COMMANDS

@@ -1,10 +1,17 @@
 package common
 
 import (
+	"fmt"
 	"strings"
 
 	te "github.com/muesli/termenv"
 )
+
+func VerticalLine() string {
+	return te.String("│").
+		Foreground(ColorPair("#646464", "#BCBCBC")).
+		String()
+}
 
 // KeyValueView renders key-value pairs
 func KeyValueView(stuff ...string) string {
@@ -12,19 +19,17 @@ func KeyValueView(stuff ...string) string {
 		return ""
 	}
 	var (
-		s         string
-		index     = 0
-		pipeColor = "241"
+		s     string
+		index = 0
 	)
 	for i := 0; i < len(stuff); i++ {
 		if i%2 == 0 {
 			// even
-			s += te.String("│ ").Foreground(Color(pipeColor)).String()
-			s += stuff[i] + ": "
+			s += fmt.Sprintf("%s %s: ", VerticalLine(), stuff[i])
 			continue
 		}
 		// odd
-		s += te.String(stuff[i]).Foreground(Color(PurpleFg)).String()
+		s += te.String(stuff[i]).Foreground(Indigo).String()
 		s += "\n"
 		index++
 	}
