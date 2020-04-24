@@ -37,7 +37,6 @@ func (e FilesystemErr) Error() string {
 type SSHKeyPair struct {
 	PrivateKeyPEM []byte
 	PublicKey     []byte
-	bitSize       int
 	keyDir        string
 	filename      string // private key filename; public key will have .pub appended
 }
@@ -52,12 +51,8 @@ func (s SSHKeyPair) publicKeyPath() string {
 
 // NewSSHKeyPair generates an SSHKeyPair, which contains a pair of SSH keys.
 func NewSSHKeyPair() (*SSHKeyPair, error) {
-	s := &SSHKeyPair{
-		bitSize:  4096,
-		keyDir:   "~/.ssh",
-		filename: "id_rsa",
-	}
-	if err := s.GenerateKeys(); err != nil {
+	s := &SSHKeyPair{}
+	if err := s.GenerateRSAKeys(4096); err != nil {
 		return nil, err
 	}
 	if err := s.WriteKeys(); err != nil {
@@ -68,29 +63,12 @@ func NewSSHKeyPair() (*SSHKeyPair, error) {
 
 // newSSHKeyPairWithBitSize returns an SSH key pair with a given bit size. This
 // is implemented for testing only. In production, use NewSSHKeyPair.
-func newSSHKeyPairWithBitSize(bitSize int) *SSHKeyPair {
-	s := &SSHKeyPair{
-		bitSize: bitSize,
+func newSSHKeyPairWithBitSize(bitSize int) (*SSHKeyPair, error) {
+	s := &SSHKeyPair{}
+	if err := s.GenerateRSAKeys(bitSize); err != nil {
+		return nil, err
 	}
-	return s
-}
-
-// GenerateKeys creates a public and private key pair
-func (s *SSHKeyPair) GenerateKeys() error {
-	var err error
-
-	privateKey, err := generatePrivateKey(s.bitSize)
-	if err != nil {
-		return err
-	}
-
-	s.PublicKey, err = generatePublicKey(&privateKey.PublicKey)
-	if err != nil {
-		return err
-	}
-
-	s.PrivateKeyPEM = encodePrivateKeyToPEM(privateKey)
-	return nil
+	return s, nil
 }
 
 // GenerateEd25519Keys creates a pair of EdD25519 keys suitable for SSH auth
@@ -121,8 +99,45 @@ func (s *SSHKeyPair) GenerateEd25519Keys() error {
 
 	s.PrivateKeyPEM = pemBlock
 	s.PublicKey = ssh.MarshalAuthorizedKey(publicKey) // serialize for public key file on disk
-	s.keyDir = "~/.ssh/"
+	s.keyDir = "~/.ssh"
 	s.filename = "id_ed25519"
+	return nil
+}
+
+func (s *SSHKeyPair) GenerateRSAKeys(bitSize int) error {
+
+	// Generate private key
+	privateKey, err := rsa.GenerateKey(rand.Reader, bitSize)
+	if err != nil {
+		return err
+	}
+
+	// Validate private key
+	err = privateKey.Validate()
+	if err != nil {
+		return err
+	}
+
+	// Get ASN.1 DER format
+	x509Encoded := x509.MarshalPKCS1PrivateKey(privateKey)
+
+	// Private key in PEM format
+	pemBlock := pem.EncodeToMemory(&pem.Block{
+		Type:    "RSA PRIVATE KEY",
+		Headers: nil,
+		Bytes:   x509Encoded,
+	})
+
+	// Generate public key
+	publicRSAKey, err := ssh.NewPublicKey(privateKey.Public())
+	if err != nil {
+		return err
+	}
+
+	s.PrivateKeyPEM = pemBlock
+	s.PublicKey = ssh.MarshalAuthorizedKey(publicRSAKey)
+	s.keyDir = "~/.ssh"
+	s.filename = "id_rsa"
 	return nil
 }
 
@@ -190,54 +205,6 @@ func (s *SSHKeyPair) WriteKeys() error {
 	}
 
 	return nil
-}
-
-// generatePrivateKey creates an RSA private key of a specified byte size, i.e.
-// 2048, 4096, etc.
-func generatePrivateKey(bitSize int) (*rsa.PrivateKey, error) {
-	// Generate private key
-	privateKey, err := rsa.GenerateKey(rand.Reader, bitSize)
-	if err != nil {
-		return nil, err
-	}
-
-	// Validate private key
-	err = privateKey.Validate()
-	if err != nil {
-		return nil, err
-	}
-
-	return privateKey, nil
-}
-
-// encodePrivateKeyToPEM encodes a private key from RSA to PEM format
-func encodePrivateKeyToPEM(privateKey *rsa.PrivateKey) []byte {
-	// Get ASN.1 DER format
-	privDer := x509.MarshalPKCS1PrivateKey(privateKey)
-
-	// pem.Block
-	privBlock := pem.Block{
-		Type:    "RSA PRIVATE KEY",
-		Headers: nil,
-		Bytes:   privDer,
-	}
-
-	// Private key in PEM format
-	privatePEMBytes := pem.EncodeToMemory(&privBlock)
-
-	return privatePEMBytes
-}
-
-// generatePublicKey takes an RSA public key and returns bytes suitable for a
-// public key file in the format "ssh-rsa ..."
-func generatePublicKey(privateKey *rsa.PublicKey) ([]byte, error) {
-	publicRSAKey, err := ssh.NewPublicKey(privateKey)
-	if err != nil {
-		return nil, err
-	}
-
-	pubKeyBytes := ssh.MarshalAuthorizedKey(publicRSAKey)
-	return pubKeyBytes, nil
 }
 
 // writeKeyToFile write a key to a given path with appropriate permissions

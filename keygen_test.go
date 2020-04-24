@@ -33,10 +33,9 @@ func TestSSHKeyGeneration(t *testing.T) {
 	}()
 
 	t.Run("test generate SSH keys", func(t *testing.T) {
-		k = newSSHKeyPairWithBitSize(bitSize)
-		k.filename = "id_rsa"
-		if err := k.GenerateKeys(); err != nil {
-			t.Errorf("error generating SSH keys: %v\n", err)
+		k, err = newSSHKeyPairWithBitSize(bitSize)
+		if err != nil {
+			t.Errorf("error creating SSH key pair: %v", err)
 		}
 
 		// TODO: is there a good way to validate these? Lengths seem to vary a bit,
