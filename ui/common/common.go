@@ -25,6 +25,7 @@ var (
 	Fuschia           = ColorPair("#EE6FF8", "#EE6FF8")
 	Green             = ColorPair("#04B575", "#04B575")
 	Red               = ColorPair("#ED567A", "#FF4672")
+	FaintRed          = ColorPair("#C74665", "#FF6F91")
 )
 
 func init() {

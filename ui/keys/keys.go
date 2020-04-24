@@ -1,6 +1,7 @@
 package keys
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/charmbracelet/charm"
@@ -82,7 +83,7 @@ func (m *Model) UpdatePaging(msg tea.Msg) {
 func NewModel(cc *charm.Client) Model {
 	p := pager.NewModel()
 	p.PerPage = keysPerPage
-	p.InactiveDot = common.Subtle("•")
+	p.InactiveDot = te.String("•").Foreground(common.ColorPair("#4F4F4F", "#CACACA")).String()
 	p.Type = pager.Dots
 
 	s := spinner.NewModel()
@@ -247,8 +248,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 func View(model tea.Model) string {
 	m, ok := model.(Model)
 	if !ok {
-		// TODO: handle error
-		return ""
+		m.err = errors.New("could not perform assertion on model")
 	}
 
 	if m.err != nil {
@@ -332,30 +332,30 @@ func keysView(m Model) string {
 }
 
 func helpView(m Model) string {
-	var s string
+	var items []string
 	if len(m.keys) > 1 {
-		s += "j/k, ↑/↓: choose • "
+		items = append(items, "j/k, ↑/↓: choose")
 	}
 	if m.pager.TotalPages > 1 {
-		s += "h/l, ←/→: page • "
+		items = append(items, "h/l, ←/→: page")
 	}
-	s += "x: delete • "
-	return common.HelpView(s + "esc: exit")
+	items = append(items, []string{"x: delete", "esc: exit"}...)
+	return common.HelpView(items...)
 }
 
 func promptDeleteView() string {
-	return te.String("\n\nDelete this key? ").Foreground(hotPink).String() +
-		te.String("(y/N)").Foreground(dullHotPink).String()
+	return te.String("\n\nDelete this key? ").Foreground(common.Red).String() +
+		te.String("(y/N)").Foreground(common.FaintRed).String()
 }
 
 func promptDeleteActiveKeyView() string {
-	return te.String("\n\nThis is the key currently in use. Are you, like, for-sure-for-sure? ").Foreground(hotPink).String() +
-		te.String("(y/N)").Foreground(dullHotPink).String()
+	return te.String("\n\nThis is the key currently in use. Are you, like, for-sure-for-sure? ").Foreground(common.Red).String() +
+		te.String("(y/N)").Foreground(common.FaintRed).String()
 }
 
 func promptDeleteAccountView() string {
-	return te.String("\n\nSure? This will delete your account. Are you absolutely positive? ").Foreground(hotPink).String() +
-		te.String("(y/N)").Foreground(dullHotPink).String()
+	return te.String("\n\nSure? This will delete your account. Are you absolutely positive? ").Foreground(common.Red).String() +
+		te.String("(y/N)").Foreground(common.FaintRed).String()
 }
 
 // SUBSCRIPTIONS

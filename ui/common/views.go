@@ -7,9 +7,29 @@ import (
 	te "github.com/muesli/termenv"
 )
 
-func VerticalLine() string {
+// State is a general UI state used to help style components
+type State int
+
+// possible states
+const (
+	StateNormal State = iota
+	StateSelected
+	StateDeleting
+)
+
+// VerticalLine return a vertical line colored according to the given state
+func VerticalLine(state State) string {
+	var c te.Color
+	switch state {
+	case StateSelected:
+		c = ColorPair("#F684FF", "#F684FF")
+	case StateDeleting:
+		c = ColorPair("#893D4E", "#FF8BA7")
+	default:
+		c = ColorPair("#646464", "#BCBCBC")
+	}
 	return te.String("│").
-		Foreground(ColorPair("#646464", "#BCBCBC")).
+		Foreground(c).
 		String()
 }
 
@@ -25,7 +45,7 @@ func KeyValueView(stuff ...string) string {
 	for i := 0; i < len(stuff); i++ {
 		if i%2 == 0 {
 			// even
-			s += fmt.Sprintf("%s %s: ", VerticalLine(), stuff[i])
+			s += fmt.Sprintf("%s %s: ", VerticalLine(StateNormal), stuff[i])
 			continue
 		}
 		// odd
