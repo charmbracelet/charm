@@ -254,7 +254,7 @@ func initCharmClient() *charm.Client {
 	cfg := getCharmConfig()
 	cc, err := charm.NewClient(cfg)
 	if err == charm.ErrMissingSSHAuth {
-		log.Fatal("Missing ssh key. Run `ssh-keygen` to make one or set the `CHARM_SSH_KEY_PATH` env var to your private key path.")
+		printFormatted("We were’t able to authenticate via SSH, which means there’s likely a problem with your key. You can set the environment variable " + common.Code("CHARM_SSH_KEY_PATH") + " to point to a specific private key, or use " + common.Code("-i") + "specifify a location.")
 	} else if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
