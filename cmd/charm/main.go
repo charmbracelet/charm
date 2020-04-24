@@ -100,8 +100,8 @@ var (
 
 	jwtCmd = &cobra.Command{
 		Use:   "jwt",
-		Short: "Print a JWT token",
-		Long:  formatLong(common.Keyword("JWT tokens") + " are a way to authenticate to different web services that utilize your Charm account. If you’re a nerd you can use " + common.Code("jwt") + " to get one for yourself."),
+		Short: "Print a JWT",
+		Long:  formatLong(common.Keyword("JSON Web Tokens") + " are a way to authenticate to different services that utilize your Charm account. If you’re a nerd you can use " + common.Code("jwt") + " to get one for yourself."),
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cc := initCharmClient()
