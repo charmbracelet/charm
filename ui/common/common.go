@@ -18,6 +18,7 @@ var (
 	SpinnerColor      string
 	Indigo            = NewColorPair("#7571F9", "#5A56E0")
 	Cream             = NewColorPair("#FFFDF5", "#FFFDF5")
+	YellowGreen       = NewColorPair("#ECFD65", "#04B575")
 	Fuschia           = NewColorPair("#EE6FF8", "#EE6FF8")
 	Green             = NewColorPair("#04B575", "#04B575")
 	Red               = NewColorPair("#ED567A", "#FF4672")
@@ -62,7 +63,7 @@ func Wrap(s string) string {
 
 // Keyword applies special formatting to imporant words or phrases
 func Keyword(s string) string {
-	return te.String(s).Foreground(NewColorPair("#ECFD65", "#04B575").Color()).String()
+	return te.String(s).Foreground(Green.Color()).String()
 }
 
 // Code applies special formatting to strings indeded to read as code
