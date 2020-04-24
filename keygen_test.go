@@ -8,15 +8,7 @@ import (
 )
 
 func TestSSHKeyGeneration(t *testing.T) {
-	var (
-		bitSize = 4096
-		k       *SSHKeyPair
-	)
-
-	if testing.Short() {
-		bitSize = 64
-		t.Logf("Using silly %d-bit key size for quicker testing", bitSize)
-	}
+	var k = &SSHKeyPair{}
 
 	// Create temp directory for keys
 	dir, err := ioutil.TempDir("", "charm")
@@ -33,7 +25,7 @@ func TestSSHKeyGeneration(t *testing.T) {
 	}()
 
 	t.Run("test generate SSH keys", func(t *testing.T) {
-		k, err = newSSHKeyPairWithBitSize(bitSize)
+		err = k.GenerateEd25519Keys()
 		if err != nil {
 			t.Errorf("error creating SSH key pair: %v", err)
 		}

@@ -61,17 +61,7 @@ func NewSSHKeyPair() (*SSHKeyPair, error) {
 	return s, nil
 }
 
-// newSSHKeyPairWithBitSize returns an SSH key pair with a given bit size. This
-// is implemented for testing only. In production, use NewSSHKeyPair.
-func newSSHKeyPairWithBitSize(bitSize int) (*SSHKeyPair, error) {
-	s := &SSHKeyPair{}
-	if err := s.GenerateRSAKeys(bitSize); err != nil {
-		return nil, err
-	}
-	return s, nil
-}
-
-// GenerateEd25519Keys creates a pair of EdD25519 keys suitable for SSH auth
+// GenerateEd25519Keys creates a pair of EdD25519 keys for SSH auth
 func (s *SSHKeyPair) GenerateEd25519Keys() error {
 	// Generate keys
 	_, privateKey, err := ed25519.GenerateKey(rand.Reader)
@@ -104,6 +94,7 @@ func (s *SSHKeyPair) GenerateEd25519Keys() error {
 	return nil
 }
 
+// GenerateRSAKeys creates a pair for RSA keys for SSH auth
 func (s *SSHKeyPair) GenerateRSAKeys(bitSize int) error {
 
 	// Generate private key
