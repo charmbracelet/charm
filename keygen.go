@@ -56,7 +56,7 @@ func (s SSHKeyPair) publicKeyPath() string {
 // NewSSHKeyPair generates an SSHKeyPair, which contains a pair of SSH keys.
 func NewSSHKeyPair() (*SSHKeyPair, error) {
 	s := &SSHKeyPair{}
-	if err := s.GenerateRSAKeys(rsaDefaultBits); err != nil {
+	if err := s.GenerateEd25519Keys(); err != nil {
 		return nil, err
 	}
 	if err := s.WriteKeys(); err != nil {
@@ -81,7 +81,7 @@ func (s *SSHKeyPair) GenerateEd25519Keys() error {
 
 	// Encode PEM
 	pemBlock := pem.EncodeToMemory(&pem.Block{
-		Type:  "OPENSSH PRIVATE KEY",
+		Type:  "PRIVATE KEY",
 		Bytes: x509Encoded,
 	})
 
