@@ -6,10 +6,6 @@ import (
 )
 
 const (
-	PurpleBg    = "#5A56E0"
-	PurpleFg    = "#7571F9"
-	YellowGreen = "#ECFD65"
-
 	wrapAt = 60
 )
 
@@ -20,12 +16,12 @@ var (
 
 	HasDarkBackground = te.HasDarkBackground()
 	SpinnerColor      string
-	Indigo            = ColorPair("#7571F9", "#5A56E0")
-	Cream             = ColorPair("#FFFDF5", "#FFFDF5")
-	Fuschia           = ColorPair("#EE6FF8", "#EE6FF8")
-	Green             = ColorPair("#04B575", "#04B575")
-	Red               = ColorPair("#ED567A", "#FF4672")
-	FaintRed          = ColorPair("#C74665", "#FF6F91")
+	Indigo            = NewColorPair("#7571F9", "#5A56E0")
+	Cream             = NewColorPair("#FFFDF5", "#FFFDF5")
+	Fuschia           = NewColorPair("#EE6FF8", "#EE6FF8")
+	Green             = NewColorPair("#04B575", "#04B575")
+	Red               = NewColorPair("#ED567A", "#FF4672")
+	FaintRed          = NewColorPair("#C74665", "#FF6F91")
 )
 
 func init() {
@@ -36,11 +32,27 @@ func init() {
 	}
 }
 
-func ColorPair(dark, light string) te.Color {
+type ColorPair struct {
+	Dark  string
+	Light string
+}
+
+func NewColorPair(dark, light string) ColorPair {
+	return ColorPair{dark, light}
+}
+
+func (c ColorPair) Color() te.Color {
 	if HasDarkBackground {
-		return Color(dark)
+		return Color(c.Dark)
 	}
-	return Color(light)
+	return Color(c.Light)
+}
+
+func (c ColorPair) String() string {
+	if HasDarkBackground {
+		return c.Dark
+	}
+	return c.Light
 }
 
 // Wrap wraps lines at a predefined width via package muesli/reflow.
@@ -50,20 +62,20 @@ func Wrap(s string) string {
 
 // Keyword applies special formatting to imporant words or phrases
 func Keyword(s string) string {
-	return te.String(s).Foreground(ColorPair("#ECFD65", "#04B575")).String()
+	return te.String(s).Foreground(NewColorPair("#ECFD65", "#04B575").Color()).String()
 }
 
 // Code applies special formatting to strings indeded to read as code
 func Code(s string) string {
 	return te.String(" " + s + " ").
-		Foreground(ColorPair("#ED567A", "#FF4672")).
-		Background(ColorPair("#2B2A2A", "#EBE5EC")).
+		Foreground(NewColorPair("#ED567A", "#FF4672").Color()).
+		Background(NewColorPair("#2B2A2A", "#EBE5EC").Color()).
 		String()
 }
 
 // Subtle applies formatting to strings intended to be "subtle"
 func Subtle(s string) string {
-	return te.String(s).Foreground(ColorPair("#5C5C5C", "#9B9B9B")).String()
+	return te.String(s).Foreground(NewColorPair("#5C5C5C", "#9B9B9B").Color()).String()
 }
 
 // HELP
@@ -76,7 +88,7 @@ func HelpView(sections ...string) string {
 		return s
 	}
 	for i := 0; i < len(sections); i++ {
-		s += te.String(sections[i]).Foreground(ColorPair("#5C5C5C", "#9B9B9B")).String()
+		s += te.String(sections[i]).Foreground(NewColorPair("#5C5C5C", "#9B9B9B").Color()).String()
 		if i < len(sections)-1 {
 			s += helpDivider()
 		}
@@ -85,7 +97,7 @@ func HelpView(sections ...string) string {
 }
 
 func helpDivider() string {
-	return te.String(" • ").Foreground(ColorPair("#3C3C3C", "#DDDADA")).String()
+	return te.String(" • ").Foreground(NewColorPair("#3C3C3C", "#DDDADA").Color()).String()
 }
 
 // BUTTONS
@@ -120,11 +132,11 @@ func CancelButtonView(focused bool, defaultButton bool) string {
 }
 
 func buttonStyling(str string, underline, focused bool) string {
-	var s te.Style = te.String(str).Foreground(Cream)
+	var s te.Style = te.String(str).Foreground(Cream.Color())
 	if focused {
-		s = s.Background(Fuschia)
+		s = s.Background(Fuschia.Color())
 	} else {
-		s = s.Background(ColorPair("#827983", "#BDB0BE"))
+		s = s.Background(ColorPair{"#827983", "#BDB0BE"}.Color())
 	}
 	if underline {
 		s = s.Underline()

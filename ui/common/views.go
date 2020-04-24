@@ -22,11 +22,11 @@ func VerticalLine(state State) string {
 	var c te.Color
 	switch state {
 	case StateSelected:
-		c = ColorPair("#F684FF", "#F684FF")
+		c = NewColorPair("#F684FF", "#F684FF").Color()
 	case StateDeleting:
-		c = ColorPair("#893D4E", "#FF8BA7")
+		c = NewColorPair("#893D4E", "#FF8BA7").Color()
 	default:
-		c = ColorPair("#646464", "#BCBCBC")
+		c = NewColorPair("#646464", "#BCBCBC").Color()
 	}
 	return te.String("│").
 		Foreground(c).
@@ -49,7 +49,7 @@ func KeyValueView(stuff ...string) string {
 			continue
 		}
 		// odd
-		s += te.String(stuff[i]).Foreground(Indigo).String()
+		s += te.String(stuff[i]).Foreground(Indigo.Color()).String()
 		s += "\n"
 		index++
 	}

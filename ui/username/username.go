@@ -11,17 +11,6 @@ import (
 	te "github.com/muesli/termenv"
 )
 
-const (
-	prompt = "> "
-)
-
-var (
-	color         = te.ColorProfile().Color
-	fuschia       = "#EE6FF8"
-	yellowGreen   = "#ECFD65"
-	focusedPrompt = te.String(prompt).Foreground(color(fuschia)).String()
-)
-
 type state int
 
 const (
@@ -36,6 +25,14 @@ const (
 	textInput index = iota
 	okButton
 	cancelButton
+)
+
+const (
+	prompt = "> "
+)
+
+var (
+	focusedPrompt = te.String(prompt).Foreground(common.Fuschia.Color()).String()
 )
 
 // MSG
@@ -100,7 +97,7 @@ func (m *Model) indexBackward() {
 func NewModel(cc *charm.Client) Model {
 
 	inputModel := input.NewModel()
-	inputModel.CursorColor = fuschia
+	inputModel.CursorColor = common.Fuschia.String()
 	inputModel.Placeholder = "divagurl2000"
 	inputModel.Prompt = focusedPrompt
 	inputModel.CharLimit = 50
@@ -108,6 +105,7 @@ func NewModel(cc *charm.Client) Model {
 
 	spinnerModel := spinner.NewModel()
 	spinnerModel.Type = spinner.Dot
+	spinnerModel.ForegroundColor = common.SpinnerColor
 
 	return Model{
 		Done:    false,
@@ -201,27 +199,23 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 	case NameTakenMsg:
 		m.state = ready
-		name := te.String(m.newName).Foreground(color("203")).String()
-		m.errMsg = te.String("Sorry,").Foreground(color("241")).String() +
-			" " + name + " " +
-			te.String("is taken.").Foreground(color("241")).String()
+		m.errMsg = common.Subtle("Sorry, ") +
+			te.String(m.newName).Foreground(common.Red.Color()).String() +
+			common.Subtle("is taken.")
 		return m, nil
 
 	case NameInvalidMsg:
 		m.state = ready
-		m.errMsg = te.String(common.Wrap(
-			te.String("Invalid name. ").Foreground(color("203")).String() +
-				te.String("Names can only contain plain letters and numbers and must be less than 50 characters. And no emojis, kiddo.").Foreground(color("241")).String(),
-		)).Foreground(color("203")).String()
+		head := te.String("Invalid name. ").Foreground(common.Red.Color()).String()
+		body := common.Subtle("Names can only contain plain letters and numbers and must be less than 50 characters. And no emojis, kiddo.")
+		m.errMsg = common.Wrap(head + body)
 		return m, nil
 
 	case errMsg:
 		m.state = ready
-		errMsg := common.Wrap(
-			te.String("Oh, what? There was a curious error we were not expecting. ").Foreground(color("203")).String() +
-				te.String(msg.Error()).Foreground(color("241")).String(),
-		)
-		m.errMsg = errMsg
+		head := te.String("Oh, what? There was a curious error we were not expecting. ").Foreground(common.Red.Color()).String()
+		body := common.Subtle(msg.Error())
+		m.errMsg = common.Wrap(head + body)
 		return m, nil
 
 	case spinner.TickMsg:
@@ -242,8 +236,8 @@ func View(m Model) string {
 	if m.state == submitting {
 		s += spinnerView(m)
 	} else {
-		s += common.OKButtonView(m.index == 1, true) +
-			" " + common.CancelButtonView(m.index == 2, false)
+		s += common.OKButtonView(m.index == 1, true)
+		s += " " + common.CancelButtonView(m.index == 2, false)
 		if m.errMsg != "" {
 			s += "\n\n" + m.errMsg
 		}
@@ -251,26 +245,12 @@ func View(m Model) string {
 	return s
 }
 
-func buttonView(label string, active bool, signalDefault bool) string {
-	c := "238"
-	if active {
-		c = fuschia
-	}
-	text := te.String(label).Background(color(c))
-	if signalDefault {
-		text = text.Underline()
-	}
-	padding := te.String("  ").Background(color(c)).String()
-	return padding + text.String() + padding
-}
-
 func nameSetView(m Model) string {
 	return "OK! Your new username is " + m.newName
 }
 
 func spinnerView(m Model) string {
-	return te.String(spinner.View(m.spinner)).Foreground(color("241")).String() +
-		" Submitting..."
+	return spinner.View(m.spinner) + " Submitting..."
 }
 
 // SUBSCRIPTIONS

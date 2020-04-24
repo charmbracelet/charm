@@ -370,7 +370,7 @@ func view(model tea.Model) string {
 }
 
 func charmLogoView() string {
-	title := te.String(" Charm ").Foreground(common.Cream).Background(common.Color("#5A56E0")).String()
+	title := te.String(" Charm ").Foreground(common.Cream.Color()).Background(common.Color("#5A56E0")).String()
 	return "\n" + title + "\n\n"
 }
 
@@ -379,8 +379,8 @@ func menuView(currentIndex int) string {
 	for i := 0; i < len(menuChoices); i++ {
 		e := "  "
 		if i == currentIndex {
-			e = te.String("> ").Foreground(common.Fuschia).String()
-			e += te.String(menuChoices[menuChoice(i)]).Foreground(common.Fuschia).String()
+			e = te.String("> ").Foreground(common.Fuschia.Color()).String()
+			e += te.String(menuChoices[menuChoice(i)]).Foreground(common.Fuschia.Color()).String()
 		} else {
 			e += menuChoices[menuChoice(i)]
 		}
@@ -407,7 +407,7 @@ func footerView(m Model) string {
 }
 
 func errorView(err error) string {
-	head := te.String("Error: ").Foreground(common.Red).String()
+	head := te.String("Error: ").Foreground(common.Red.Color()).String()
 	body := common.Subtle(err.Error())
 	msg := common.Wrap(head + body)
 	return "\n\n" + indent.String(msg, 2)

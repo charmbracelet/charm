@@ -28,8 +28,8 @@ func newStyledKey(key charm.Key, active bool) styledKey {
 
 	var note string
 	if active {
-		bullet := te.String("• ").Foreground(common.ColorPair("#2B4A3F", "#ABE5D1")).String()
-		note = bullet + te.String("Current Key").Foreground(common.ColorPair("#04B575", "#04B575")).String()
+		bullet := te.String("• ").Foreground(common.NewColorPair("#2B4A3F", "#ABE5D1").Color()).String()
+		note = bullet + te.String("Current Key").Foreground(common.NewColorPair("#04B575", "#04B575").Color()).String()
 	}
 
 	// Default state
@@ -38,9 +38,9 @@ func newStyledKey(key charm.Key, active bool) styledKey {
 		fingerprint: fp,
 		line:        common.VerticalLine(common.StateNormal),
 		keyLabel:    "Key:",
-		keyVal:      te.String(fp).Foreground(common.Indigo).String(),
+		keyVal:      te.String(fp).Foreground(common.Indigo.Color()).String(),
 		dateLabel:   "Added:",
-		dateVal:     te.String(date).Foreground(common.Indigo).String(),
+		dateVal:     te.String(date).Foreground(common.Indigo.Color()).String(),
 		note:        note,
 	}
 }
@@ -48,17 +48,17 @@ func newStyledKey(key charm.Key, active bool) styledKey {
 // Selected state
 func (k *styledKey) selected() {
 	k.line = common.VerticalLine(common.StateSelected)
-	k.keyLabel = te.String("Key:").Foreground(common.Fuschia).String()
-	k.dateLabel = te.String("Added:").Foreground(common.Fuschia).String()
+	k.keyLabel = te.String("Key:").Foreground(common.Fuschia.Color()).String()
+	k.dateLabel = te.String("Added:").Foreground(common.Fuschia.Color()).String()
 }
 
 // Deleting state
 func (k *styledKey) deleting() {
 	k.line = common.VerticalLine(common.StateDeleting)
-	k.keyLabel = te.String("Key:").Foreground(common.Red).String()
-	k.keyVal = te.String(k.fingerprint).Foreground(common.FaintRed).String()
-	k.dateLabel = te.String("Added:").Foreground(common.Red).String()
-	k.dateVal = te.String(k.date).Foreground(common.FaintRed).String()
+	k.keyLabel = te.String("Key:").Foreground(common.Red.Color()).String()
+	k.keyVal = te.String(k.fingerprint).Foreground(common.FaintRed.Color()).String()
+	k.dateLabel = te.String("Added:").Foreground(common.Red.Color()).String()
+	k.dateVal = te.String(k.date).Foreground(common.FaintRed.Color()).String()
 }
 
 func (k styledKey) render(state keyState) string {

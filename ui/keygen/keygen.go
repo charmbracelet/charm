@@ -113,7 +113,7 @@ func View(model tea.Model) string {
 	case statusRunning:
 		s += fmt.Sprintf("%s Generating keys...", spinner.View(m.spinner))
 	case statusSuccess:
-		s += termenv.String("✔").Foreground(common.Green).String()
+		s += termenv.String("✔").Foreground(common.Green.Color()).String()
 		s += "  Done!"
 	case statusError:
 		s += fmt.Sprintf("Uh oh, there's been an error: %v", m.err)

@@ -83,7 +83,7 @@ func (m *Model) UpdatePaging(msg tea.Msg) {
 func NewModel(cc *charm.Client) Model {
 	p := pager.NewModel()
 	p.PerPage = keysPerPage
-	p.InactiveDot = te.String("•").Foreground(common.ColorPair("#4F4F4F", "#CACACA")).String()
+	p.InactiveDot = te.String("•").Foreground(common.ColorPair{"#4F4F4F", "#CACACA"}.Color()).String()
 	p.Type = pager.Dots
 
 	s := spinner.NewModel()
@@ -344,18 +344,18 @@ func helpView(m Model) string {
 }
 
 func promptDeleteView() string {
-	return te.String("\n\nDelete this key? ").Foreground(common.Red).String() +
-		te.String("(y/N)").Foreground(common.FaintRed).String()
+	return te.String("\n\nDelete this key? ").Foreground(common.Red.Color()).String() +
+		te.String("(y/N)").Foreground(common.FaintRed.Color()).String()
 }
 
 func promptDeleteActiveKeyView() string {
-	return te.String("\n\nThis is the key currently in use. Are you, like, for-sure-for-sure? ").Foreground(common.Red).String() +
-		te.String("(y/N)").Foreground(common.FaintRed).String()
+	return te.String("\n\nThis is the key currently in use. Are you, like, for-sure-for-sure? ").Foreground(common.Red.Color()).String() +
+		te.String("(y/N)").Foreground(common.FaintRed.Color()).String()
 }
 
 func promptDeleteAccountView() string {
-	return te.String("\n\nSure? This will delete your account. Are you absolutely positive? ").Foreground(common.Red).String() +
-		te.String("(y/N)").Foreground(common.FaintRed).String()
+	return te.String("\n\nSure? This will delete your account. Are you absolutely positive? ").Foreground(common.Red.Color()).String() +
+		te.String("(y/N)").Foreground(common.FaintRed.Color()).String()
 }
 
 // SUBSCRIPTIONS
