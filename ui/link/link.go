@@ -164,15 +164,15 @@ func view(mdl tea.Model) string {
 }
 
 func subscriptions(mdl tea.Model) tea.Subs {
-	return tea.Subs{
-		"tick": func(mdl tea.Model) tea.Msg {
-			m, ok := mdl.(model)
-			if !ok {
-				return errMsg(errors.New("could not perform assertion on model in tick subscription"))
-			}
-			return spinner.Sub(m.spinner)
-		},
+	m, ok := mdl.(model)
+	if !ok {
+		return nil
 	}
+	sub, err := spinner.MakeSub(m.spinner)
+	if err != nil {
+		return nil
+	}
+	return tea.Subs{"tick": sub}
 }
 
 // COMMANDS

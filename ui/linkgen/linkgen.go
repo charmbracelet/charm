@@ -312,23 +312,34 @@ func Subscriptions(model tea.Model) tea.Subs {
 	if !ok {
 		return nil
 	}
+
+	sub, err := Spin(m)
+	if err != nil {
+		return nil
+	}
 	return tea.Subs{
-		"link-spinner-tick": Spin(m),
+		"link-spinner-tick": sub,
 	}
 }
 
 // Spin wraps the spinner components's subscription. This should be integrated
 // when this component is used as part of another program.
-func Spin(model tea.Model) tea.Sub {
+func Spin(model tea.Model) (tea.Sub, error) {
 	m, ok := model.(Model)
 	if !ok {
-		return nil
+		return nil, errors.New("could not perform assertion on model")
 	}
 
 	if m.status != linkInit {
-		return nil
+		return nil, nil
 	}
-	return tea.SubMap(spinner.Sub, m.spinner)
+
+	sub, err := spinner.MakeSub(m.spinner)
+	if err != nil {
+		return nil, err
+	}
+
+	return sub, nil
 }
 
 // COMMANDS

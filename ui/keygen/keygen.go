@@ -1,6 +1,7 @@
 package keygen
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -135,20 +136,27 @@ func Subscriptions(model tea.Model) tea.Subs {
 	if !ok {
 		return nil
 	}
-	subs := make(tea.Subs)
-
-	if m.status == statusRunning {
-		subs["keygen-spinner"] = tea.SubMap(spinner.Sub, m.spinner)
-	}
-	return subs
-}
-
-func Spin(model tea.Model) tea.Sub {
-	m, ok := model.(Model)
-	if !ok {
+	sub, err := Spin(m)
+	if err != nil {
 		return nil
 	}
-	return tea.SubMap(spinner.Sub, m.spinner)
+
+	if m.status == statusRunning {
+		return tea.Subs{"keygen-spinner": sub}
+	}
+	return nil
+}
+
+func Spin(model tea.Model) (tea.Sub, error) {
+	m, ok := model.(Model)
+	if !ok {
+		return nil, errors.New("could not perform assertion on model")
+	}
+	sub, err := spinner.MakeSub(m.spinner)
+	if err != nil {
+		return nil, err
+	}
+	return sub, nil
 }
 
 // COMMANDS

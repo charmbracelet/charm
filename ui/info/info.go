@@ -3,6 +3,8 @@ package info
 // Fetch a user's basic Charm account info
 
 import (
+	"errors"
+
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/tea"
@@ -99,16 +101,19 @@ func bioView(u *charm.User) string {
 // SUBSCRIPTIONS
 
 // Tick just wraps the spinner's subscription
-func Tick(model tea.Model) tea.Sub {
+func Tick(model tea.Model) (tea.Sub, error) {
 	m, ok := model.(Model)
 	if !ok {
-		// TODO: handle this error properly
-		return nil
+		return nil, errors.New("could not create subscription; could not perform assertion on model")
 	} else if m.User != nil {
-		return nil
+		return nil, errors.New("could not create subscription; no user set")
 	}
 
-	return tea.SubMap(spinner.Sub, m.spinner)
+	sub, err := spinner.MakeSub(m.spinner)
+	if err != nil {
+		return nil, err
+	}
+	return sub, nil
 }
 
 // COMMANDS

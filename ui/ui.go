@@ -445,21 +445,42 @@ func subscriptions(model tea.Model) tea.Subs {
 
 	switch m.status {
 	case statusInit:
-		subs["init-spinner-tick"] = tea.SubMap(spinner.Sub, m.spinner)
+		tick, err := spinner.MakeSub(m.spinner)
+		if err != nil {
+			return nil
+		}
+		subs["init-spinner-tick"] = tick
 	case statusKeygen:
-		s := keygen.Subscriptions(m.keygen)
-		for k, v := range s {
-			subs[k] = v
+		spin, err := keygen.Spin(m.keygen)
+		if err == nil {
+			subs["keygen-spin"] = spin
 		}
 	case statusFetching:
-		subs["info-spinner-tick"] = info.Tick(m.info)
+		spin, err := spinner.MakeSub(m.info)
+		if err != nil {
+			return nil
+		}
+		subs["info-spinner-tick"] = spin
 	case statusBrowsingKeys:
-		subs["keys-spinner-tick"] = keys.Spin(m.keys)
+		tick, err := spinner.MakeSub(m.keys)
+		if err != nil {
+			return nil
+		}
+		subs["keys-spinner-tick"] = tick
 	case statusSettingUsername:
-		subs["username-input-blink"] = username.Blink(m.username)
-		subs["username-spinner-tick"] = username.Spin(m.username)
+		blink, err := username.Blink(m.username)
+		if err == nil {
+			subs["username-input-blink"] = blink
+		}
+		spin, err := username.Spin(m.username)
+		if err == nil {
+			subs["username-spinner-tick"] = spin
+		}
 	case statusLinking:
-		subs["link-setup-spinner-tick"] = linkgen.Spin(m.link)
+		spin, err := linkgen.Spin(m.link)
+		if err == nil {
+			subs["link-setup-spinner-tick"] = spin
+		}
 	}
 
 	return subs

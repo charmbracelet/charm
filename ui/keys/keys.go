@@ -365,23 +365,28 @@ func Subscriptions(model tea.Model) tea.Subs {
 	if !ok {
 		return nil
 	}
-	if m.state == stateLoading {
-		return tea.Subs{
-			"spinner-tick": Spin(m),
-		}
-	}
-	return nil
-}
-
-func Spin(model tea.Model) tea.Sub {
-	m, ok := model.(Model)
-	if !ok {
+	sub, err := MakeSub(m)
+	if err != nil {
 		return nil
 	}
-	if m.state == stateLoading {
-		return tea.SubMap(spinner.Sub, m.spinner)
+	return tea.Subs{
+		"spinner-tick": sub,
 	}
-	return nil
+}
+
+func MakeSub(model tea.Model) (tea.Sub, error) {
+	m, ok := model.(Model)
+	if !ok {
+		return nil, errors.New("could not perform assertion on model")
+	}
+	if m.state == stateLoading {
+		sub, err := spinner.MakeSub(m.spinner)
+		if err != nil {
+			return nil, err
+		}
+		return sub, nil
+	}
+	return nil, nil
 }
 
 // COMMANDS

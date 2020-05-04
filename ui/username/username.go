@@ -1,6 +1,7 @@
 package username
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/charmbracelet/charm"
@@ -256,23 +257,31 @@ func spinnerView(m Model) string {
 // SUBSCRIPTIONS
 
 // Blink wraps input's Blink subscription
-func Blink(model tea.Model) tea.Sub {
+func Blink(model tea.Model) (tea.Sub, error) {
 	m, ok := model.(Model)
 	if !ok {
-		return nil // TODO: handle this error properly
+		return nil, errors.New("could not perform assertion on model")
 	}
-	return tea.SubMap(input.Blink, m.input)
+	sub, err := input.MakeSub(m.input)
+	if err != nil {
+		return nil, err
+	}
+	return sub, nil
 }
 
-func Spin(model tea.Model) tea.Sub {
+func Spin(model tea.Model) (tea.Sub, error) {
 	m, ok := model.(Model)
 	if !ok {
-		return nil
+		return nil, errors.New("could not perform assertion on model")
+	}
+	sub, err := spinner.MakeSub(m.spinner)
+	if err != nil {
+		return nil, err
 	}
 	if m.state == submitting {
-		return tea.SubMap(spinner.Sub, m.spinner)
+		return sub, nil
 	}
-	return nil
+	return nil, nil
 }
 
 // COMMANDS

@@ -11,8 +11,10 @@ github.com/calmh/randomart v1.1.0/go.mod h1:DQUbPVyP+7PAs21w/AnfMKG5NioxS3TbZ2F9
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=
 github.com/charmbracelet/tea v0.2.0 h1:PvoNZa2N5HeHnUELfEmZxLO+gmDgjNcrDLNHUMsSuXM=
 github.com/charmbracelet/tea v0.2.0/go.mod h1:lADjwO2mMub9qvXSCA9vAkabVWO0HeUrv4uO/lG3C+k=
-github.com/charmbracelet/teaparty v0.0.0-20200423161053-7ef18ab69e57 h1:ukiz+Ys4HH0pdVH0CUH4+6du6XyiFSCjDjoNUXInTew=
-github.com/charmbracelet/teaparty v0.0.0-20200423161053-7ef18ab69e57/go.mod h1:9imOygZqdiciPbgk8TGAwRyi40o4MXpHqpkn4t+IZkg=
+github.com/charmbracelet/tea v0.2.1 h1:RoNxJORl6Nymxd/bpP0SgJ3f6RG8cifxvSkWcAlxekg=
+github.com/charmbracelet/tea v0.2.1/go.mod h1:uA/DUzCuyIZ1NFyAdCz6k+gF8lspujo6ZvoavcSsLCM=
+github.com/charmbracelet/teaparty v0.0.0-20200504225426-da64445a0e0d h1:cKZmktu4U8kTcaKM1JjM0jILREm2ABBoh5YLdrfCykQ=
+github.com/charmbracelet/teaparty v0.0.0-20200504225426-da64445a0e0d/go.mod h1:PsGcwPVbwjZv3XGW7qGoJ+EkhKqk2owMVUuX3IBUsTw=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/coreos/bbolt v1.3.2/go.mod h1:iRUV2dpdMOn7Bo10OQBFzIJO9kkE559Wcmn+qkEiiKk=
 github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
@@ -157,6 +159,8 @@ golang.org/x/sys v0.0.0-20200331124033-c3d80250170d h1:nc5K6ox/4lTFbMVSL9WRR81ix
 golang.org/x/sys v0.0.0-20200331124033-c3d80250170d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200430202703-d923437fa56d h1:xmcims+WSpFuY56YEzkKF6IMDxYAVDRipkQRJfXUBZk=
 golang.org/x/sys v0.0.0-20200430202703-d923437fa56d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20200501145240-bc7a7d42d5c3 h1:5B6i6EAiSYyejWfvc5Rc9BbI3rzIsrrXfAQBWnYfn+w=
+golang.org/x/sys v0.0.0-20200501145240-bc7a7d42d5c3/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/text v0.3.0 h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/time v0.0.0-20190308202827-9d24e82272b4/go.mod h1:tRJNPiyCQ0inRvYxbN9jk5I+vvW/OXSQhTDSoE431IQ=
