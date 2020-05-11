@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+const (
+	apiPrefix = "v1"
+)
+
 type Markdown struct {
 	ID        int        `json:"id"`
 	Note      string     `json:"note"`
@@ -31,7 +35,7 @@ func (cc *Client) GetStash() ([]*Markdown, error) {
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s:%d/%s/stash", cc.config.GlowHost, cc.config.GlowPort, auth.CharmID), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s:%d/%s/%s/stash", cc.config.GlowHost, cc.config.GlowPort, apiPrefix, auth.CharmID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +66,7 @@ func (cc *Client) GetMarkdown(markdownID int) (*Markdown, error) {
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s:%d/%s/stash/%d", cc.config.GlowHost, cc.config.GlowPort, auth.CharmID, markdownID), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s:%d/%s/%s/stash/%d", cc.config.GlowHost, cc.config.GlowPort, apiPrefix, auth.CharmID, markdownID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +102,7 @@ func (cc *Client) StashMarkdown(note string, body string) error {
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s:%d/%s/stash", cc.config.GlowHost, cc.config.GlowPort, auth.CharmID), buf)
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s:%d/%s/%s/stash", cc.config.GlowHost, cc.config.GlowPort, apiPrefix, auth.CharmID), buf)
 	if err != nil {
 		return err
 	}
@@ -123,7 +127,7 @@ func (cc *Client) DeleteMarkdown(markdownID int) error {
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("DELETE", fmt.Sprintf("%s:%d/%s/stash/%d", cc.config.GlowHost, cc.config.GlowPort, auth.CharmID, markdownID), nil)
+	req, err := http.NewRequest("DELETE", fmt.Sprintf("%s:%d/%s/%s/stash/%d", cc.config.GlowHost, cc.config.GlowPort, apiPrefix, auth.CharmID, markdownID), nil)
 	if err != nil {
 		return err
 	}
