@@ -3,12 +3,10 @@ package info
 // Fetch a user's basic Charm account info
 
 import (
-	"errors"
-
+	"github.com/charmbracelet/boba"
+	"github.com/charmbracelet/boba/spinner"
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
-	"github.com/charmbracelet/tea"
-	"github.com/charmbracelet/teaparty/spinner"
 	te "github.com/muesli/termenv"
 )
 
@@ -49,9 +47,11 @@ func NewModel(cc *charm.Client) Model {
 
 // UPDATE
 
-func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
+func Update(msg boba.Msg, m Model) (Model, boba.Cmd) {
+	var cmd boba.Cmd
+
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case boba.KeyMsg:
 		switch msg.String() {
 		case "q":
 			fallthrough
@@ -69,9 +69,10 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		m.Quit = true
 		return m, nil
 	case spinner.TickMsg:
-		m.spinner, _ = spinner.Update(msg, m.spinner)
+		m.spinner, cmd = spinner.Update(msg, m.spinner)
 	}
-	return m, nil
+
+	return m, cmd
 }
 
 // VIEW
@@ -98,28 +99,11 @@ func bioView(u *charm.User) string {
 	)
 }
 
-// SUBSCRIPTIONS
-
-// Tick just wraps the spinner's subscription
-func Tick(model tea.Model) (tea.Sub, error) {
-	m, ok := model.(Model)
-	if !ok {
-		return nil, errors.New("could not create subscription; could not perform assertion on model")
-	} else if m.User != nil {
-		return nil, errors.New("could not create subscription; no user set")
-	}
-
-	sub, err := spinner.MakeSub(m.spinner)
-	if err != nil {
-		return nil, err
-	}
-	return sub, nil
-}
-
 // COMMANDS
 
-func GetBio(cc *charm.Client) tea.Cmd {
-	return func() tea.Msg {
+// GetBio fetches the authenticated user's bio
+func GetBio(cc *charm.Client) boba.Cmd {
+	return func() boba.Msg {
 		user, err := cc.Bio()
 		if err != nil {
 			return errMsg(err)
@@ -127,4 +111,9 @@ func GetBio(cc *charm.Client) tea.Cmd {
 
 		return GotBioMsg(user)
 	}
+}
+
+// Tick just wraps the spinner's tick command
+func Tick(m Model) boba.Cmd {
+	return spinner.Tick(m.spinner)
 }

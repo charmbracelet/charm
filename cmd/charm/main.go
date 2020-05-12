@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/charmbracelet/boba"
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui"
 	"github.com/charmbracelet/charm/ui/common"
@@ -12,7 +13,6 @@ import (
 	"github.com/charmbracelet/charm/ui/keys"
 	"github.com/charmbracelet/charm/ui/link"
 	"github.com/charmbracelet/charm/ui/linkgen"
-	"github.com/charmbracelet/tea"
 	"github.com/mattn/go-isatty"
 	"github.com/muesli/reflow/indent"
 	"github.com/muesli/reflow/wordwrap"
@@ -50,7 +50,7 @@ var (
 			if isTTY() {
 				cfg := getCharmConfig()
 				if cfg.Debug {
-					err := tea.UseSysLog("charm")
+					err := boba.UseSysLog("charm")
 					if err != nil {
 						return err
 					}
@@ -164,7 +164,7 @@ var (
 		Args:   cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if isTTY() && !simpleOutput {
-				return tea.NewProgram(keygen.Init, keygen.Update, keygen.View, keygen.Subscriptions).Start()
+				return boba.NewProgram(keygen.Init, keygen.Update, keygen.View).Start()
 			} else {
 				// TODO
 			}

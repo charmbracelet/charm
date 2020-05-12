@@ -4,11 +4,11 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/charmbracelet/boba"
+	pager "github.com/charmbracelet/boba/paginator"
+	"github.com/charmbracelet/boba/spinner"
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
-	"github.com/charmbracelet/tea"
-	"github.com/charmbracelet/teaparty/pager"
-	"github.com/charmbracelet/teaparty/spinner"
 	"github.com/muesli/reflow/indent"
 	te "github.com/muesli/termenv"
 )
@@ -35,8 +35,8 @@ const (
 )
 
 // NewProgram creates a new Tea program
-func NewProgram(cc *charm.Client) *tea.Program {
-	return tea.NewProgram(Init(cc), Update, View, Subscriptions)
+func NewProgram(cc *charm.Client) *boba.Program {
+	return boba.NewProgram(Init(cc), Update, View)
 }
 
 // MSG
@@ -68,7 +68,7 @@ func (m *Model) getSelectedIndex() int {
 	return m.index + m.pager.Page*m.pager.PerPage
 }
 
-func (m *Model) UpdatePaging(msg tea.Msg) {
+func (m *Model) UpdatePaging(msg boba.Msg) {
 
 	// Handle paging
 	m.pager.SetTotalPages(len(m.keys))
@@ -83,7 +83,7 @@ func (m *Model) UpdatePaging(msg tea.Msg) {
 func NewModel(cc *charm.Client) Model {
 	p := pager.NewModel()
 	p.PerPage = keysPerPage
-	p.InactiveDot = te.String("•").Foreground(common.ColorPair{"#4F4F4F", "#CACACA"}.Color()).String()
+	p.InactiveDot = te.String("•").Foreground(common.NewColorPair("#4F4F4F", "#CACACA").Color()).String()
 	p.Type = pager.Dots
 
 	s := spinner.NewModel()
@@ -108,18 +108,25 @@ func NewModel(cc *charm.Client) Model {
 
 // Init is the Tea initialization function which returns an initial model and,
 // potentially, an initial command
-func Init(cc *charm.Client) func() (tea.Model, tea.Cmd) {
-	return func() (tea.Model, tea.Cmd) {
+func Init(cc *charm.Client) func() (boba.Model, boba.Cmd) {
+	return func() (boba.Model, boba.Cmd) {
 		m := NewModel(cc)
 		m.standalone = true
-		return m, LoadKeys(cc)
+		return m, InitialCmd(m)
 	}
+}
+
+func InitialCmd(m Model) boba.Cmd {
+	return boba.Batch(
+		LoadKeys(m.cc),
+		spinner.Tick(m.spinner),
+	)
 }
 
 // UPDATE
 
-// Update is the Tea update function which handles incoming messages
-func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
+// Update is the Boba update function which handles incoming messages
+func Update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
 	m, ok := model.(Model)
 	if !ok {
 		// TODO: handle error
@@ -127,7 +134,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case boba.KeyMsg:
 		switch msg.String() {
 
 		case "ctrl+c":
@@ -137,7 +144,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		case "esc":
 			if m.standalone {
 				m.state = stateQuitting
-				return m, tea.Quit
+				return m, boba.Quit
 			}
 			m.Exit = true
 			return m, nil
@@ -209,7 +216,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 	case unlinkedKeyMsg:
 		if m.state == stateQuitting {
-			return m, tea.Quit
+			return m, boba.Quit
 		}
 		i := m.getSelectedIndex()
 
@@ -226,15 +233,16 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case spinner.TickMsg:
-		m.spinner, _ = spinner.Update(msg, m.spinner)
-		return m, nil
+		var cmd boba.Cmd
+		m.spinner, cmd = spinner.Update(msg, m.spinner)
+		return m, cmd
 	}
 
 	m.UpdatePaging(msg)
 
 	// If an item is being confirmed for delete, any key (other than the key
 	// used for confirmation above) cancels the deletion
-	k, ok := msg.(tea.KeyMsg)
+	k, ok := msg.(boba.KeyMsg)
 	if ok && k.String() != "x" {
 		m.state = stateNormal
 	}
@@ -245,7 +253,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 // VIEW
 
 // View renders the current UI into a string
-func View(model tea.Model) string {
+func View(model boba.Model) string {
 	m, ok := model.(Model)
 	if !ok {
 		m.err = errors.New("could not perform assertion on model")
@@ -358,42 +366,11 @@ func promptDeleteAccountView() string {
 		te.String("(y/N)").Foreground(common.FaintRed.Color()).String()
 }
 
-// SUBSCRIPTIONS
-
-func Subscriptions(model tea.Model) tea.Subs {
-	m, ok := model.(Model)
-	if !ok {
-		return nil
-	}
-	sub, err := MakeSub(m)
-	if err != nil {
-		return nil
-	}
-	return tea.Subs{
-		"spinner-tick": sub,
-	}
-}
-
-func MakeSub(model tea.Model) (tea.Sub, error) {
-	m, ok := model.(Model)
-	if !ok {
-		return nil, errors.New("could not perform assertion on model")
-	}
-	if m.state == stateLoading {
-		sub, err := spinner.MakeSub(m.spinner)
-		if err != nil {
-			return nil, err
-		}
-		return sub, nil
-	}
-	return nil, nil
-}
-
 // COMMANDS
 
 // LoadKeys loads the current set of keys from the server
-func LoadKeys(cc *charm.Client) tea.Cmd {
-	return func() tea.Msg {
+func LoadKeys(cc *charm.Client) boba.Cmd {
+	return func() boba.Msg {
 		cc.RenewSession()
 		ak, err := cc.AuthorizedKeysWithMetadata()
 		if err != nil {
@@ -404,8 +381,8 @@ func LoadKeys(cc *charm.Client) tea.Cmd {
 }
 
 // unlinkKey deletes the selected key
-func unlinkKey(m Model) tea.Cmd {
-	return func() tea.Msg {
+func unlinkKey(m Model) boba.Cmd {
+	return func() boba.Msg {
 		m.cc.RenewSession()
 		err := m.cc.UnlinkAuthorizedKey(m.keys[m.getSelectedIndex()].Key)
 		if err != nil {

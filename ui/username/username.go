@@ -1,14 +1,13 @@
 package username
 
 import (
-	"errors"
 	"strings"
 
+	"github.com/charmbracelet/boba"
+	"github.com/charmbracelet/boba/spinner"
+	input "github.com/charmbracelet/boba/textinput"
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
-	"github.com/charmbracelet/tea"
-	"github.com/charmbracelet/teaparty/spinner"
-	input "github.com/charmbracelet/teaparty/textinput"
 	te "github.com/muesli/termenv"
 )
 
@@ -121,18 +120,29 @@ func NewModel(cc *charm.Client) Model {
 	}
 }
 
+func Init(cc *charm.Client) func() (boba.Model, boba.Cmd) {
+	return func() (boba.Model, boba.Cmd) {
+		m := NewModel(cc)
+		return m, InitialCmd(m)
+	}
+}
+
+func InitialCmd(m Model) boba.Cmd {
+	return input.Blink(m.input)
+}
+
 // UPDATE
 
-func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
+func Update(msg boba.Msg, m Model) (Model, boba.Cmd) {
 	switch msg := msg.(type) {
 
-	case tea.KeyMsg:
+	case boba.KeyMsg:
 		switch msg.Type {
 
-		case tea.KeyCtrlC: // quit
+		case boba.KeyCtrlC: // quit
 			m.Quit = true
 			return m, nil
-		case tea.KeyEscape: // exit this mini-app
+		case boba.KeyEscape: // exit this mini-app
 			m.Done = true
 			return m, nil
 
@@ -180,7 +190,10 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 					m.state = submitting
 					m.errMsg = ""
 					m.newName = strings.TrimSpace(m.input.Value)
-					return m, setName(m) // fire off the command, too
+					return m, boba.Batch(
+						setName(m), // fire off the command, too
+						spinner.Tick(m.spinner),
+					)
 				case cancelButton: // Exit this mini-app
 					m.Done = true
 					return m, nil
@@ -190,7 +203,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 			// Pass messages through to the input element if that's the element
 			// in focus
 			if m.index == textInput {
-				var cmd tea.Cmd
+				var cmd boba.Cmd
 				m.input, cmd = input.Update(msg, m.input)
 				return m, cmd
 			}
@@ -220,12 +233,14 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		return m, nil
 
 	case spinner.TickMsg:
-		m.spinner, _ = spinner.Update(msg, m.spinner)
-		return m, nil
+		var cmd boba.Cmd
+		m.spinner, cmd = spinner.Update(msg, m.spinner)
+		return m, cmd
 
 	default:
-		m.input, _ = input.Update(msg, m.input) // Do we still need this?
-		return m, nil
+		var cmd boba.Cmd
+		m.input, cmd = input.Update(msg, m.input) // Do we still need this?
+		return m, cmd
 	}
 }
 
@@ -254,41 +269,11 @@ func spinnerView(m Model) string {
 	return spinner.View(m.spinner) + " Submitting..."
 }
 
-// SUBSCRIPTIONS
-
-// Blink wraps input's Blink subscription
-func Blink(model tea.Model) (tea.Sub, error) {
-	m, ok := model.(Model)
-	if !ok {
-		return nil, errors.New("could not perform assertion on model")
-	}
-	sub, err := input.MakeSub(m.input)
-	if err != nil {
-		return nil, err
-	}
-	return sub, nil
-}
-
-func Spin(model tea.Model) (tea.Sub, error) {
-	m, ok := model.(Model)
-	if !ok {
-		return nil, errors.New("could not perform assertion on model")
-	}
-	sub, err := spinner.MakeSub(m.spinner)
-	if err != nil {
-		return nil, err
-	}
-	if m.state == submitting {
-		return sub, nil
-	}
-	return nil, nil
-}
-
 // COMMANDS
 
 // Attempt to update the username on the server
-func setName(m Model) tea.Cmd {
-	return func() tea.Msg {
+func setName(m Model) boba.Cmd {
+	return func() boba.Msg {
 
 		// Validate before resetting the session to speed things up and keep us
 		// from pounding charm.RenewSession().

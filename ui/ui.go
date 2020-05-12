@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/charmbracelet/boba"
+	"github.com/charmbracelet/boba/spinner"
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/charm/ui/info"
@@ -12,17 +14,15 @@ import (
 	"github.com/charmbracelet/charm/ui/keys"
 	"github.com/charmbracelet/charm/ui/linkgen"
 	"github.com/charmbracelet/charm/ui/username"
-	"github.com/charmbracelet/tea"
-	"github.com/charmbracelet/teaparty/spinner"
 	"github.com/muesli/reflow/indent"
 	te "github.com/muesli/termenv"
 )
 
 const padding = 2
 
-// NewProgram returns a new tea program
-func NewProgram(cfg *charm.Config) *tea.Program {
-	return tea.NewProgram(initialize(cfg), update, view, subscriptions)
+// NewProgram returns a new boba program
+func NewProgram(cfg *charm.Config) *boba.Program {
+	return boba.NewProgram(initialize(cfg), update, view)
 }
 
 // status is used to indicate a high level application state
@@ -108,8 +108,8 @@ type Model struct {
 
 // INIT
 
-func initialize(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
-	return func() (tea.Model, tea.Cmd) {
+func initialize(cfg *charm.Config) func() (boba.Model, boba.Cmd) {
+	return func() (boba.Model, boba.Cmd) {
 		s := spinner.NewModel()
 		s.Type = spinner.Dot
 		s.ForegroundColor = "244"
@@ -124,13 +124,16 @@ func initialize(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
 			spinner:    s,
 			keygen:     keygen.NewModel(),
 		}
-		return m, newCharmClient(m)
+		return m, boba.Batch(
+			newCharmClient(m),
+			spinner.Tick(m.spinner),
+		)
 	}
 }
 
 // UPDATE
 
-func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
+func update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
 	m, ok := model.(Model)
 	if !ok {
 		return Model{
@@ -139,8 +142,8 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	}
 
 	var (
-		cmds []tea.Cmd
-		cmd  tea.Cmd
+		cmds []boba.Cmd
+		cmd  boba.Cmd
 	)
 
 	if m.cfg.Debug {
@@ -151,12 +154,12 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 
-	case tea.KeyMsg:
+	case boba.KeyMsg:
 
 		switch msg.Type {
-		case tea.KeyCtrlC:
+		case boba.KeyCtrlC:
 			m.status = statusQuitting
-			return m, tea.Quit
+			return m, boba.Quit
 		}
 
 		if m.status == statusReady { // Process keys for the menu
@@ -168,7 +171,7 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 				fallthrough
 			case "esc":
 				m.status = statusQuitting
-				return m, tea.Quit
+				return m, boba.Quit
 
 			// Prev menu item
 			case "up":
@@ -199,19 +202,25 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		m.err = msg
 
 	case spinner.TickMsg:
-		m.spinner, _ = spinner.Update(msg, m.spinner)
+		if m.status == statusInit || m.status == statusKeygenComplete {
+			m.spinner, cmd = spinner.Update(msg, m.spinner)
+			return m, cmd
+		}
 
 	case sshAuthErrorMsg:
 		m.status = statusKeygen
-		return m, keygen.GenerateKeys
+		return m, keygen.InitialCmd(m.keygen)
 
 	case sshAuthFailedMsg:
 		// TODO: report permanent failure
-		return m, tea.Quit
+		return m, boba.Quit
 
 	case keygen.DoneMsg:
 		m.status = statusKeygenComplete
-		return m, newCharmClient(m)
+		return m, boba.Batch(
+			newCharmClient(m),
+			spinner.Tick(m.spinner),
+		)
 
 	case newCharmClientMsg:
 		// Save reference to Charm client
@@ -229,8 +238,9 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 	case info.GotBioMsg:
 		m.status = statusReady
-		m.info, _ = info.Update(msg, m.info)
 		m.user = m.info.User
+		m.info, cmd = info.Update(msg, m.info)
+		cmds = append(cmds, cmd)
 
 	case username.NameSetMsg:
 		m.status = statusReady
@@ -244,15 +254,15 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 
-	return m, tea.Batch(cmds...)
+	return m, boba.Batch(cmds...)
 }
 
-func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
-	var cmd tea.Cmd
+func updateChilden(msg boba.Msg, m Model) (Model, boba.Cmd) {
+	var cmd boba.Cmd
 
 	switch m.status {
 	case statusKeygen:
-		keygenModel, newCmd := keygen.Update(msg, tea.Model(m.keygen))
+		keygenModel, newCmd := keygen.Update(msg, boba.Model(m.keygen))
 		mdl, ok := keygenModel.(keygen.Model)
 		if !ok {
 			m.err = errors.New("could not perform model assertion on keygen model")
@@ -261,19 +271,19 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		cmd = newCmd
 		m.keygen = mdl
 	case statusFetching:
-		m.info, _ = info.Update(msg, m.info)
+		m.info, cmd = info.Update(msg, m.info)
 		if m.info.Quit {
 			m.status = statusQuitting
 			m.err = m.info.Err
-			return m, tea.Quit
+			return m, boba.Quit
 		}
-		return m, nil
+		return m, cmd
 	case statusLinking:
-		linkModel, _ := linkgen.Update(msg, tea.Model(m.link))
+		linkModel, cmd := linkgen.Update(msg, boba.Model(m.link))
 		mdl, ok := linkModel.(linkgen.Model)
 		if !ok {
 			m.err = errors.New("could not perform model assertion on link model")
-			return m, nil
+			return m, cmd
 		}
 		m.link = mdl
 		if m.link.Exit {
@@ -281,10 +291,10 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 			m.status = statusReady
 		} else if m.link.Quit {
 			m.status = statusQuitting
-			return m, tea.Quit
+			return m, boba.Quit
 		}
 	case statusBrowsingKeys:
-		var newModel tea.Model
+		var newModel boba.Model
 		newModel, cmd = keys.Update(msg, m.keys)
 		newKeysModel, ok := newModel.(keys.Model)
 		if !ok {
@@ -297,7 +307,7 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 			m.status = statusReady
 		} else if m.keys.Quit {
 			m.status = statusQuitting
-			return m, tea.Quit
+			return m, boba.Quit
 		}
 	case statusSettingUsername:
 		m.username, cmd = username.Update(msg, m.username)
@@ -306,7 +316,7 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 			m.status = statusReady
 		} else if m.username.Quit {
 			m.status = statusQuitting
-			return m, tea.Quit
+			return m, boba.Quit
 		}
 	}
 
@@ -314,17 +324,19 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	case linkChoice:
 		m.status = statusLinking
 		m.menuChoice = unsetChoice
-		cmd = tea.Batch(linkgen.HandleLinkRequest(m.link)...)
+		cmd = boba.Batch(linkgen.HandleLinkRequest(m.link)...)
+		cmd = linkgen.InitialCmd(m.link)
 	case keysChoice:
 		m.status = statusBrowsingKeys
 		m.menuChoice = unsetChoice
-		cmd = keys.LoadKeys(m.cc)
+		cmd = keys.InitialCmd(m.keys)
 	case setUsernameChoice:
 		m.status = statusSettingUsername
 		m.menuChoice = unsetChoice
+		cmd = username.InitialCmd(m.username)
 	case exitChoice:
 		m.status = statusQuitting
-		cmd = tea.Quit
+		cmd = boba.Quit
 	}
 
 	return m, cmd
@@ -332,7 +344,7 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 // VIEW
 
-func view(model tea.Model) string {
+func view(model boba.Model) string {
 	m, ok := model.(Model)
 	if !ok {
 		m.err = errors.New("could not perform assertion on model in view")
@@ -366,7 +378,7 @@ func view(model tea.Model) string {
 		s += m.err.Error()
 	}
 
-	return indent.String(s, padding)
+	return indent.String(s, padding) + "\n"
 }
 
 func charmLogoView() string {
@@ -415,8 +427,8 @@ func errorView(err error) string {
 
 // COMMANDS
 
-func newCharmClient(m Model) tea.Cmd {
-	return func() tea.Msg {
+func newCharmClient(m Model) boba.Cmd {
+	return func() boba.Msg {
 		cc, err := charm.NewClient(m.cfg)
 		if err == charm.ErrMissingSSHAuth {
 			if m.status != statusKeygenComplete {
@@ -430,58 +442,4 @@ func newCharmClient(m Model) tea.Cmd {
 
 		return newCharmClientMsg(cc)
 	}
-}
-
-// SUBSCRIPTIONS
-
-func subscriptions(model tea.Model) tea.Subs {
-	m, ok := model.(Model)
-	if !ok {
-		// TODO: how can we handle this more gracefully?
-		return nil
-	}
-
-	subs := tea.Subs{}
-
-	switch m.status {
-	case statusInit:
-		tick, err := spinner.MakeSub(m.spinner)
-		if err != nil {
-			return nil
-		}
-		subs["init-spinner-tick"] = tick
-	case statusKeygen:
-		spin, err := keygen.Spin(m.keygen)
-		if err == nil {
-			subs["keygen-spin"] = spin
-		}
-	case statusFetching:
-		spin, err := spinner.MakeSub(m.info)
-		if err != nil {
-			return nil
-		}
-		subs["info-spinner-tick"] = spin
-	case statusBrowsingKeys:
-		tick, err := spinner.MakeSub(m.keys)
-		if err != nil {
-			return nil
-		}
-		subs["keys-spinner-tick"] = tick
-	case statusSettingUsername:
-		blink, err := username.Blink(m.username)
-		if err == nil {
-			subs["username-input-blink"] = blink
-		}
-		spin, err := username.Spin(m.username)
-		if err == nil {
-			subs["username-spinner-tick"] = spin
-		}
-	case statusLinking:
-		spin, err := linkgen.Spin(m.link)
-		if err == nil {
-			subs["link-setup-spinner-tick"] = spin
-		}
-	}
-
-	return subs
 }

@@ -1,14 +1,13 @@
 package keygen
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
+	"github.com/charmbracelet/boba"
+	"github.com/charmbracelet/boba/spinner"
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
-	"github.com/charmbracelet/tea"
-	"github.com/charmbracelet/teaparty/spinner"
 	"github.com/muesli/reflow/indent"
 	"github.com/muesli/termenv"
 )
@@ -42,10 +41,10 @@ type Model struct {
 
 // INIT
 
-func Init() (tea.Model, tea.Cmd) {
+func Init() (boba.Model, boba.Cmd) {
 	m := NewModel()
 	m.standalone = true
-	return m, GenerateKeys
+	return m, InitialCmd(m)
 }
 
 func NewModel() Model {
@@ -60,16 +59,22 @@ func NewModel() Model {
 	}
 }
 
+func InitialCmd(m Model) boba.Cmd {
+	return boba.Batch(GenerateKeys, spinner.Tick(m.spinner))
+}
+
 // UPDATE
 
-func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
+func Update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
 	m, ok := model.(Model)
 	if !ok {
 		return model, nil
 	}
 
+	var cmd boba.Cmd
+
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case boba.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
 			fallthrough
@@ -77,21 +82,23 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 			fallthrough
 		case "q":
 			m.status = statusQuitting
-			return m, tea.Quit
+			return m, boba.Quit
 		}
 	case failedMsg:
 		m.err = msg
 		m.status = statusError
-		return m, tea.Quit
+		return m, boba.Quit
 	case successMsg:
 		m.status = statusSuccess
 		return m, pause
 	case spinner.TickMsg:
-		m.spinner, _ = spinner.Update(msg, m.spinner)
-		return m, nil
+		if m.status == statusRunning {
+			m.spinner, cmd = spinner.Update(msg, m.spinner)
+			return m, cmd
+		}
 	case DoneMsg:
 		if m.standalone {
-			return m, tea.Quit
+			return m, boba.Quit
 		}
 		m.status = statusDone
 		return m, nil
@@ -102,7 +109,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 // VIEWS
 
-func View(model tea.Model) string {
+func View(model boba.Model) string {
 	m, ok := model.(Model)
 	if !ok {
 		return "could not perform assertion on model in view"
@@ -115,7 +122,7 @@ func View(model tea.Model) string {
 		s += fmt.Sprintf("%s Generating keys...", spinner.View(m.spinner))
 	case statusSuccess:
 		s += termenv.String("✔").Foreground(common.Green.Color()).String()
-		s += "  Done!"
+		s += "  Generated keys"
 	case statusError:
 		s += fmt.Sprintf("Uh oh, there's been an error: %v", m.err)
 	case statusQuitting:
@@ -129,41 +136,11 @@ func View(model tea.Model) string {
 	return s
 }
 
-// SUBSCRIPTIONS
-
-func Subscriptions(model tea.Model) tea.Subs {
-	m, ok := model.(Model)
-	if !ok {
-		return nil
-	}
-	sub, err := Spin(m)
-	if err != nil {
-		return nil
-	}
-
-	if m.status == statusRunning {
-		return tea.Subs{"keygen-spinner": sub}
-	}
-	return nil
-}
-
-func Spin(model tea.Model) (tea.Sub, error) {
-	m, ok := model.(Model)
-	if !ok {
-		return nil, errors.New("could not perform assertion on model")
-	}
-	sub, err := spinner.MakeSub(m.spinner)
-	if err != nil {
-		return nil, err
-	}
-	return sub, nil
-}
-
 // COMMANDS
 
-// GenerateKeys is a Tea command that generates a pair of SSH keys and writes
+// GenerateKeys is a Boba command that generates a pair of SSH keys and writes
 // them to disk
-func GenerateKeys() tea.Msg {
+func GenerateKeys() boba.Msg {
 	_, err := charm.NewSSHKeyPair()
 	if err != nil {
 		return failedMsg(err)
@@ -172,7 +149,7 @@ func GenerateKeys() tea.Msg {
 }
 
 // pause runs the final pause before we wrap things up
-func pause() tea.Msg {
-	time.Sleep(time.Millisecond * 500)
+func pause() boba.Msg {
+	time.Sleep(time.Millisecond * 600)
 	return DoneMsg{}
 }
