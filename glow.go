@@ -78,6 +78,8 @@ func (cc *Client) authorizeRequest(req *http.Request) error {
 
 func (cc *Client) makeAPIRequest(method string, apiPath string, body interface{}, result interface{}) error {
 	var buf *bytes.Buffer
+	var err error
+	var req *http.Request
 	client := &http.Client{}
 	url := fmt.Sprintf("%s:%d/v1/%s", cc.config.GlowHost, cc.config.GlowPort, apiPath)
 	if body != nil {
@@ -86,6 +88,9 @@ func (cc *Client) makeAPIRequest(method string, apiPath string, body interface{}
 		if err != nil {
 			return err
 		}
+		req, err = http.NewRequest(method, url, buf)
+	} else {
+		req, err = http.NewRequest(method, url, nil)
 	}
 	if err != nil {
 		return err
