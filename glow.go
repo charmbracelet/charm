@@ -3,10 +3,13 @@ package charm
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
 )
+
+var ErrorPageOutOfBounds = errors.New("page must be a value of 1 or greater")
 
 type Markdown struct {
 	ID        int        `json:"id"`
@@ -16,6 +19,9 @@ type Markdown struct {
 }
 
 func (cc *Client) GetNews(page int) ([]*Markdown, error) {
+	if page < 1 {
+		return nil, ErrorPageOutOfBounds
+	}
 	var news []*Markdown
 	err := cc.makeAPIRequest("GET", fmt.Sprintf("news?page=%d", page), nil, &news)
 	if err != nil {
@@ -25,6 +31,9 @@ func (cc *Client) GetNews(page int) ([]*Markdown, error) {
 }
 
 func (cc *Client) GetStash(page int) ([]*Markdown, error) {
+	if page < 1 {
+		return nil, ErrorPageOutOfBounds
+	}
 	var stash []*Markdown
 	auth, err := cc.Auth()
 	if err != nil {
