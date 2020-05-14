@@ -23,6 +23,7 @@ var (
 	Green             = NewColorPair("#04B575", "#04B575")
 	Red               = NewColorPair("#ED567A", "#FF4672")
 	FaintRed          = NewColorPair("#C74665", "#FF6F91")
+	NoColor           = NewColorPair("", "")
 )
 
 func init() {
