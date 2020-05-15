@@ -415,7 +415,7 @@ func footerView(m Model) string {
 	if m.err != nil {
 		return errorView(m.err)
 	}
-	return common.HelpView("j/k, ↑/↓: choose", "enter: select")
+	return "\n\n" + common.HelpView("j/k, ↑/↓: choose", "enter: select")
 }
 
 func errorView(err error) string {

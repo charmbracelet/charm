@@ -85,7 +85,7 @@ func Subtle(s string) string {
 // Help renders text intended to display at help text, usually at the bottom of
 // a view.
 func HelpView(sections ...string) string {
-	var s = "\n\n"
+	var s string
 	if len(sections) == 0 {
 		return s
 	}
