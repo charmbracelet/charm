@@ -85,6 +85,15 @@ func (cc *Client) DeleteMarkdown(markdownID int) error {
 	return cc.makeAPIRequest("DELETE", fmt.Sprintf("%s/stash/%d", auth.CharmID, markdownID), nil, nil)
 }
 
+func (cc *Client) SetMarkdownNote(markdownID int, note string) error {
+	auth, err := cc.Auth()
+	if err != nil {
+		return err
+	}
+	md := &Markdown{Note: note}
+	return cc.makeAPIRequest("PUT", fmt.Sprintf("%s/stash/%d", auth.CharmID, markdownID), md, nil)
+}
+
 func (cc *Client) authorizeRequest(req *http.Request) error {
 	auth, err := cc.Auth()
 	if err != nil {
