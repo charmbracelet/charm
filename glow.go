@@ -11,14 +11,15 @@ import (
 
 var ErrorPageOutOfBounds = errors.New("page must be a value of 1 or greater")
 
-// MarkdownsByCreatedAt implements sort.Interface for []Markdown based on the
-// CreatedAt field.
-type MarkdownsByCreatedAt []*Markdown
+// MarkdownsByCreatedAtDesc sorts markdown documents by date in descending
+// order. It implements sort.Interface for []Markdown based on the CreatedAt
+// field.
+type MarkdownsByCreatedAtDesc []*Markdown
 
 // Sort implementation for MarkdownByCreatedAt
-func (m MarkdownsByCreatedAt) Len() int           { return len(m) }
-func (m MarkdownsByCreatedAt) Swap(i, j int)      { m[i], m[j] = m[j], m[i] }
-func (m MarkdownsByCreatedAt) Less(i, j int) bool { return m[i].CreatedAt.Before(*m[j].CreatedAt) }
+func (m MarkdownsByCreatedAtDesc) Len() int           { return len(m) }
+func (m MarkdownsByCreatedAtDesc) Swap(i, j int)      { m[i], m[j] = m[j], m[i] }
+func (m MarkdownsByCreatedAtDesc) Less(i, j int) bool { return m[i].CreatedAt.After(*m[j].CreatedAt) }
 
 type Markdown struct {
 	ID        int        `json:"id"`
