@@ -254,7 +254,7 @@ func View(model boba.Model) string {
 	case linkTokenCreated:
 		s += preamble
 		s += fmt.Sprintf(
-			"%s\n\n%s%s",
+			"%s\n\n%s\n\n%s",
 			common.Wrap("To link, run the following command on your other machine:"),
 			common.Code("charm link "+m.token),
 			common.HelpView("To cancel, press escape"),

@@ -288,7 +288,7 @@ func View(model boba.Model) string {
 		case stateDeletingAccount:
 			s += promptDeleteAccountView()
 		default:
-			s += helpView(m)
+			s += "\n\n" + helpView(m)
 		}
 
 	}

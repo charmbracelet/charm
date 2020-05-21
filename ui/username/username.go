@@ -189,7 +189,7 @@ func Update(msg boba.Msg, m Model) (Model, boba.Cmd) {
 				case okButton: // Submit the form
 					m.state = submitting
 					m.errMsg = ""
-					m.newName = strings.TrimSpace(m.input.Value)
+					m.newName = strings.TrimSpace(m.input.Value())
 					return m, boba.Batch(
 						setName(m), // fire off the command, too
 						spinner.Tick(m.spinner),
