@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/meowgorithm/babyenv"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/ssh"
@@ -57,6 +58,7 @@ type Client struct {
 	config             *Config
 	sshConfig          *ssh.ClientConfig
 	jwtPublicKey       *rsa.PublicKey
+	authLock           *sync.Mutex
 	initialSession     *ssh.Session
 	initialSessionOnce *sync.Once
 }
@@ -88,7 +90,12 @@ func ConfigFromEnv() (*Config, error) {
 
 // NewClient creates a new Charm client
 func NewClient(cfg *Config) (*Client, error) {
-	cc := &Client{config: cfg, auth: &Auth{}, initialSessionOnce: &sync.Once{}}
+	cc := &Client{
+		config:             cfg,
+		auth:               &Auth{},
+		authLock:           &sync.Mutex{},
+		initialSessionOnce: &sync.Once{},
+	}
 	err := cc.setJWTKey()
 	if err != nil {
 		return nil, err
@@ -438,8 +445,31 @@ func ValidateName(name string) bool {
 }
 
 func (cc *Client) Auth() (*Auth, error) {
+	cc.authLock.Lock()
+	defer cc.authLock.Unlock()
 	if cc.auth.claims == nil || cc.auth.claims.Valid() != nil {
-		err := cc.renewAuth()
+		auth := &Auth{}
+		s, err := cc.sshSession()
+		if err != nil {
+			return nil, err
+		}
+		defer s.Close()
+		b, err := s.Output("api-auth")
+		if err != nil {
+			return nil, err
+		}
+		err = json.Unmarshal(b, auth)
+		if err != nil {
+			return nil, err
+		}
+		token, err := jwt.ParseWithClaims(auth.JWT, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
+			return cc.jwtPublicKey, nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		auth.claims = token.Claims.(*jwt.StandardClaims)
+		cc.auth = auth
 		if err != nil {
 			return nil, err
 		}

@@ -1,7 +1,6 @@
 package charm
 
 import (
-	"encoding/json"
 	"io/ioutil"
 
 	"github.com/dgrijalva/jwt-go"
@@ -42,31 +41,5 @@ func (cc *Client) setJWTKey() error {
 		return err
 	}
 	cc.jwtPublicKey = pk
-	return nil
-}
-
-func (cc *Client) renewAuth() error {
-	auth := &Auth{}
-	s, err := cc.sshSession()
-	if err != nil {
-		return err
-	}
-	defer s.Close()
-	b, err := s.Output("api-auth")
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(b, auth)
-	if err != nil {
-		return err
-	}
-	token, err := jwt.ParseWithClaims(auth.JWT, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return cc.jwtPublicKey, nil
-	})
-	if err != nil {
-		return err
-	}
-	auth.claims = token.Claims.(*jwt.StandardClaims)
-	cc.auth = auth
 	return nil
 }
