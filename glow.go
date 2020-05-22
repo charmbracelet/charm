@@ -40,6 +40,15 @@ func (cc *Client) GetNews(page int) ([]*Markdown, error) {
 	return news, nil
 }
 
+func (cc *Client) GetNewsMarkdown(markdownID int) (*Markdown, error) {
+	var md Markdown
+	err := cc.makeAPIRequest("GET", fmt.Sprintf("news/%d", markdownID), nil, &md)
+	if err != nil {
+		return nil, err
+	}
+	return &md, nil
+}
+
 func (cc *Client) GetStash(page int) ([]*Markdown, error) {
 	if page < 1 {
 		return nil, ErrorPageOutOfBounds
