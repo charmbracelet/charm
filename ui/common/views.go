@@ -14,6 +14,8 @@ type State int
 const (
 	StateNormal State = iota
 	StateSelected
+	StateActive
+	StateSpecial
 	StateDeleting
 )
 
@@ -25,6 +27,10 @@ func VerticalLine(state State) string {
 		c = NewColorPair("#F684FF", "#F684FF").Color()
 	case StateDeleting:
 		c = NewColorPair("#893D4E", "#FF8BA7").Color()
+	case StateActive:
+		c = NewColorPair("#9BA92F", "#6CCCA9").Color()
+	case StateSpecial:
+		c = NewColorPair("#04B575", "#04B575").Color()
 	default:
 		c = NewColorPair("#646464", "#BCBCBC").Color()
 	}
