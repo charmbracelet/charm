@@ -47,9 +47,12 @@ func (cc *Client) setJWTKey() error {
 
 func (cc *Client) renewAuth() error {
 	auth := &Auth{}
-	defer cc.session.Close()
-	defer cc.RenewSession()
-	b, err := cc.session.Output("api-auth")
+	s, err := cc.sshSession()
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+	b, err := s.Output("api-auth")
 	if err != nil {
 		return err
 	}

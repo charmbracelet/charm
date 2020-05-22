@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sync"
 	"time"
 
 	"github.com/meowgorithm/babyenv"
@@ -52,11 +53,12 @@ type Config struct {
 
 // Client is the Charm client
 type Client struct {
-	auth         *Auth
-	config       *Config
-	sshConfig    *ssh.ClientConfig
-	session      *ssh.Session
-	jwtPublicKey *rsa.PublicKey
+	auth               *Auth
+	config             *Config
+	sshConfig          *ssh.ClientConfig
+	jwtPublicKey       *rsa.PublicKey
+	initialSession     *ssh.Session
+	initialSessionOnce *sync.Once
 }
 
 // User represents a Charm user
@@ -75,10 +77,6 @@ type Keys struct {
 	Keys      []Key `json:"keys"`
 }
 
-type sshSession struct {
-	session *ssh.Session
-}
-
 // ConfigFromEnv loads the configuration from the environment
 func ConfigFromEnv() (*Config, error) {
 	var cfg Config
@@ -90,7 +88,7 @@ func ConfigFromEnv() (*Config, error) {
 
 // NewClient creates a new Charm client
 func NewClient(cfg *Config) (*Client, error) {
-	cc := &Client{config: cfg, auth: &Auth{}}
+	cc := &Client{config: cfg, auth: &Auth{}, initialSessionOnce: &sync.Once{}}
 	err := cc.setJWTKey()
 	if err != nil {
 		return nil, err
@@ -105,9 +103,19 @@ func NewClient(cfg *Config) (*Client, error) {
 				Auth:            []ssh.AuthMethod{am},
 				HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 			}
-			cc.session, err = cc.sshSession()
+
+			// Dial session here as agent may still not work
+			c, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cc.config.IDHost, cc.config.IDPort), cc.sshConfig)
+			if err != nil {
+				return nil, err
+			}
+			s, err := c.NewSession()
+			if err != nil {
+				return nil, err
+			}
 			if err == nil {
-				// Used SSH agent for auth!
+				// Cache dialed session and use SSH agent for auth!
+				cc.initialSession = s
 				return cc, nil
 			}
 		}
@@ -136,17 +144,17 @@ func NewClient(cfg *Config) (*Client, error) {
 		Auth:            []ssh.AuthMethod{pkam},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
-	cc.session, err = cc.sshSession()
-	if err != nil {
-		return nil, err
-	}
 	return cc, nil
 }
 
 // JWT returns a JSON web token for the user
 func (cc *Client) JWT() (string, error) {
-	defer cc.session.Close()
-	jwt, err := cc.session.Output("jwt")
+	s, err := cc.sshSession()
+	if err != nil {
+		return "", err
+	}
+	defer s.Close()
+	jwt, err := s.Output("jwt")
 	if err != nil {
 		return "", err
 	}
@@ -155,8 +163,12 @@ func (cc *Client) JWT() (string, error) {
 
 // ID returns the user's ID
 func (cc *Client) ID() (string, error) {
-	defer cc.session.Close()
-	id, err := cc.session.Output("id")
+	s, err := cc.sshSession()
+	if err != nil {
+		return "", err
+	}
+	defer s.Close()
+	id, err := s.Output("id")
 	if err != nil {
 		return "", err
 	}
@@ -165,8 +177,12 @@ func (cc *Client) ID() (string, error) {
 
 // AuthorizedKeys returns the keys linked to a user's account
 func (cc *Client) AuthorizedKeys() (string, error) {
-	defer cc.session.Close()
-	keys, err := cc.session.Output("keys")
+	s, err := cc.sshSession()
+	if err != nil {
+		return "", err
+	}
+	defer s.Close()
+	keys, err := s.Output("keys")
 	if err != nil {
 		return "", err
 	}
@@ -175,8 +191,12 @@ func (cc *Client) AuthorizedKeys() (string, error) {
 
 // AuthorizedKeys fetches keys linked to a user's account, with metadata
 func (cc *Client) AuthorizedKeysWithMetadata() (*Keys, error) {
-	defer cc.session.Close()
-	b, err := cc.session.Output("api-keys")
+	s, err := cc.sshSession()
+	if err != nil {
+		return nil, err
+	}
+	defer s.Close()
+	b, err := s.Output("api-keys")
 	if err != nil {
 		return nil, err
 	}
@@ -186,10 +206,14 @@ func (cc *Client) AuthorizedKeysWithMetadata() (*Keys, error) {
 }
 
 // UnlinkAuthorizedKey removes an authorized key from the user's Charm account
-func (cc *Client) UnlinkAuthorizedKey(s string) error {
-	defer cc.session.Close()
-	k := Key{Key: s}
-	in, err := cc.session.StdinPipe()
+func (cc *Client) UnlinkAuthorizedKey(key string) error {
+	s, err := cc.sshSession()
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+	k := Key{Key: key}
+	in, err := s.StdinPipe()
 	if err != nil {
 		return err
 	}
@@ -200,7 +224,7 @@ func (cc *Client) UnlinkAuthorizedKey(s string) error {
 	if err != nil {
 		return err
 	}
-	b, err := cc.session.Output(fmt.Sprintf("api-unlink %s", string(j)))
+	b, err := s.Output(fmt.Sprintf("api-unlink %s", string(j)))
 	if err != nil {
 		return err
 	}
@@ -212,13 +236,17 @@ func (cc *Client) UnlinkAuthorizedKey(s string) error {
 
 // Link joins in on a linking session initiated by LinkGen
 func (cc *Client) Link(lh LinkHandler, code string) error {
-	defer cc.session.Close()
-	out, err := cc.session.StdoutPipe()
+	s, err := cc.sshSession()
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+	out, err := s.StdoutPipe()
 	if err != nil {
 		return err
 	}
 
-	err = cc.session.Start(fmt.Sprintf("api-link %s", code))
+	err = s.Start(fmt.Sprintf("api-link %s", code))
 	if err != nil {
 		return err
 	}
@@ -254,17 +282,21 @@ func (cc *Client) Link(lh LinkHandler, code string) error {
 
 // LinkGen initiates a linking session
 func (cc *Client) LinkGen(lh LinkHandler) error {
-	defer cc.session.Close()
-	out, err := cc.session.StdoutPipe()
+	s, err := cc.sshSession()
 	if err != nil {
 		return err
 	}
-	in, err := cc.session.StdinPipe()
+	defer s.Close()
+	out, err := s.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	in, err := s.StdinPipe()
 	if err != nil {
 		return err
 	}
 
-	err = cc.session.Start("api-link")
+	err = s.Start("api-link")
 	if err != nil {
 		return err
 	}
@@ -371,10 +403,6 @@ func (cc *Client) Bio() (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = cc.RenewSession()
-	if err != nil {
-		return nil, err
-	}
 	jwt, err := cc.JWT()
 	if err != nil {
 		return nil, err
@@ -404,33 +432,9 @@ func (cc *Client) Bio() (*User, error) {
 	return u, nil
 }
 
-// RenewSession resets the session so we can perform another SSH-backed command
-func (cc *Client) RenewSession() error {
-	var err error
-	cc.session, err = cc.sshSession()
-	return err
-}
-
-// CloseSession closes the client's SSH session
-func (cc *Client) CloseSession() error {
-	return cc.session.Close()
-}
-
 // ValidateName validates a given name
 func ValidateName(name string) bool {
 	return nameValidator.MatchString(name)
-}
-
-func (cc *Client) sshSession() (*ssh.Session, error) {
-	c, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cc.config.IDHost, cc.config.IDPort), cc.sshConfig)
-	if err != nil {
-		return nil, err
-	}
-	s, err := c.NewSession()
-	if err != nil {
-		return nil, err
-	}
-	return s, nil
 }
 
 func (cc *Client) Auth() (*Auth, error) {
@@ -441,6 +445,28 @@ func (cc *Client) Auth() (*Auth, error) {
 		}
 	}
 	return cc.auth, nil
+}
+
+func (cc *Client) sshSession() (*ssh.Session, error) {
+	var s *ssh.Session
+
+	// On first run we may have already dialed a session to test ssh agent
+	cc.initialSessionOnce.Do(func() {
+		s = cc.initialSession
+	})
+	if s != nil {
+		return s, nil
+	}
+
+	c, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cc.config.IDHost, cc.config.IDPort), cc.sshConfig)
+	if err != nil {
+		return nil, err
+	}
+	s, err = c.NewSession()
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
 }
 
 func fileExists(path string) bool {
