@@ -121,7 +121,7 @@ func (cc *Client) makeAPIRequest(method string, apiPath string, body interface{}
 	url := fmt.Sprintf("%s:%d/v1/%s", cc.config.GlowHost, cc.config.GlowPort, apiPath)
 	if body != nil {
 		buf = &bytes.Buffer{}
-		err := json.NewEncoder(buf).Encode(body)
+		err = json.NewEncoder(buf).Encode(body)
 		if err != nil {
 			return err
 		}
