@@ -140,7 +140,7 @@ func (cc *Client) makeAPIRequest(method string, apiPath string, body interface{}
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("http server error %d", resp.StatusCode)
 	}
 	if result != nil {

@@ -382,10 +382,10 @@ func (cc *Client) SetName(name string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode == 409 {
+	if resp.StatusCode == http.StatusConflict {
 		return nil, ErrNameTaken
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("server error")
 	}
 	defer resp.Body.Close()
@@ -424,10 +424,10 @@ func (cc *Client) Bio() (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode == 409 {
+	if resp.StatusCode == http.StatusConflict {
 		return nil, ErrNameTaken
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("server error")
 	}
 	defer resp.Body.Close()
