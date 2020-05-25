@@ -322,7 +322,6 @@ func View(model boba.Model) string {
 func HandleLinkRequest(m Model) []boba.Cmd {
 
 	go func() {
-		m.cc.RenewSession()
 		if err := m.cc.LinkGen(m.lh); err != nil {
 			m.lh.err <- err
 		}

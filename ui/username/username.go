@@ -275,16 +275,10 @@ func spinnerView(m Model) string {
 func setName(m Model) boba.Cmd {
 	return func() boba.Msg {
 
-		// Validate before resetting the session to speed things up and keep us
-		// from pounding charm.RenewSession().
+		// Validate before resetting the session to potentially save some
+		// network traffic and keep things feeling speedy.
 		if !charm.ValidateName(m.newName) {
 			return NameInvalidMsg{}
-		}
-
-		// We must renew the session for every subsequent SSH-backed command we
-		// run. In the case below, we request a new JWT when setting the username.
-		if err := m.cc.RenewSession(); err != nil {
-			return errMsg(err)
 		}
 
 		u, err := m.cc.SetName(m.newName)

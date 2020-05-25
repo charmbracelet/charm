@@ -371,7 +371,6 @@ func promptDeleteAccountView() string {
 // LoadKeys loads the current set of keys from the server
 func LoadKeys(cc *charm.Client) boba.Cmd {
 	return func() boba.Msg {
-		cc.RenewSession()
 		ak, err := cc.AuthorizedKeysWithMetadata()
 		if err != nil {
 			return errMsg(err)
@@ -383,7 +382,6 @@ func LoadKeys(cc *charm.Client) boba.Cmd {
 // unlinkKey deletes the selected key
 func unlinkKey(m Model) boba.Cmd {
 	return func() boba.Msg {
-		m.cc.RenewSession()
 		err := m.cc.UnlinkAuthorizedKey(m.keys[m.getSelectedIndex()].Key)
 		if err != nil {
 			return errMsg(err)
