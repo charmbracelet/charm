@@ -12,7 +12,7 @@ require (
 	github.com/meowgorithm/babyenv v1.2.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/muesli/reflow v0.1.0
-	github.com/muesli/termenv v0.5.2
+	github.com/muesli/termenv v0.5.3-0.20200526053627-d728968dcf83
 	github.com/spf13/cobra v0.0.7
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
