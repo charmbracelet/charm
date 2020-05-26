@@ -4,16 +4,16 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/charmbracelet/boba"
-	"github.com/charmbracelet/boba/spinner"
+	"github.com/charmbracelet/bubbles/spinner"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/muesli/reflow/indent"
 )
 
-// NewProgram returns a Boba program for the link participant
-func NewProgram(cc *charm.Client, code string) *boba.Program {
-	return boba.NewProgram(initialize(cc, code), update, view)
+// NewProgram returns a Tea program for the link participant
+func NewProgram(cc *charm.Client, code string) *tea.Program {
+	return tea.NewProgram(initialize(cc, code), update, view)
 }
 
 type status int
@@ -47,11 +47,11 @@ type model struct {
 	spinner       spinner.Model
 }
 
-func initialize(cc *charm.Client, code string) func() (boba.Model, boba.Cmd) {
+func initialize(cc *charm.Client, code string) func() (tea.Model, tea.Cmd) {
 	sp := spinner.NewModel()
 	sp.ForegroundColor = "241"
 	sp.Type = spinner.Dot
-	return func() (boba.Model, boba.Cmd) {
+	return func() (tea.Model, tea.Cmd) {
 		m := model{
 			cc:            cc,
 			lh:            newLinkHandler(),
@@ -61,14 +61,14 @@ func initialize(cc *charm.Client, code string) func() (boba.Model, boba.Cmd) {
 			err:           nil,
 			spinner:       sp,
 		}
-		return m, boba.Batch(
+		return m, tea.Batch(
 			handleLinkRequest(m),
 			spinner.Tick(sp),
 		)
 	}
 }
 
-func update(msg boba.Msg, mdl boba.Model) (boba.Model, boba.Cmd) {
+func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
 	m, ok := mdl.(model)
 	if !ok {
 		return model{
@@ -78,7 +78,7 @@ func update(msg boba.Msg, mdl boba.Model) (boba.Model, boba.Cmd) {
 
 	switch msg := msg.(type) {
 
-	case boba.KeyMsg:
+	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
 			fallthrough
@@ -86,7 +86,7 @@ func update(msg boba.Msg, mdl boba.Model) (boba.Model, boba.Cmd) {
 			fallthrough
 		case "q":
 			m.status = quitting
-			return m, boba.Quit
+			return m, tea.Quit
 		default:
 			return m, nil
 		}
@@ -101,29 +101,29 @@ func update(msg boba.Msg, mdl boba.Model) (boba.Model, boba.Cmd) {
 			return m, nil
 		}
 		m.status = linkTokenInvalid
-		return m, boba.Quit
+		return m, tea.Quit
 
 	case requestDeniedMsg:
 		m.status = linkRequestDenied
-		return m, boba.Quit
+		return m, tea.Quit
 
 	case successMsg:
 		m.status = linkSuccess
 		if msg {
 			m.alreadyLinked = true
 		}
-		return m, boba.Quit
+		return m, tea.Quit
 
 	case timeoutMsg:
 		m.status = linkTimeout
-		return m, boba.Quit
+		return m, tea.Quit
 
 	case errMsg:
 		m.status = linkErr
-		return m, boba.Quit
+		return m, tea.Quit
 
 	case spinner.TickMsg:
-		var cmd boba.Cmd
+		var cmd tea.Cmd
 		m.spinner, cmd = spinner.Update(msg, m.spinner)
 		return m, cmd
 
@@ -132,7 +132,7 @@ func update(msg boba.Msg, mdl boba.Model) (boba.Model, boba.Cmd) {
 	}
 }
 
-func view(mdl boba.Model) string {
+func view(mdl tea.Model) string {
 	m, ok := mdl.(model)
 	if !ok {
 		m.err = errors.New("could not perform assertion on model in view")
@@ -169,7 +169,7 @@ func view(mdl boba.Model) string {
 
 // COMMANDS
 
-func handleLinkRequest(m model) boba.Cmd {
+func handleLinkRequest(m model) tea.Cmd {
 
 	go func() {
 		if err := m.cc.Link(m.lh, m.code); err != nil {
@@ -177,7 +177,7 @@ func handleLinkRequest(m model) boba.Cmd {
 		}
 	}()
 
-	return boba.Batch(
+	return tea.Batch(
 		handleTokenSent(m.lh),
 		handleValidToken(m.lh),
 		handleRequestDenied(m.lh),
@@ -187,41 +187,41 @@ func handleLinkRequest(m model) boba.Cmd {
 	)
 }
 
-func handleTokenSent(lh *linkHandler) boba.Cmd {
-	return func() boba.Msg {
+func handleTokenSent(lh *linkHandler) tea.Cmd {
+	return func() tea.Msg {
 		<-lh.tokenSent
 		return tokenSentMsg{}
 	}
 }
 
-func handleValidToken(lh *linkHandler) boba.Cmd {
-	return func() boba.Msg {
+func handleValidToken(lh *linkHandler) tea.Cmd {
+	return func() tea.Msg {
 		return validTokenMsg(<-lh.validToken)
 	}
 }
 
-func handleRequestDenied(lh *linkHandler) boba.Cmd {
-	return func() boba.Msg {
+func handleRequestDenied(lh *linkHandler) tea.Cmd {
+	return func() tea.Msg {
 		<-lh.requestDenied
 		return requestDeniedMsg{}
 	}
 }
 
-func handleLinkSuccess(lh *linkHandler) boba.Cmd {
-	return func() boba.Msg {
+func handleLinkSuccess(lh *linkHandler) tea.Cmd {
+	return func() tea.Msg {
 		return successMsg(<-lh.success)
 	}
 }
 
-func handleTimeout(lh *linkHandler) boba.Cmd {
-	return func() boba.Msg {
+func handleTimeout(lh *linkHandler) tea.Cmd {
+	return func() tea.Msg {
 		<-lh.timeout
 		return timeoutMsg{}
 	}
 }
 
-func handleErr(lh *linkHandler) boba.Cmd {
-	return func() boba.Msg {
+func handleErr(lh *linkHandler) tea.Cmd {
+	return func() tea.Msg {
 		return errMsg(<-lh.err)
 	}
 }

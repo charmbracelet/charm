@@ -3,9 +3,9 @@ package username
 import (
 	"strings"
 
-	"github.com/charmbracelet/boba"
-	"github.com/charmbracelet/boba/spinner"
-	input "github.com/charmbracelet/boba/textinput"
+	"github.com/charmbracelet/bubbles/spinner"
+	input "github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
 	te "github.com/muesli/termenv"
@@ -120,29 +120,29 @@ func NewModel(cc *charm.Client) Model {
 	}
 }
 
-func Init(cc *charm.Client) func() (boba.Model, boba.Cmd) {
-	return func() (boba.Model, boba.Cmd) {
+func Init(cc *charm.Client) func() (tea.Model, tea.Cmd) {
+	return func() (tea.Model, tea.Cmd) {
 		m := NewModel(cc)
 		return m, InitialCmd(m)
 	}
 }
 
-func InitialCmd(m Model) boba.Cmd {
+func InitialCmd(m Model) tea.Cmd {
 	return input.Blink(m.input)
 }
 
 // UPDATE
 
-func Update(msg boba.Msg, m Model) (Model, boba.Cmd) {
+func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
-	case boba.KeyMsg:
+	case tea.KeyMsg:
 		switch msg.Type {
 
-		case boba.KeyCtrlC: // quit
+		case tea.KeyCtrlC: // quit
 			m.Quit = true
 			return m, nil
-		case boba.KeyEscape: // exit this mini-app
+		case tea.KeyEscape: // exit this mini-app
 			m.Done = true
 			return m, nil
 
@@ -190,7 +190,7 @@ func Update(msg boba.Msg, m Model) (Model, boba.Cmd) {
 					m.state = submitting
 					m.errMsg = ""
 					m.newName = strings.TrimSpace(m.input.Value())
-					return m, boba.Batch(
+					return m, tea.Batch(
 						setName(m), // fire off the command, too
 						spinner.Tick(m.spinner),
 					)
@@ -203,7 +203,7 @@ func Update(msg boba.Msg, m Model) (Model, boba.Cmd) {
 			// Pass messages through to the input element if that's the element
 			// in focus
 			if m.index == textInput {
-				var cmd boba.Cmd
+				var cmd tea.Cmd
 				m.input, cmd = input.Update(msg, m.input)
 				return m, cmd
 			}
@@ -233,12 +233,12 @@ func Update(msg boba.Msg, m Model) (Model, boba.Cmd) {
 		return m, nil
 
 	case spinner.TickMsg:
-		var cmd boba.Cmd
+		var cmd tea.Cmd
 		m.spinner, cmd = spinner.Update(msg, m.spinner)
 		return m, cmd
 
 	default:
-		var cmd boba.Cmd
+		var cmd tea.Cmd
 		m.input, cmd = input.Update(msg, m.input) // Do we still need this?
 		return m, cmd
 	}
@@ -272,8 +272,8 @@ func spinnerView(m Model) string {
 // COMMANDS
 
 // Attempt to update the username on the server
-func setName(m Model) boba.Cmd {
-	return func() boba.Msg {
+func setName(m Model) tea.Cmd {
+	return func() tea.Msg {
 
 		// Validate before resetting the session to potentially save some
 		// network traffic and keep things feeling speedy.

@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/charmbracelet/boba"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui"
 	"github.com/charmbracelet/charm/ui/common"
@@ -50,7 +50,7 @@ var (
 			if isTTY() {
 				cfg := getCharmConfig()
 				if cfg.Debug {
-					err := boba.UseSysLog("charm")
+					err := tea.UseSysLog("charm")
 					if err != nil {
 						return err
 					}
@@ -164,7 +164,7 @@ var (
 		Args:   cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if isTTY() && !simpleOutput {
-				return boba.NewProgram(keygen.Init, keygen.Update, keygen.View).Start()
+				return tea.NewProgram(keygen.Init, keygen.Update, keygen.View).Start()
 			} else {
 				// TODO
 			}

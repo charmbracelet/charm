@@ -3,8 +3,8 @@ package info
 // Fetch a user's basic Charm account info
 
 import (
-	"github.com/charmbracelet/boba"
-	"github.com/charmbracelet/boba/spinner"
+	"github.com/charmbracelet/bubbles/spinner"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
 	te "github.com/muesli/termenv"
@@ -47,11 +47,11 @@ func NewModel(cc *charm.Client) Model {
 
 // UPDATE
 
-func Update(msg boba.Msg, m Model) (Model, boba.Cmd) {
-	var cmd boba.Cmd
+func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
+	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
-	case boba.KeyMsg:
+	case tea.KeyMsg:
 		switch msg.String() {
 		case "q":
 			fallthrough
@@ -102,8 +102,8 @@ func bioView(u *charm.User) string {
 // COMMANDS
 
 // GetBio fetches the authenticated user's bio
-func GetBio(cc *charm.Client) boba.Cmd {
-	return func() boba.Msg {
+func GetBio(cc *charm.Client) tea.Cmd {
+	return func() tea.Msg {
 		user, err := cc.Bio()
 		if err != nil {
 			return errMsg(err)
@@ -114,6 +114,6 @@ func GetBio(cc *charm.Client) boba.Cmd {
 }
 
 // Tick just wraps the spinner's tick command
-func Tick(m Model) boba.Cmd {
+func Tick(m Model) tea.Cmd {
 	return spinner.Tick(m.spinner)
 }

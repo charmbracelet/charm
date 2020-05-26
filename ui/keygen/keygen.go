@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/charmbracelet/boba"
-	"github.com/charmbracelet/boba/spinner"
+	"github.com/charmbracelet/bubbles/spinner"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/muesli/reflow/indent"
@@ -41,7 +41,7 @@ type Model struct {
 
 // INIT
 
-func Init() (boba.Model, boba.Cmd) {
+func Init() (tea.Model, tea.Cmd) {
 	m := NewModel()
 	m.standalone = true
 	return m, InitialCmd(m)
@@ -59,22 +59,22 @@ func NewModel() Model {
 	}
 }
 
-func InitialCmd(m Model) boba.Cmd {
-	return boba.Batch(GenerateKeys, spinner.Tick(m.spinner))
+func InitialCmd(m Model) tea.Cmd {
+	return tea.Batch(GenerateKeys, spinner.Tick(m.spinner))
 }
 
 // UPDATE
 
-func Update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
+func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	m, ok := model.(Model)
 	if !ok {
 		return model, nil
 	}
 
-	var cmd boba.Cmd
+	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
-	case boba.KeyMsg:
+	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
 			fallthrough
@@ -82,12 +82,12 @@ func Update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
 			fallthrough
 		case "q":
 			m.status = statusQuitting
-			return m, boba.Quit
+			return m, tea.Quit
 		}
 	case failedMsg:
 		m.err = msg
 		m.status = statusError
-		return m, boba.Quit
+		return m, tea.Quit
 	case successMsg:
 		m.status = statusSuccess
 		return m, pause
@@ -98,7 +98,7 @@ func Update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
 		}
 	case DoneMsg:
 		if m.standalone {
-			return m, boba.Quit
+			return m, tea.Quit
 		}
 		m.status = statusDone
 		return m, nil
@@ -109,7 +109,7 @@ func Update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
 
 // VIEWS
 
-func View(model boba.Model) string {
+func View(model tea.Model) string {
 	m, ok := model.(Model)
 	if !ok {
 		return "could not perform assertion on model in view"
@@ -138,9 +138,9 @@ func View(model boba.Model) string {
 
 // COMMANDS
 
-// GenerateKeys is a Boba command that generates a pair of SSH keys and writes
+// GenerateKeys is a Tea command that generates a pair of SSH keys and writes
 // them to disk
-func GenerateKeys() boba.Msg {
+func GenerateKeys() tea.Msg {
 	_, err := charm.NewSSHKeyPair()
 	if err != nil {
 		return failedMsg(err)
@@ -149,7 +149,7 @@ func GenerateKeys() boba.Msg {
 }
 
 // pause runs the final pause before we wrap things up
-func pause() boba.Msg {
+func pause() tea.Msg {
 	time.Sleep(time.Millisecond * 600)
 	return DoneMsg{}
 }

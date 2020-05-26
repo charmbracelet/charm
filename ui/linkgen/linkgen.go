@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/charmbracelet/boba"
-	"github.com/charmbracelet/boba/spinner"
+	"github.com/charmbracelet/bubbles/spinner"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/muesli/reflow/indent"
@@ -30,15 +30,15 @@ type linkSuccessMsg bool // true if this account's already been linked
 type linkTimeoutMsg struct{}
 type errMsg error
 
-// NewProgram is a simple wrapper for boba.NewProgram
-func NewProgram(cc *charm.Client) *boba.Program {
-	return boba.NewProgram(Init(cc), Update, View)
+// NewProgram is a simple wrapper for tea.NewProgram
+func NewProgram(cc *charm.Client) *tea.Program {
+	return tea.NewProgram(Init(cc), Update, View)
 }
 
-// Model is the Boba model for the link initiator program
+// Model is the tea model for the link initiator program
 type Model struct {
 	lh            *linkHandler
-	standalone    bool // true if this is running as a stadalone Boba program
+	standalone    bool // true if this is running as a stadalone tea program
 	Quit          bool // indicates the user wants to exit the whole program
 	Exit          bool // indicates the user wants to exit this mini-app
 	err           error
@@ -52,17 +52,17 @@ type Model struct {
 }
 
 // acceptRequest rejects the current linking request
-func (m Model) acceptRequest() (Model, boba.Cmd) {
+func (m Model) acceptRequest() (Model, tea.Cmd) {
 	m.lh.response <- true
 	return m, nil
 }
 
 // rejectRequset rejects the current linking request
-func (m Model) rejectRequest() (Model, boba.Cmd) {
+func (m Model) rejectRequest() (Model, tea.Cmd) {
 	m.lh.response <- false
 	m.status = linkRequestDenied
 	if m.standalone {
-		return m, boba.Quit
+		return m, tea.Quit
 	}
 	return m, nil
 }
@@ -95,29 +95,29 @@ func NewModel(cc *charm.Client) Model {
 	}
 }
 
-// Init is a Boba program's initialization function
-func Init(cc *charm.Client) func() (boba.Model, boba.Cmd) {
-	return func() (boba.Model, boba.Cmd) {
+// Init is a Tea program's initialization function
+func Init(cc *charm.Client) func() (tea.Model, tea.Cmd) {
+	return func() (tea.Model, tea.Cmd) {
 		m := NewModel(cc)
 		m.standalone = true
 		return m, InitialCmd(m)
 	}
 }
 
-func InitialCmd(m Model) boba.Cmd {
+func InitialCmd(m Model) tea.Cmd {
 	cmds := append(HandleLinkRequest(m), spinner.Tick(m.spinner))
-	return boba.Batch(cmds...)
+	return tea.Batch(cmds...)
 }
 
-// Update is the Boba update loop
-func Update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
+// Update is the Tea update loop
+func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	m, ok := model.(Model)
 	if !ok {
 		m.err = errors.New("could not perform model assertion in update")
 	}
 
 	switch msg := msg.(type) {
-	case boba.KeyMsg:
+	case tea.KeyMsg:
 
 		switch msg.String() {
 
@@ -125,7 +125,7 @@ func Update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
 		case "ctrl+c":
 			if m.standalone {
 				m.status = quitting
-				return m, boba.Quit
+				return m, tea.Quit
 			}
 			m.Quit = true
 			return m, nil
@@ -134,7 +134,7 @@ func Update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
 		case "esc":
 			if m.standalone {
 				m.status = quitting
-				return m, boba.Quit
+				return m, tea.Quit
 			}
 			m.Exit = true
 			return m, nil
@@ -210,19 +210,19 @@ func Update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
 		m.status = linkSuccess
 		m.alreadyLinked = bool(msg)
 		if m.standalone {
-			return m, boba.Quit
+			return m, tea.Quit
 		}
 		return m, nil
 
 	case linkTimeoutMsg:
 		m.status = linkTimedOut
 		if m.standalone {
-			return m, boba.Quit
+			return m, tea.Quit
 		}
 		return m, nil
 
 	case spinner.TickMsg:
-		var cmd boba.Cmd
+		var cmd tea.Cmd
 		m.spinner, cmd = spinner.Update(msg, m.spinner)
 		if m.status != linkInit {
 			return m, cmd
@@ -234,7 +234,7 @@ func Update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
 }
 
 // View renders the UI
-func View(model boba.Model) string {
+func View(model tea.Model) string {
 	m, ok := model.(Model)
 	if !ok {
 		m.status = linkError
@@ -315,11 +315,11 @@ func View(model boba.Model) string {
 // COMMANDS
 
 // HandleLinkRequest returns a bunch of blocking commands that resolve on link
-// request states. As a Boba command, this should be treated as batch:
+// request states. As a Tea command, this should be treated as batch:
 //
-//     boba.Batch(HandleLinkRequest(model)...)
+//     tea.Batch(HandleLinkRequest(model)...)
 //
-func HandleLinkRequest(m Model) []boba.Cmd {
+func HandleLinkRequest(m Model) []tea.Cmd {
 
 	go func() {
 		if err := m.cc.LinkGen(m.lh); err != nil {
@@ -329,7 +329,7 @@ func HandleLinkRequest(m Model) []boba.Cmd {
 
 	// We use a series of blocking commands to interface with channels on the
 	// link handler.
-	return []boba.Cmd{
+	return []tea.Cmd{
 		generateLink(m.lh),
 		handleLinkRequest(m.lh),
 		handleLinkSuccess(m.lh),
@@ -339,8 +339,8 @@ func HandleLinkRequest(m Model) []boba.Cmd {
 }
 
 // generateLink waits for either a link to be generated, or an error.
-func generateLink(lh *linkHandler) boba.Cmd {
-	return func() boba.Msg {
+func generateLink(lh *linkHandler) tea.Cmd {
+	return func() tea.Msg {
 		select {
 		case err := <-lh.err:
 			return errMsg(err)
@@ -351,30 +351,30 @@ func generateLink(lh *linkHandler) boba.Cmd {
 }
 
 // handleLinkRequest waits for a link request code.
-func handleLinkRequest(lh *linkHandler) boba.Cmd {
-	return func() boba.Msg {
+func handleLinkRequest(lh *linkHandler) tea.Cmd {
+	return func() tea.Msg {
 		return linkRequestMsg(<-lh.request)
 	}
 }
 
 // handleLinkSuccess waits for data in the link success channel.
-func handleLinkSuccess(lh *linkHandler) boba.Cmd {
-	return func() boba.Msg {
+func handleLinkSuccess(lh *linkHandler) tea.Cmd {
+	return func() tea.Msg {
 		return linkSuccessMsg(<-lh.success)
 	}
 }
 
 // handleLinkTimeout waits for a timeout in the linking process.
-func handleLinkTimeout(lh *linkHandler) boba.Cmd {
-	return func() boba.Msg {
+func handleLinkTimeout(lh *linkHandler) tea.Cmd {
+	return func() tea.Msg {
 		<-lh.timeout
 		return linkTimeoutMsg{}
 	}
 }
 
 // handleLinkError responds when a linking error is reported
-func handleLinkError(lh *linkHandler) boba.Cmd {
-	return func() boba.Msg {
+func handleLinkError(lh *linkHandler) tea.Cmd {
+	return func() tea.Msg {
 		return errMsg(<-lh.err)
 	}
 }

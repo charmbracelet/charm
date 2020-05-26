@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/charmbracelet/boba"
-	pager "github.com/charmbracelet/boba/paginator"
-	"github.com/charmbracelet/boba/spinner"
+	pager "github.com/charmbracelet/bubbles/paginator"
+	"github.com/charmbracelet/bubbles/spinner"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/muesli/reflow/indent"
@@ -35,8 +35,8 @@ const (
 )
 
 // NewProgram creates a new Tea program
-func NewProgram(cc *charm.Client) *boba.Program {
-	return boba.NewProgram(Init(cc), Update, View)
+func NewProgram(cc *charm.Client) *tea.Program {
+	return tea.NewProgram(Init(cc), Update, View)
 }
 
 // MSG
@@ -68,7 +68,7 @@ func (m *Model) getSelectedIndex() int {
 	return m.index + m.pager.Page*m.pager.PerPage
 }
 
-func (m *Model) UpdatePaging(msg boba.Msg) {
+func (m *Model) UpdatePaging(msg tea.Msg) {
 
 	// Handle paging
 	m.pager.SetTotalPages(len(m.keys))
@@ -108,16 +108,16 @@ func NewModel(cc *charm.Client) Model {
 
 // Init is the Tea initialization function which returns an initial model and,
 // potentially, an initial command
-func Init(cc *charm.Client) func() (boba.Model, boba.Cmd) {
-	return func() (boba.Model, boba.Cmd) {
+func Init(cc *charm.Client) func() (tea.Model, tea.Cmd) {
+	return func() (tea.Model, tea.Cmd) {
 		m := NewModel(cc)
 		m.standalone = true
 		return m, InitialCmd(m)
 	}
 }
 
-func InitialCmd(m Model) boba.Cmd {
-	return boba.Batch(
+func InitialCmd(m Model) tea.Cmd {
+	return tea.Batch(
 		LoadKeys(m.cc),
 		spinner.Tick(m.spinner),
 	)
@@ -125,8 +125,8 @@ func InitialCmd(m Model) boba.Cmd {
 
 // UPDATE
 
-// Update is the Boba update function which handles incoming messages
-func Update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
+// Update is the tea update function which handles incoming messages
+func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	m, ok := model.(Model)
 	if !ok {
 		// TODO: handle error
@@ -134,7 +134,7 @@ func Update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
 	}
 
 	switch msg := msg.(type) {
-	case boba.KeyMsg:
+	case tea.KeyMsg:
 		switch msg.String() {
 
 		case "ctrl+c":
@@ -144,7 +144,7 @@ func Update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
 		case "esc":
 			if m.standalone {
 				m.state = stateQuitting
-				return m, boba.Quit
+				return m, tea.Quit
 			}
 			m.Exit = true
 			return m, nil
@@ -216,7 +216,7 @@ func Update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
 
 	case unlinkedKeyMsg:
 		if m.state == stateQuitting {
-			return m, boba.Quit
+			return m, tea.Quit
 		}
 		i := m.getSelectedIndex()
 
@@ -233,7 +233,7 @@ func Update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
 		return m, nil
 
 	case spinner.TickMsg:
-		var cmd boba.Cmd
+		var cmd tea.Cmd
 		m.spinner, cmd = spinner.Update(msg, m.spinner)
 		return m, cmd
 	}
@@ -242,7 +242,7 @@ func Update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
 
 	// If an item is being confirmed for delete, any key (other than the key
 	// used for confirmation above) cancels the deletion
-	k, ok := msg.(boba.KeyMsg)
+	k, ok := msg.(tea.KeyMsg)
 	if ok && k.String() != "x" {
 		m.state = stateNormal
 	}
@@ -253,7 +253,7 @@ func Update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
 // VIEW
 
 // View renders the current UI into a string
-func View(model boba.Model) string {
+func View(model tea.Model) string {
 	m, ok := model.(Model)
 	if !ok {
 		m.err = errors.New("could not perform assertion on model")
@@ -369,8 +369,8 @@ func promptDeleteAccountView() string {
 // COMMANDS
 
 // LoadKeys loads the current set of keys from the server
-func LoadKeys(cc *charm.Client) boba.Cmd {
-	return func() boba.Msg {
+func LoadKeys(cc *charm.Client) tea.Cmd {
+	return func() tea.Msg {
 		ak, err := cc.AuthorizedKeysWithMetadata()
 		if err != nil {
 			return errMsg(err)
@@ -380,8 +380,8 @@ func LoadKeys(cc *charm.Client) boba.Cmd {
 }
 
 // unlinkKey deletes the selected key
-func unlinkKey(m Model) boba.Cmd {
-	return func() boba.Msg {
+func unlinkKey(m Model) tea.Cmd {
+	return func() tea.Msg {
 		err := m.cc.UnlinkAuthorizedKey(m.keys[m.getSelectedIndex()].Key)
 		if err != nil {
 			return errMsg(err)

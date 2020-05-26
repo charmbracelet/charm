@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/charmbracelet/boba"
-	"github.com/charmbracelet/boba/spinner"
+	"github.com/charmbracelet/bubbles/spinner"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/charm/ui/info"
@@ -20,9 +20,9 @@ import (
 
 const padding = 2
 
-// NewProgram returns a new boba program
-func NewProgram(cfg *charm.Config) *boba.Program {
-	return boba.NewProgram(initialize(cfg), update, view)
+// NewProgram returns a new Tea program
+func NewProgram(cfg *charm.Config) *tea.Program {
+	return tea.NewProgram(initialize(cfg), update, view)
 }
 
 // status is used to indicate a high level application state
@@ -108,8 +108,8 @@ type Model struct {
 
 // INIT
 
-func initialize(cfg *charm.Config) func() (boba.Model, boba.Cmd) {
-	return func() (boba.Model, boba.Cmd) {
+func initialize(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
+	return func() (tea.Model, tea.Cmd) {
 		s := spinner.NewModel()
 		s.Type = spinner.Dot
 		s.ForegroundColor = "244"
@@ -124,7 +124,7 @@ func initialize(cfg *charm.Config) func() (boba.Model, boba.Cmd) {
 			spinner:    s,
 			keygen:     keygen.NewModel(),
 		}
-		return m, boba.Batch(
+		return m, tea.Batch(
 			newCharmClient(m),
 			spinner.Tick(m.spinner),
 		)
@@ -133,7 +133,7 @@ func initialize(cfg *charm.Config) func() (boba.Model, boba.Cmd) {
 
 // UPDATE
 
-func update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
+func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	m, ok := model.(Model)
 	if !ok {
 		return Model{
@@ -142,8 +142,8 @@ func update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
 	}
 
 	var (
-		cmds []boba.Cmd
-		cmd  boba.Cmd
+		cmds []tea.Cmd
+		cmd  tea.Cmd
 	)
 
 	if m.cfg.Debug {
@@ -154,12 +154,12 @@ func update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
 
 	switch msg := msg.(type) {
 
-	case boba.KeyMsg:
+	case tea.KeyMsg:
 
 		switch msg.Type {
-		case boba.KeyCtrlC:
+		case tea.KeyCtrlC:
 			m.status = statusQuitting
-			return m, boba.Quit
+			return m, tea.Quit
 		}
 
 		if m.status == statusReady { // Process keys for the menu
@@ -171,7 +171,7 @@ func update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
 				fallthrough
 			case "esc":
 				m.status = statusQuitting
-				return m, boba.Quit
+				return m, tea.Quit
 
 			// Prev menu item
 			case "up":
@@ -213,11 +213,11 @@ func update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
 
 	case sshAuthFailedMsg:
 		// TODO: report permanent failure
-		return m, boba.Quit
+		return m, tea.Quit
 
 	case keygen.DoneMsg:
 		m.status = statusKeygenComplete
-		return m, boba.Batch(
+		return m, tea.Batch(
 			newCharmClient(m),
 			spinner.Tick(m.spinner),
 		)
@@ -254,15 +254,15 @@ func update(msg boba.Msg, model boba.Model) (boba.Model, boba.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 
-	return m, boba.Batch(cmds...)
+	return m, tea.Batch(cmds...)
 }
 
-func updateChilden(msg boba.Msg, m Model) (Model, boba.Cmd) {
-	var cmd boba.Cmd
+func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
+	var cmd tea.Cmd
 
 	switch m.status {
 	case statusKeygen:
-		keygenModel, newCmd := keygen.Update(msg, boba.Model(m.keygen))
+		keygenModel, newCmd := keygen.Update(msg, tea.Model(m.keygen))
 		mdl, ok := keygenModel.(keygen.Model)
 		if !ok {
 			m.err = errors.New("could not perform model assertion on keygen model")
@@ -275,11 +275,11 @@ func updateChilden(msg boba.Msg, m Model) (Model, boba.Cmd) {
 		if m.info.Quit {
 			m.status = statusQuitting
 			m.err = m.info.Err
-			return m, boba.Quit
+			return m, tea.Quit
 		}
 		return m, cmd
 	case statusLinking:
-		linkModel, cmd := linkgen.Update(msg, boba.Model(m.link))
+		linkModel, cmd := linkgen.Update(msg, tea.Model(m.link))
 		mdl, ok := linkModel.(linkgen.Model)
 		if !ok {
 			m.err = errors.New("could not perform model assertion on link model")
@@ -291,10 +291,10 @@ func updateChilden(msg boba.Msg, m Model) (Model, boba.Cmd) {
 			m.status = statusReady
 		} else if m.link.Quit {
 			m.status = statusQuitting
-			return m, boba.Quit
+			return m, tea.Quit
 		}
 	case statusBrowsingKeys:
-		var newModel boba.Model
+		var newModel tea.Model
 		newModel, cmd = keys.Update(msg, m.keys)
 		newKeysModel, ok := newModel.(keys.Model)
 		if !ok {
@@ -307,7 +307,7 @@ func updateChilden(msg boba.Msg, m Model) (Model, boba.Cmd) {
 			m.status = statusReady
 		} else if m.keys.Quit {
 			m.status = statusQuitting
-			return m, boba.Quit
+			return m, tea.Quit
 		}
 	case statusSettingUsername:
 		m.username, cmd = username.Update(msg, m.username)
@@ -316,7 +316,7 @@ func updateChilden(msg boba.Msg, m Model) (Model, boba.Cmd) {
 			m.status = statusReady
 		} else if m.username.Quit {
 			m.status = statusQuitting
-			return m, boba.Quit
+			return m, tea.Quit
 		}
 	}
 
@@ -335,7 +335,7 @@ func updateChilden(msg boba.Msg, m Model) (Model, boba.Cmd) {
 		cmd = username.InitialCmd(m.username)
 	case exitChoice:
 		m.status = statusQuitting
-		cmd = boba.Quit
+		cmd = tea.Quit
 	}
 
 	return m, cmd
@@ -343,7 +343,7 @@ func updateChilden(msg boba.Msg, m Model) (Model, boba.Cmd) {
 
 // VIEW
 
-func view(model boba.Model) string {
+func view(model tea.Model) string {
 	m, ok := model.(Model)
 	if !ok {
 		m.err = errors.New("could not perform assertion on model in view")
@@ -426,8 +426,8 @@ func errorView(err error) string {
 
 // COMMANDS
 
-func newCharmClient(m Model) boba.Cmd {
-	return func() boba.Msg {
+func newCharmClient(m Model) tea.Cmd {
+	return func() tea.Msg {
 		cc, err := charm.NewClient(m.cfg)
 		if err == charm.ErrMissingSSHAuth {
 			if m.status != statusKeygenComplete {
