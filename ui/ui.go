@@ -324,7 +324,6 @@ func updateChilden(msg boba.Msg, m Model) (Model, boba.Cmd) {
 	case linkChoice:
 		m.status = statusLinking
 		m.menuChoice = unsetChoice
-		cmd = boba.Batch(linkgen.HandleLinkRequest(m.link)...)
 		cmd = linkgen.InitialCmd(m.link)
 	case keysChoice:
 		m.status = statusBrowsingKeys
