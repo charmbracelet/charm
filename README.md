@@ -1,6 +1,6 @@
 # Charm
 
-Making the command line friendly!
+<img src="https://stuff.charm.sh/charm-tool-trailer.gif" width="500" height="282" alt="Charm UI Trailer" />
 
 ## Usage
 
