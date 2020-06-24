@@ -285,14 +285,14 @@ func View(model tea.Model) string {
 		if m.standalone {
 			s += "\n"
 		} else {
-			s = preamble + s + common.HelpView("Press any key to exit...")
+			s = preamble + s + common.HelpView("\n\nPress any key to exit...")
 		}
 	case linkRequestDenied:
 		s += "Link request " + common.Keyword("denied") + "."
 		if m.standalone {
 			s += "\n"
 		} else {
-			s = preamble + s + common.HelpView("Press any key to exit...")
+			s = preamble + s + common.HelpView("\n\nPress any key to exit...")
 		}
 	case linkTimedOut:
 		s += preamble
