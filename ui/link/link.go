@@ -50,7 +50,7 @@ type model struct {
 func initialize(cc *charm.Client, code string) func() (tea.Model, tea.Cmd) {
 	sp := spinner.NewModel()
 	sp.ForegroundColor = "241"
-	sp.Type = spinner.Dot
+	sp.Frames = spinner.Dot
 	return func() (tea.Model, tea.Cmd) {
 		m := model{
 			cc:            cc,

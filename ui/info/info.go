@@ -34,7 +34,7 @@ type Model struct {
 
 func NewModel(cc *charm.Client) Model {
 	s := spinner.NewModel()
-	s.Type = spinner.Dot
+	s.Frames = spinner.Dot
 	s.ForegroundColor = common.SpinnerColor
 
 	return Model{

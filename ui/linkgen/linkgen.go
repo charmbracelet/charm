@@ -77,7 +77,7 @@ func NewModel(cc *charm.Client) Model {
 		timeout:  make(chan struct{}),
 	}
 	s := spinner.NewModel()
-	s.Type = spinner.Dot
+	s.Frames = spinner.Dot
 	s.ForegroundColor = "241"
 	return Model{
 		lh:            lh,

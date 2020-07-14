@@ -87,7 +87,7 @@ func NewModel(cc *charm.Client) Model {
 	p.Type = pager.Dots
 
 	s := spinner.NewModel()
-	s.Type = spinner.Dot
+	s.Frames = spinner.Dot
 	s.ForegroundColor = "241"
 
 	return Model{

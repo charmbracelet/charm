@@ -49,7 +49,7 @@ func Init() (tea.Model, tea.Cmd) {
 
 func NewModel() Model {
 	s := spinner.NewModel()
-	s.Type = spinner.Dot
+	s.Frames = spinner.Dot
 	s.ForegroundColor = common.SpinnerColor
 	return Model{
 		status:     statusRunning,
