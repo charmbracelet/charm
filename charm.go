@@ -389,7 +389,7 @@ func (cc *Client) SetName(name string) (*User, error) {
 		return nil, ErrNameTaken
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("server error")
+		return nil, fmt.Errorf("server error: %d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
 	}
 	defer resp.Body.Close()
 	dec := json.NewDecoder(resp.Body)
@@ -431,7 +431,7 @@ func (cc *Client) Bio() (*User, error) {
 		return nil, ErrNameTaken
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("server error")
+		return nil, fmt.Errorf("server error: %d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
 	}
 	defer resp.Body.Close()
 	dec := json.NewDecoder(resp.Body)
