@@ -43,7 +43,7 @@ type Config struct {
 	IDPort      int    `env:"CHARM_ID_PORT" default:"22"`
 	BioHost     string `env:"CHARM_BIO_HOST" default:"https://bio.charm.sh"`
 	BioPort     int    `env:"CHARM_BIO_PORT" default:"443"`
-	GlowHost    string `env:"CHARM_GLOW_HOST" default:"https://glow-api.charm.sh"`
+	GlowHost    string `env:"CHARM_GLOW_HOST" default:"https://glow.charm.sh"`
 	GlowPort    int    `env:"CHARM_GLOW_PORT" default:"443"`
 	JWTKey      string `env:"CHARM_JWT_KEY" default:""`
 	UseSSHAgent bool   `env:"CHARM_USE_SSH_AGENT" default:"true"`
