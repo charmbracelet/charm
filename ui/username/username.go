@@ -215,7 +215,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		m.state = ready
 		m.errMsg = common.Subtle("Sorry, ") +
 			te.String(m.newName).Foreground(common.Red.Color()).String() +
-			common.Subtle("is taken.")
+			common.Subtle(" is taken.")
 		return m, nil
 
 	case NameInvalidMsg:
