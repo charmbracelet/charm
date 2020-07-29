@@ -80,10 +80,12 @@ var menuChoices = map[menuChoice]string{
 
 type sshAuthErrorMsg struct{}
 
+// TODO: this should be wrapped in a struct; it will match all error types
 type sshAuthFailedMsg error
 
 type newCharmClientMsg *charm.Client
 
+// TODO: this should be wrapped in a struct; it will match all error types
 type errMsg error
 
 // MODEL
