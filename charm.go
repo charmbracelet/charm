@@ -114,29 +114,26 @@ func NewClient(cfg *Config) (*Client, error) {
 			// Dial session here as agent may still not work
 			c, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cc.config.IDHost, cc.config.IDPort), cc.sshConfig)
 			if err == nil {
-				// Successful dial; let's finish up here
+				// Successful dial; let's try and finish up here
 
 				s, err := c.NewSession()
-				if err != nil {
-					return nil, err
-				}
 				if err == nil {
-					// Cache dialed session and use SSH agent for auth!
+					// It worked. Cache dialed session and use SSH agent for auth!
 					cc.initialSession = s
 					return cc, nil
 				}
 			}
-
 		}
 	}
 
-	// If we're still here it means SSH agent either failed or isn't setup.
-	// So now we look for default SSH keys.
+	// If we're still here it means SSH agent either failed or isn't setup, so
+	// now we look for default SSH keys.
 	defaultSSHKeys, err := findSSHKeys()
 	if err != nil {
 		return nil, err
 	}
 	if len(defaultSSHKeys) == 0 {
+		// We didn't find any keys; give up
 		return nil, ErrMissingSSHAuth
 	}
 
