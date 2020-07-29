@@ -25,3 +25,17 @@ Want to know your Charm ID? You're in luck! Just `charm id` to receive your answ
 ### Keys
 
 Charm accounts are powered by SSH keys. You can see all of the keys linked to your account with `charm keys`.
+
+
+## License
+
+[MIT](https://github.com/charmbracelet/charm/raw/master/LICENSE)
+
+
+***
+
+A [Charm](https://charm.sh) project.
+
+<img alt="the Charm logo" src="https://stuff.charm.sh/charm-badge.jpg" width="400">
+
+Charm热爱开源!
