@@ -36,6 +36,7 @@ type Model struct {
 	Status     status
 	err        error
 	standalone bool
+	spinner    spinner.Model
 }
 
 // INIT
@@ -43,7 +44,7 @@ type Model struct {
 func Init() (tea.Model, tea.Cmd) {
 	m := NewModel()
 	m.standalone = true
-	return m, GenerateKeys
+	return m, tea.Batch(GenerateKeys, spinner.Tick(m.spinner))
 }
 
 func NewModel() Model {
@@ -54,6 +55,7 @@ func NewModel() Model {
 		Status:     StatusRunning,
 		err:        nil,
 		standalone: false,
+		spinner:    s,
 	}
 }
 
@@ -89,6 +91,12 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		}
 		m.Status = StatusDone
 		return m, nil
+	case spinner.TickMsg:
+		if m.Status == StatusRunning {
+			newSpinnerModel, cmd := spinner.Update(msg, m.spinner)
+			m.spinner = newSpinnerModel
+			return m, cmd
+		}
 	}
 
 	return m, nil
@@ -106,6 +114,9 @@ func View(model tea.Model) string {
 
 	switch m.Status {
 	case StatusRunning:
+		if m.standalone {
+			s += spinner.View(m.spinner)
+		}
 		s += " Generating keys..."
 	case StatusSuccess:
 		s += termenv.String("✔").Foreground(common.Green.Color()).String()
