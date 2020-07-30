@@ -120,7 +120,7 @@ var (
 
 	keysCmd = &cobra.Command{
 		Use:   "keys",
-		Short: "Print linked keys",
+		Short: "Browse or print linked keys",
 		Long:  formatLong("Charm accounts are powered by " + common.Keyword("SSH keys") + ". This command prints all of the keys linked to your account. To remove keys use the main " + common.Code("charm") + " interface."),
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
