@@ -54,6 +54,7 @@ func (s SSHKeyPair) publicKeyPath() string {
 }
 
 // NewSSHKeyPair generates an SSHKeyPair, which contains a pair of SSH keys.
+// The keys are written to disk.
 func NewSSHKeyPair() (*SSHKeyPair, error) {
 	s := &SSHKeyPair{}
 	if err := s.GenerateEd25519Keys(); err != nil {
@@ -65,7 +66,7 @@ func NewSSHKeyPair() (*SSHKeyPair, error) {
 	return s, nil
 }
 
-// GenerateEd25519Keys creates a pair of EdD25519 keys for SSH auth
+// GenerateEd25519Keys creates a pair of EdD25519 keys for SSH auth.
 func (s *SSHKeyPair) GenerateEd25519Keys() error {
 	// Generate keys
 	_, privateKey, err := ed25519.GenerateKey(rand.Reader)
@@ -181,7 +182,7 @@ func (s *SSHKeyPair) PrepFilesystem() error {
 	return nil
 }
 
-// WriteKeys writes the SSH key pair to disk
+// WriteKeys writes the SSH key pair to disk.
 func (s *SSHKeyPair) WriteKeys() error {
 	if len(s.PrivateKeyPEM) == 0 || len(s.PublicKey) == 0 {
 		return MissingSSHKeysErr
@@ -202,7 +203,7 @@ func (s *SSHKeyPair) WriteKeys() error {
 	return nil
 }
 
-// writeKeyToFile write a key to a given path with appropriate permissions
+// writeKeyToFile write a key to a given path with appropriate permissions.
 func writeKeyToFile(keyBytes []byte, path string) error {
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
