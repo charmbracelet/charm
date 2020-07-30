@@ -9,8 +9,11 @@ import (
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/muesli/reflow/indent"
+	"github.com/muesli/reflow/wordwrap"
 	"github.com/muesli/termenv"
 )
+
+const indentAmount = 2
 
 type status int
 
@@ -33,10 +36,11 @@ type DoneMsg struct{}
 // MODEL
 
 type Model struct {
-	Status     status
-	err        error
-	standalone bool
-	spinner    spinner.Model
+	Status        status
+	err           error
+	standalone    bool
+	spinner       spinner.Model
+	terminalWidth int
 }
 
 // INIT
@@ -78,6 +82,9 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 			m.Status = StatusQuitting
 			return m, tea.Quit
 		}
+	case tea.WindowSizeMsg:
+		m.terminalWidth = msg.Width
+		return m, nil
 	case failedMsg:
 		m.err = msg.err
 		m.Status = StatusError
@@ -128,7 +135,10 @@ func View(model tea.Model) string {
 	}
 
 	if m.standalone {
-		return indent.String(fmt.Sprintf("\n%s\n\n", s), 2)
+		return wordwrap.String(
+			indent.String(fmt.Sprintf("\n%s\n\n", s), indentAmount),
+			m.terminalWidth-(indentAmount*2),
+		)
 	}
 
 	return s
