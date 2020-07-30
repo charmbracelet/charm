@@ -22,6 +22,10 @@ const indentAmount = 2
 
 // NewProgram returns a new Tea program
 func NewProgram(cfg *charm.Config) *tea.Program {
+	if cfg.Logfile != "" {
+		log.Println("-- Starting Charm ----------------")
+		log.Println("Bubble Tea now initializing...")
+	}
 	return tea.NewProgram(initialize(cfg), update, view)
 }
 
@@ -148,7 +152,7 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		cmd  tea.Cmd
 	)
 
-	if m.cfg.Debug {
+	if m.cfg.Debug && m.cfg.Logfile != "" {
 		if _, ok := msg.(spinner.TickMsg); !ok {
 			log.Printf("STATUS: %s | MSG: %#v\n", m.status, msg)
 		}

@@ -49,6 +49,7 @@ type Config struct {
 	UseSSHAgent bool   `env:"CHARM_USE_SSH_AGENT" default:"true"`
 	SSHKeyPath  string `env:"CHARM_SSH_KEY_PATH" default:"~/.ssh/id_rsa"`
 	Debug       bool   `env:"CHARM_DEBUG" default:"false"`
+	Logfile     string `env:"CHARM_LOGFILE" default:""`
 	ForceKey    bool
 }
 

@@ -49,11 +49,14 @@ var (
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if isTTY() {
 				cfg := getCharmConfig()
-				if cfg.Debug {
-					err := tea.UseSysLog("charm")
+
+				// Log to file, if set
+				if cfg.Logfile != "" {
+					f, err := tea.LogToFile(cfg.Logfile, "charm")
 					if err != nil {
 						return err
 					}
+					defer f.Close()
 				}
 
 				return ui.NewProgram(cfg).Start()
@@ -123,7 +126,19 @@ var (
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cc := initCharmClient()
 			if isTTY() && !simpleOutput && !randomart {
+
+				// Log to file, if set
+				cfg := getCharmConfig()
+				if cfg.Logfile != "" {
+					f, err := tea.LogToFile(cfg.Logfile, "charm")
+					if err != nil {
+						return err
+					}
+					defer f.Close()
+				}
+
 				return keys.NewProgram(cc).Start()
+
 			} else {
 				// Print randomart with fingerprints
 				k, err := cc.AuthorizedKeysWithMetadata()
@@ -164,6 +179,17 @@ var (
 		Args:   cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if isTTY() && !simpleOutput {
+
+				// Log to file if specified in the environment
+				cfg := getCharmConfig()
+				if cfg.Logfile != "" {
+					f, err := tea.LogToFile(cfg.Logfile, "charm")
+					if err != nil {
+						return err
+					}
+					defer f.Close()
+				}
+
 				return tea.NewProgram(keygen.Init, keygen.Update, keygen.View).Start()
 			} else {
 				// TODO
@@ -181,16 +207,29 @@ var (
 		Args:    cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cc := initCharmClient()
+
+			// Log to file if specified in the environment
+			cfg := getCharmConfig()
+			if cfg.Logfile != "" {
+				f, err := tea.LogToFile(cfg.Logfile, "charm")
+				if err != nil {
+					return err
+				}
+				defer f.Close()
+			}
+
 			switch len(args) {
 			case 0:
 				// Initialize a linking session
 				p := linkgen.NewProgram(cc)
 				return p.Start()
 			default:
+
 				// Join in on a linking session
 				p := link.NewProgram(cc, args[0])
 				return p.Start()
 			}
+
 		},
 	}
 
