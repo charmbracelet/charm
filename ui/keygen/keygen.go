@@ -15,11 +15,11 @@ import (
 type status int
 
 const (
-	statusRunning status = iota
-	statusError
-	statusSuccess
-	statusDone
-	statusQuitting
+	StatusRunning status = iota
+	StatusError
+	StatusSuccess
+	StatusDone
+	StatusQuitting
 )
 
 // MSG
@@ -33,9 +33,8 @@ type DoneMsg struct{}
 // MODEL
 
 type Model struct {
-	status     status
+	Status     status
 	err        error
-	spinner    spinner.Model
 	standalone bool
 }
 
@@ -44,7 +43,7 @@ type Model struct {
 func Init() (tea.Model, tea.Cmd) {
 	m := NewModel()
 	m.standalone = true
-	return m, InitialCmd(m)
+	return m, GenerateKeys
 }
 
 func NewModel() Model {
@@ -52,15 +51,10 @@ func NewModel() Model {
 	s.Frames = spinner.Dot
 	s.ForegroundColor = common.SpinnerColor
 	return Model{
-		status:     statusRunning,
+		Status:     StatusRunning,
 		err:        nil,
-		spinner:    s,
 		standalone: false,
 	}
-}
-
-func InitialCmd(m Model) tea.Cmd {
-	return tea.Batch(GenerateKeys, spinner.Tick(m.spinner))
 }
 
 // UPDATE
@@ -71,8 +65,6 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		return model, nil
 	}
 
-	var cmd tea.Cmd
-
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -81,26 +73,21 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		case "esc":
 			fallthrough
 		case "q":
-			m.status = statusQuitting
+			m.Status = StatusQuitting
 			return m, tea.Quit
 		}
 	case failedMsg:
 		m.err = msg
-		m.status = statusError
+		m.Status = StatusError
 		return m, tea.Quit
 	case successMsg:
-		m.status = statusSuccess
+		m.Status = StatusSuccess
 		return m, pause
-	case spinner.TickMsg:
-		if m.status == statusRunning {
-			m.spinner, cmd = spinner.Update(msg, m.spinner)
-			return m, cmd
-		}
 	case DoneMsg:
 		if m.standalone {
 			return m, tea.Quit
 		}
-		m.status = statusDone
+		m.Status = StatusDone
 		return m, nil
 	}
 
@@ -117,15 +104,15 @@ func View(model tea.Model) string {
 
 	var s string
 
-	switch m.status {
-	case statusRunning:
-		s += fmt.Sprintf("%s Generating keys...", spinner.View(m.spinner))
-	case statusSuccess:
+	switch m.Status {
+	case StatusRunning:
+		s += " Generating keys..."
+	case StatusSuccess:
 		s += termenv.String("✔").Foreground(common.Green.Color()).String()
 		s += "  Generated keys"
-	case statusError:
+	case StatusError:
 		s += fmt.Sprintf("Uh oh, there's been an error: %v", m.err)
-	case statusQuitting:
+	case StatusQuitting:
 		s += "Exiting..."
 	}
 

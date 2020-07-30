@@ -18,7 +18,7 @@ import (
 	te "github.com/muesli/termenv"
 )
 
-const padding = 2
+const indentAmount = 2
 
 // NewProgram returns a new Tea program
 func NewProgram(cfg *charm.Config) *tea.Program {
@@ -204,14 +204,15 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		m.err = msg
 
 	case spinner.TickMsg:
-		if m.status == statusInit || m.status == statusKeygenComplete {
+		switch m.status {
+		case statusInit, statusKeygen, statusKeygenComplete, statusFetching:
 			m.spinner, cmd = spinner.Update(msg, m.spinner)
 			return m, cmd
 		}
 
 	case sshAuthErrorMsg:
 		m.status = statusKeygen
-		return m, keygen.InitialCmd(m.keygen)
+		return m, keygen.GenerateKeys
 
 	case sshAuthFailedMsg:
 		// TODO: report permanent failure
@@ -358,10 +359,16 @@ func view(model tea.Model) string {
 	case statusInit:
 		s += spinner.View(m.spinner) + " Initializing..."
 	case statusKeygen:
+		if m.keygen.Status == keygen.StatusRunning {
+			s += spinner.View(m.spinner)
+		}
 		s += keygen.View(m.keygen)
 	case statusKeygenComplete:
 		s += spinner.View(m.spinner) + " Reinitializing..."
 	case statusFetching:
+		if m.info.User == nil {
+			s += spinner.View(m.spinner)
+		}
 		s += info.View(m.info)
 	case statusReady:
 		s += info.View(m.info)
@@ -379,7 +386,7 @@ func view(model tea.Model) string {
 		s += m.err.Error()
 	}
 
-	return indent.String(s, padding) + "\n"
+	return indent.String(s, indentAmount) + "\n"
 }
 
 func charmLogoView() string {

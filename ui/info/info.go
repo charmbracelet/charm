@@ -3,7 +3,6 @@ package info
 // Fetch a user's basic Charm account info
 
 import (
-	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
@@ -25,23 +24,17 @@ type errMsg error
 // MODEL
 
 type Model struct {
-	Quit    bool // signals it's time to exit the whole application
-	Err     error
-	User    *charm.User
-	cc      *charm.Client
-	spinner spinner.Model
+	Quit bool // signals it's time to exit the whole application
+	Err  error
+	User *charm.User
+	cc   *charm.Client
 }
 
 func NewModel(cc *charm.Client) Model {
-	s := spinner.NewModel()
-	s.Frames = spinner.Dot
-	s.ForegroundColor = common.SpinnerColor
-
 	return Model{
-		Quit:    false,
-		User:    nil,
-		cc:      cc,
-		spinner: s,
+		Quit: false,
+		User: nil,
+		cc:   cc,
 	}
 }
 
@@ -68,8 +61,6 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		m.Err = msg
 		m.Quit = true
 		return m, nil
-	case spinner.TickMsg:
-		m.spinner, cmd = spinner.Update(msg, m.spinner)
 	}
 
 	return m, cmd
@@ -81,7 +72,7 @@ func View(m Model) string {
 	if m.Err != nil {
 		return "error: " + m.Err.Error()
 	} else if m.User == nil {
-		return spinner.View(m.spinner) + " Authenticating..."
+		return " Authenticating..."
 	}
 	return bioView(m.User)
 }
@@ -111,9 +102,4 @@ func GetBio(cc *charm.Client) tea.Cmd {
 
 		return GotBioMsg(user)
 	}
-}
-
-// Tick just wraps the spinner's tick command
-func Tick(m Model) tea.Cmd {
-	return spinner.Tick(m.spinner)
 }
