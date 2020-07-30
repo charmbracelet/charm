@@ -24,10 +24,10 @@ const (
 
 // MSG
 
-type failedMsg error
-
+type failedMsg struct {
+	err error
+}
 type successMsg struct{}
-
 type DoneMsg struct{}
 
 // MODEL
@@ -79,7 +79,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 	case failedMsg:
-		m.err = msg
+		m.err = msg.err
 		m.Status = StatusError
 		return m, tea.Quit
 	case successMsg:
@@ -141,7 +141,7 @@ func View(model tea.Model) string {
 func GenerateKeys() tea.Msg {
 	_, err := charm.NewSSHKeyPair()
 	if err != nil {
-		return failedMsg(err)
+		return failedMsg{err}
 	}
 	return successMsg{}
 }
