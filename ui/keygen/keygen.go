@@ -128,7 +128,7 @@ func View(model tea.Model) string {
 	}
 
 	if m.standalone {
-		return indent.String(fmt.Sprintf("\n%s\n", s), 2)
+		return indent.String(fmt.Sprintf("\n%s\n\n", s), 2)
 	}
 
 	return s
