@@ -1,11 +1,12 @@
 logfile := debug.log
 
+.PHONY: default run linux log enable_logging
+
 default:
 	rm -f ./charm
 	go build
 
-run:
-	export CHARM_LOGFILE=$(logfile)
+run: enable_logging
 	rm -f ./charm
 	go build
 	./charm
@@ -17,3 +18,6 @@ linux:
 log:
 	>$(logfile)
 	tail -f $(logfile)
+
+enable_logging:
+	export CHARM_LOGFILE=$(logfile)
