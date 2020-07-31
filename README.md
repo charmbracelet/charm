@@ -1,4 +1,9 @@
-# Charm
+Charm
+=====
+
+<p>
+  <img src="https://stuff.charm.sh/charm-tool-header-github.png" width="469" height="267" alt="Charm Tool Header Treatment">
+</p>
 
 <img src="https://stuff.charm.sh/charm-tool-trailer.gif" width="500" height="282" alt="Charm UI Trailer" />
 
