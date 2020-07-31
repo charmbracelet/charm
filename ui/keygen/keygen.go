@@ -130,7 +130,12 @@ func View(model tea.Model) string {
 		s += termenv.String("✔").Foreground(common.Green.Color()).String()
 		s += "  Generated keys"
 	case StatusError:
-		s += fmt.Sprintf("Uh oh, there's been an error: %v", m.err)
+		switch m.err.(type) {
+		case charm.SSHKeysAlreadyExistErr:
+			s += "You already have SSH keys :)"
+		default:
+			s += fmt.Sprintf("Uh oh, there's been an error: %v", m.err)
+		}
 	case StatusQuitting:
 		s += "Exiting..."
 	}

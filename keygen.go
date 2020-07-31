@@ -21,9 +21,22 @@ const (
 )
 
 var (
-	// MissingSSHKeysErr indicates we're missing
-	MissingSSHKeysErr = errors.New("missing one or more keys; did you forget to generate them?")
+
+	// MissingSSHKeysErr indicates we're missing some keys we thought we had.
+	// This should be an extreme edge case, as we're generating them here.
+	MissingSSHKeysErr = errors.New("missing one or more keys; did something happen to them after they were generated?")
 )
+
+// SSHKeysAlreadyExist is used when we're attempting to generate SSH keys
+// for you but found they already exist on disk.
+type SSHKeysAlreadyExistErr struct {
+	path string
+}
+
+// Error returns the a human-readable error message for SSHKeysAlreadyExistErr
+func (e SSHKeysAlreadyExistErr) Error() string {
+	return fmt.Sprintf("ssh key %s already exists", e.path)
+}
 
 // FilesystemError is used to signal there was a problem at the
 // filesystem-level. For example, when we're unable to create a directory to
@@ -172,10 +185,10 @@ func (s *SSHKeyPair) PrepFilesystem() error {
 
 	// Make sure the files we're going to write to don't already exist
 	if fileExists(s.privateKeyPath()) {
-		return FilesystemErr{fmt.Errorf("file %s already exists", s.privateKeyPath())}
+		return SSHKeysAlreadyExistErr{s.privateKeyPath()}
 	}
 	if fileExists(s.publicKeyPath()) {
-		return FilesystemErr{fmt.Errorf("file %s already exists", s.publicKeyPath())}
+		return SSHKeysAlreadyExistErr{s.privateKeyPath()}
 	}
 
 	// The directory looks good as-is. This should be a rare case.
