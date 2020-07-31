@@ -223,11 +223,8 @@ var (
 				p := linkgen.NewProgram(cfg)
 				return p.Start()
 			default:
-				// TODO: remove this
-				cc := initCharmClient()
-
 				// Join in on a linking session
-				p := link.NewProgram(cc, args[0])
+				p := link.NewProgram(cfg, args[0])
 				return p.Start()
 			}
 

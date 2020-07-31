@@ -259,7 +259,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		mdl, ok := newKeygenModel.(keygen.Model)
 		if !ok {
 			// This shouldn't happen, but if it does, it's fatal
-			m.err = errors.New("could no assert model to keygen.Model in linkgen update")
+			m.err = errors.New("could not assert model to keygen.Model in linkgen update")
 			return m, tea.Quit
 		}
 		m.keygen = mdl

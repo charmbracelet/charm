@@ -7,19 +7,24 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm"
+	"github.com/charmbracelet/charm/ui/charmclient"
 	"github.com/charmbracelet/charm/ui/common"
+	"github.com/charmbracelet/charm/ui/keygen"
 	"github.com/muesli/reflow/indent"
 )
 
-// NewProgram returns a Tea program for the link participant
-func NewProgram(cc *charm.Client, code string) *tea.Program {
-	return tea.NewProgram(initialize(cc, code), update, view)
+// NewProgram returns a Tea program for the link participant.
+func NewProgram(cfg *charm.Config, code string) *tea.Program {
+	return tea.NewProgram(initialize(cfg, code), update, view)
 }
 
 type status int
 
 const (
-	linkInit status = iota
+	initCharmClient status = iota
+	keygenRunning
+	keygenFinished
+	linkInit
 	linkTokenSent
 	linkTokenValid
 	linkTokenInvalid
@@ -35,34 +40,38 @@ type validTokenMsg bool
 type requestDeniedMsg struct{}
 type successMsg bool
 type timeoutMsg struct{}
-type errMsg error
+type errMsg struct {
+	err error
+}
 
 type model struct {
 	lh            *linkHandler
+	cfg           *charm.Config
 	cc            *charm.Client
 	code          string
 	status        status
 	alreadyLinked bool
 	err           error
 	spinner       spinner.Model
+	keygen        keygen.Model
 }
 
-func initialize(cc *charm.Client, code string) func() (tea.Model, tea.Cmd) {
+func initialize(cfg *charm.Config, code string) func() (tea.Model, tea.Cmd) {
 	sp := spinner.NewModel()
 	sp.ForegroundColor = "241"
 	sp.Frames = spinner.Dot
 	return func() (tea.Model, tea.Cmd) {
 		m := model{
-			cc:            cc,
+			cfg:           cfg,
 			lh:            newLinkHandler(),
 			code:          code,
-			status:        linkInit,
+			status:        initCharmClient,
 			alreadyLinked: false,
 			err:           nil,
 			spinner:       sp,
 		}
 		return m, tea.Batch(
-			handleLinkRequest(m),
+			charmclient.NewClient(cfg),
 			spinner.Tick(sp),
 		)
 	}
@@ -90,6 +99,28 @@ func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
 		default:
 			return m, nil
 		}
+
+	case charmclient.NewClientMsg:
+		m.cc = msg
+		m.status = linkInit
+		return m, handleLinkRequest(m)
+
+	case charmclient.ErrMsg:
+		m.err = msg.Err
+		return m, tea.Quit
+
+	case charmclient.SSHAuthErrorMsg:
+		if m.status == initCharmClient {
+			m.status = keygenRunning
+			m.keygen = keygen.NewModel()
+			return m, keygen.GenerateKeys
+		}
+		m.err = msg.Err
+		return m, tea.Quit
+
+	case keygen.DoneMsg:
+		m.status = keygenFinished
+		return m, charmclient.NewClient(m.cfg)
 
 	case tokenSentMsg:
 		m.status = linkTokenSent
@@ -128,6 +159,17 @@ func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	default:
+		if m.status == keygenRunning {
+			newKeygenModel, cmd := keygen.Update(msg, m.keygen)
+			mdl, ok := newKeygenModel.(keygen.Model)
+			if !ok {
+				m.err = errors.New("could not assert model to keygen.Model in link update")
+				return m, tea.Quit
+			}
+			m.keygen = mdl
+			return m, cmd
+		}
+
 		return m, nil
 	}
 }
@@ -138,13 +180,25 @@ func view(mdl tea.Model) string {
 		m.err = errors.New("could not perform assertion on model in view")
 	}
 
+	if m.err != nil {
+		return paddedView(m.err.Error())
+	}
+
 	s := spinner.View(m.spinner) + " "
 
 	switch m.status {
+	case initCharmClient:
+		s += "Initializing..."
+	case keygenRunning:
+		if m.keygen.Status != keygen.StatusSuccess {
+			s += keygen.View(m.keygen)
+		} else {
+			s = keygen.View(m.keygen)
+		}
 	case linkInit:
 		s += "Linking..."
 	case linkTokenSent:
-		s += "Token sent..."
+		s += fmt.Sprintf("Token %s. Waiting for validation...", common.Keyword("sent"))
 	case linkTokenValid:
 		s += fmt.Sprintf("Token %s. Waiting for authorization...", common.Keyword("valid"))
 	case linkTokenInvalid:
@@ -164,6 +218,10 @@ func view(mdl tea.Model) string {
 		s = "Oh, ok. Bye."
 	}
 
+	return paddedView(s)
+}
+
+func paddedView(s string) string {
 	return indent.String(fmt.Sprintf("\n%s\n\n", s), 2)
 }
 
@@ -222,6 +280,6 @@ func handleTimeout(lh *linkHandler) tea.Cmd {
 
 func handleErr(lh *linkHandler) tea.Cmd {
 	return func() tea.Msg {
-		return errMsg(<-lh.err)
+		return errMsg{<-lh.err}
 	}
 }
