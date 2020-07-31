@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm"
+	"github.com/charmbracelet/charm/ui/charmclient"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/charm/ui/info"
 	"github.com/charmbracelet/charm/ui/keygen"
@@ -80,18 +81,6 @@ var menuChoices = map[menuChoice]string{
 	exitChoice:        "Exit",
 }
 
-// MSG
-
-type sshAuthErrorMsg struct{}
-
-// TODO: this should be wrapped in a struct; it will match all error types
-type sshAuthFailedMsg error
-
-type newCharmClientMsg *charm.Client
-
-// TODO: this should be wrapped in a struct; it will match all error types
-type errMsg error
-
 // MODEL
 
 // Model holds the state for this program
@@ -119,19 +108,17 @@ func initialize(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
 		s := spinner.NewModel()
 		s.Frames = spinner.Dot
 		s.ForegroundColor = "244"
+
 		m := Model{
 			cfg:        cfg,
-			cc:         nil,
-			user:       nil,
-			err:        nil,
 			status:     statusInit,
-			menuIndex:  0,
 			menuChoice: unsetChoice,
 			spinner:    s,
 			keygen:     keygen.NewModel(),
 		}
+
 		return m, tea.Batch(
-			newCharmClient(m),
+			charmclient.NewClient(m.cfg),
 			spinner.Tick(m.spinner),
 		)
 	}
@@ -203,10 +190,6 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 			}
 		}
 
-	case errMsg:
-		m.status = statusError
-		m.err = msg
-
 	case spinner.TickMsg:
 		switch m.status {
 		case statusInit, statusKeygen, statusKeygenComplete, statusFetching:
@@ -214,22 +197,28 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 			return m, cmd
 		}
 
-	case sshAuthErrorMsg:
-		m.status = statusKeygen
-		return m, keygen.GenerateKeys
+	case charmclient.ErrMsg:
+		m.status = statusError
+		m.err = msg.Err
 
-	case sshAuthFailedMsg:
-		// TODO: report permanent failure
+	case charmclient.SSHAuthErrorMsg:
+		if m.status == statusInit {
+			// SSH auth didn't work so let's try generating keys/
+			m.status = statusKeygen
+			return m, keygen.GenerateKeys
+		}
+		// We tried the keygen, to no avail. Quit.
+		m.err = msg.Err
 		return m, tea.Quit
 
 	case keygen.DoneMsg:
 		m.status = statusKeygenComplete
 		return m, tea.Batch(
-			newCharmClient(m),
+			charmclient.NewClient(m.cfg),
 			spinner.Tick(m.spinner),
 		)
 
-	case newCharmClientMsg:
+	case charmclient.NewClientMsg:
 		// Save reference to Charm client
 		m.cc = msg
 
@@ -435,23 +424,4 @@ func errorView(err error) string {
 	body := common.Subtle(err.Error())
 	msg := common.Wrap(head + body)
 	return "\n\n" + indent.String(msg, 2)
-}
-
-// COMMANDS
-
-func newCharmClient(m Model) tea.Cmd {
-	return func() tea.Msg {
-		cc, err := charm.NewClient(m.cfg)
-		if err == charm.ErrMissingSSHAuth {
-			if m.status != statusKeygenComplete {
-				return sshAuthErrorMsg{}
-			}
-			return sshAuthFailedMsg(err)
-		} else if err != nil {
-			// TODO: make this fatal
-			return errMsg(err)
-		}
-
-		return newCharmClientMsg(cc)
-	}
 }
