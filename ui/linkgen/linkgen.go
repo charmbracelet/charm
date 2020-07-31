@@ -118,10 +118,6 @@ func Init(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
 	}
 }
 
-func InitLinkGen(m Model) tea.Cmd {
-	return tea.Batch(append(HandleLinkRequest(m), spinner.Tick(m.spinner))...)
-}
-
 // Update is the Tea update loop
 func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	m, ok := model.(Model)
@@ -358,6 +354,12 @@ func View(model tea.Model) string {
 }
 
 // COMMANDS
+
+// InitLinkGen runs the necessary commands for starting the link generation
+// process.
+func InitLinkGen(m Model) tea.Cmd {
+	return tea.Batch(append(HandleLinkRequest(m), spinner.Tick(m.spinner))...)
+}
 
 // HandleLinkRequest returns a bunch of blocking commands that resolve on link
 // request states. As a Tea command, this should be treated as batch:

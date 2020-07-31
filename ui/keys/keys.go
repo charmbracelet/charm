@@ -8,7 +8,9 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm"
+	"github.com/charmbracelet/charm/ui/charmclient"
 	"github.com/charmbracelet/charm/ui/common"
+	"github.com/charmbracelet/charm/ui/keygen"
 	"github.com/muesli/reflow/indent"
 	te "github.com/muesli/termenv"
 )
@@ -18,7 +20,10 @@ const keysPerPage = 4
 type state int
 
 const (
-	stateLoading state = iota
+	stateInitCharmClient state = iota
+	stateKeygenRunning
+	stateKeygenFinished
+	stateLoading
 	stateNormal
 	stateDeletingKey
 	stateDeletingActiveKey
@@ -35,21 +40,24 @@ const (
 )
 
 // NewProgram creates a new Tea program
-func NewProgram(cc *charm.Client) *tea.Program {
-	return tea.NewProgram(Init(cc), Update, View)
+func NewProgram(cfg *charm.Config) *tea.Program {
+	return tea.NewProgram(Init(cfg), Update, View)
 }
 
 // MSG
 
 type keysLoadedMsg charm.Keys
 type unlinkedKeyMsg int
-type errMsg error
+type errMsg struct {
+	err error
+}
 
 // MODEL
 
 // Model is the Tea state model for this user interface
 type Model struct {
 	cc             *charm.Client
+	cfg            *charm.Config
 	pager          pager.Model
 	state          state
 	err            error
@@ -57,9 +65,10 @@ type Model struct {
 	activeKeyIndex int         // index of the key in the below slice which is currently in use
 	keys           []charm.Key // keys linked to user's account
 	index          int         // index of selected key in relation to the current page
-	spinner        spinner.Model
 	Exit           bool
 	Quit           bool
+	spinner        spinner.Model
+	keygen         keygen.Model
 }
 
 // getSelectedIndex returns the index of the cursor in relation to the total
@@ -79,19 +88,28 @@ func (m *Model) UpdatePaging(msg tea.Msg) {
 	m.index = min(m.index, numItems-1)
 }
 
+func (m *Model) SetCharmClient(cc *charm.Client) {
+	if cc == nil {
+		panic("charm client is nil")
+	}
+	m.cc = cc
+}
+
 // NewModel creates a new model with defaults
-func NewModel(cc *charm.Client) Model {
+func NewModel(cfg *charm.Config) Model {
 	p := pager.NewModel()
 	p.PerPage = keysPerPage
-	p.InactiveDot = te.String("•").Foreground(common.NewColorPair("#4F4F4F", "#CACACA").Color()).String()
 	p.Type = pager.Dots
+	p.InactiveDot = te.String("•").
+		Foreground(common.NewColorPair("#4F4F4F", "#CACACA").Color()).
+		String()
 
 	s := spinner.NewModel()
 	s.Frames = spinner.Dot
 	s.ForegroundColor = "241"
 
 	return Model{
-		cc:             cc,
+		cfg:            cfg,
 		pager:          p,
 		state:          stateLoading,
 		err:            nil,
@@ -106,21 +124,17 @@ func NewModel(cc *charm.Client) Model {
 
 // INIT
 
-// Init is the Tea initialization function which returns an initial model and,
-// potentially, an initial command
-func Init(cc *charm.Client) func() (tea.Model, tea.Cmd) {
+// Init is the Tea initialization function.
+func Init(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
 	return func() (tea.Model, tea.Cmd) {
-		m := NewModel(cc)
+		m := NewModel(cfg)
 		m.standalone = true
-		return m, InitialCmd(m)
+		m.state = stateInitCharmClient
+		return m, tea.Batch(
+			charmclient.NewClient(cfg),
+			spinner.Tick(m.spinner),
+		)
 	}
-}
-
-func InitialCmd(m Model) tea.Cmd {
-	return tea.Batch(
-		LoadKeys(m.cc),
-		spinner.Tick(m.spinner),
-	)
 }
 
 // UPDATE
@@ -129,19 +143,16 @@ func InitialCmd(m Model) tea.Cmd {
 func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	m, ok := model.(Model)
 	if !ok {
-		// TODO: handle error
-		return model, nil
+		return Model{
+			err: errors.New("could not perform assertion on model in keys update"),
+		}, nil
 	}
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 
-		case "ctrl+c":
-			fallthrough
-		case "q":
-			fallthrough
-		case "esc":
+		case "ctrl+c", "q", "esc":
 			if m.standalone {
 				m.state = stateQuitting
 				return m, tea.Quit
@@ -150,9 +161,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		// Select individual items
-		case "up":
-			fallthrough
-		case "k":
+		case "up", "k":
 			// Move up
 			m.index--
 			if m.index < 0 && m.pager.Page > 0 {
@@ -160,9 +169,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 				m.pager.PrevPage()
 			}
 			m.index = max(0, m.index)
-		case "down":
-			fallthrough
-		case "j":
+		case "down", "j":
 			// Move down
 			itemsOnPage := m.pager.ItemsOnPage(len(m.keys))
 			m.index++
@@ -204,8 +211,32 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 			}
 		}
 
+	case charmclient.ErrMsg:
+		m.err = msg.Err
+		return m, tea.Quit
+
+	case charmclient.SSHAuthErrorMsg:
+		if m.state == stateInitCharmClient {
+			// Couldn't find SSH keys, so let's try the keygen
+			m.state = stateKeygenRunning
+			m.keygen = keygen.NewModel()
+			return m, keygen.GenerateKeys
+		}
+		// Keygen failed too
+		m.err = msg.Err
+		return m, tea.Quit
+
+	case charmclient.NewClientMsg:
+		m.cc = msg
+		m.state = stateLoading
+		return m, InitLoadKeys(m)
+
+	case keygen.DoneMsg:
+		m.state = stateKeygenFinished
+		return m, charmclient.NewClient(m.cfg)
+
 	case errMsg:
-		m.err = msg
+		m.err = msg.err
 		return m, nil
 
 	case keysLoadedMsg:
@@ -234,7 +265,21 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 	case spinner.TickMsg:
 		var cmd tea.Cmd
-		m.spinner, cmd = spinner.Update(msg, m.spinner)
+		if m.state < stateNormal {
+			m.spinner, cmd = spinner.Update(msg, m.spinner)
+		}
+		return m, cmd
+	}
+
+	// Update keygen
+	if m.state == stateKeygenRunning {
+		newKeygenModel, cmd := keygen.Update(msg, m.keygen)
+		mdl, ok := newKeygenModel.(keygen.Model)
+		if !ok {
+			m.err = errors.New("could not perform assertion on keygen model in link update")
+			return m, tea.Quit
+		}
+		m.keygen = mdl
 		return m, cmd
 	}
 
@@ -266,8 +311,16 @@ func View(model tea.Model) string {
 	var s string
 
 	switch m.state {
+
+	case stateInitCharmClient:
+		s = spinner.View(m.spinner) + " Initializing...\n\n"
+	case stateKeygenRunning:
+		if m.keygen.Status != keygen.StatusSuccess {
+			s += spinner.View(m.spinner)
+		}
+		s += keygen.View(m.keygen)
 	case stateLoading:
-		s = loadingView(m)
+		s = spinner.View(m.spinner) + " Loading...\n\n"
 	case stateQuitting:
 		s = "Thanks for using Charm!\n"
 	default:
@@ -297,10 +350,6 @@ func View(model tea.Model) string {
 		return indent.String(fmt.Sprintf("\n%s\n", s), 2)
 	}
 	return s
-}
-
-func loadingView(m Model) string {
-	return fmt.Sprintf("%s Loading...\n\n", spinner.View(m.spinner))
 }
 
 func keysView(m Model) string {
@@ -368,12 +417,22 @@ func promptDeleteAccountView() string {
 
 // COMMANDS
 
+func InitLoadKeys(m Model) tea.Cmd {
+	if m.standalone {
+		return LoadKeys(m.cc)
+	}
+	return tea.Batch(
+		LoadKeys(m.cc),
+		spinner.Tick(m.spinner),
+	)
+}
+
 // LoadKeys loads the current set of keys from the server
 func LoadKeys(cc *charm.Client) tea.Cmd {
 	return func() tea.Msg {
 		ak, err := cc.AuthorizedKeysWithMetadata()
 		if err != nil {
-			return errMsg(err)
+			return errMsg{err}
 		}
 		return keysLoadedMsg(*ak)
 	}
@@ -384,7 +443,7 @@ func unlinkKey(m Model) tea.Cmd {
 	return func() tea.Msg {
 		err := m.cc.UnlinkAuthorizedKey(m.keys[m.getSelectedIndex()].Key)
 		if err != nil {
-			return errMsg(err)
+			return errMsg{err}
 		}
 		return unlinkedKeyMsg(m.index)
 	}

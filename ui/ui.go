@@ -226,7 +226,8 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		m.info = info.NewModel(m.cc)
 		m.link = linkgen.NewModel()
 		m.username = username.NewModel(m.cc)
-		m.keys = keys.NewModel(m.cc)
+		m.keys = keys.NewModel(m.cfg)
+		m.keys.SetCharmClient(m.cc)
 
 		// Fetch user info
 		m.status = statusFetching
@@ -299,7 +300,8 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		}
 		m.keys = newKeysModel
 		if m.keys.Exit {
-			m.keys = keys.NewModel(m.cc)
+			m.keys = keys.NewModel(m.cfg)
+			m.keys.SetCharmClient(m.cc)
 			m.status = statusReady
 		} else if m.keys.Quit {
 			m.status = statusQuitting
@@ -324,7 +326,7 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	case keysChoice:
 		m.status = statusBrowsingKeys
 		m.menuChoice = unsetChoice
-		cmd = keys.InitialCmd(m.keys)
+		cmd = keys.InitLoadKeys(m.keys)
 	case setUsernameChoice:
 		m.status = statusSettingUsername
 		m.menuChoice = unsetChoice
