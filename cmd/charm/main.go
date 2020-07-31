@@ -206,7 +206,6 @@ var (
 		Example: indent.String("charm link\ncharm link XXXXXX", indentBy),
 		Args:    cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cc := initCharmClient()
 
 			// Log to file if specified in the environment
 			cfg := getCharmConfig()
@@ -221,9 +220,11 @@ var (
 			switch len(args) {
 			case 0:
 				// Initialize a linking session
-				p := linkgen.NewProgram(cc)
+				p := linkgen.NewProgram(cfg)
 				return p.Start()
 			default:
+				// TODO: remove this
+				cc := initCharmClient()
 
 				// Join in on a linking session
 				p := link.NewProgram(cc, args[0])

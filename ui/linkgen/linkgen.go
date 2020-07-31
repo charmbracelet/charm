@@ -7,14 +7,19 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm"
+	"github.com/charmbracelet/charm/ui/charmclient"
 	"github.com/charmbracelet/charm/ui/common"
+	"github.com/charmbracelet/charm/ui/keygen"
 	"github.com/muesli/reflow/indent"
 )
 
 type status int
 
 const (
-	linkInit status = iota
+	initCharmClient status = iota // we're creating charm client
+	keygenRunning
+	keygenFinished
+	linkInit // we're initializing the linking process
 	linkTokenCreated
 	linkRequested
 	linkSuccess
@@ -28,19 +33,23 @@ type linkTokenCreatedMsg string
 type linkRequestMsg linkRequest
 type linkSuccessMsg bool // true if this account's already been linked
 type linkTimeoutMsg struct{}
-type errMsg error
+type errMsg struct {
+	err error
+}
 
-// NewProgram is a simple wrapper for tea.NewProgram
-func NewProgram(cc *charm.Client) *tea.Program {
-	return tea.NewProgram(Init(cc), Update, View)
+// NewProgram is a simple wrapper for tea.NewProgram. For use in standalone
+// mode.
+func NewProgram(cfg *charm.Config) *tea.Program {
+	return tea.NewProgram(Init(cfg), Update, View)
 }
 
 // Model is the tea model for the link initiator program
 type Model struct {
 	lh            *linkHandler
-	standalone    bool // true if this is running as a stadalone tea program
-	Quit          bool // indicates the user wants to exit the whole program
-	Exit          bool // indicates the user wants to exit this mini-app
+	standalone    bool          // true if this is running as a stadalone tea program
+	cfg           *charm.Config // only applicable in standalone mode
+	Quit          bool          // indicates the user wants to exit the whole program
+	Exit          bool          // indicates the user wants to exit this mini-app
 	err           error
 	status        status
 	alreadyLinked bool
@@ -49,6 +58,7 @@ type Model struct {
 	cc            *charm.Client
 	buttonIndex   int // focused state of ok/cancel buttons
 	spinner       spinner.Model
+	keygen        keygen.Model
 }
 
 // acceptRequest rejects the current linking request
@@ -67,7 +77,7 @@ func (m Model) rejectRequest() (Model, tea.Cmd) {
 	return m, nil
 }
 
-func NewModel(cc *charm.Client) Model {
+func NewModel() Model {
 	lh := &linkHandler{
 		err:      make(chan error),
 		token:    make(chan string),
@@ -76,9 +86,11 @@ func NewModel(cc *charm.Client) Model {
 		success:  make(chan bool),
 		timeout:  make(chan struct{}),
 	}
+
 	s := spinner.NewModel()
 	s.Frames = spinner.Dot
 	s.ForegroundColor = "241"
+
 	return Model{
 		lh:            lh,
 		standalone:    false,
@@ -89,24 +101,25 @@ func NewModel(cc *charm.Client) Model {
 		alreadyLinked: false,
 		token:         "",
 		linkRequest:   linkRequest{},
-		cc:            cc,
 		buttonIndex:   0,
 		spinner:       s,
 	}
 }
 
-// Init is a Tea program's initialization function
-func Init(cc *charm.Client) func() (tea.Model, tea.Cmd) {
+// Init is the Bubble Tea program's initialization function. This is used in
+// standalone mode.
+func Init(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
 	return func() (tea.Model, tea.Cmd) {
-		m := NewModel(cc)
+		m := NewModel()
+		m.status = initCharmClient
 		m.standalone = true
-		return m, InitialCmd(m)
+		m.cfg = cfg
+		return m, tea.Batch(charmclient.NewClient(cfg), spinner.Tick(m.spinner))
 	}
 }
 
-func InitialCmd(m Model) tea.Cmd {
-	cmds := append(HandleLinkRequest(m), spinner.Tick(m.spinner))
-	return tea.Batch(cmds...)
+func InitLinkGen(m Model) tea.Cmd {
+	return tea.Batch(append(HandleLinkRequest(m), spinner.Tick(m.spinner))...)
 }
 
 // Update is the Tea update loop
@@ -145,24 +158,12 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 			case linkRequested:
 				switch msg.String() {
-				case "j":
-					fallthrough
-				case "h":
-					fallthrough
-				case "right":
-					fallthrough
-				case "tab":
+				case "j", "h", "right", "tab":
 					m.buttonIndex++
 					if m.buttonIndex > 1 {
 						m.buttonIndex = 0
 					}
-				case "k":
-					fallthrough
-				case "l":
-					fallthrough
-				case "left":
-					fallthrough
-				case "shift+tab":
+				case "k", "l", "left", "shift+tab":
 					m.buttonIndex--
 					if m.buttonIndex < 0 {
 						m.buttonIndex = 1
@@ -179,11 +180,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 				}
 				return m, nil
 
-			case linkSuccess:
-				fallthrough
-			case linkRequestDenied:
-				fallthrough
-			case linkTimedOut:
+			case linkSuccess, linkRequestDenied, linkTimedOut:
 				// Any key exits
 				m.Exit = true
 				return m, nil
@@ -191,9 +188,35 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 			}
 		}
 
+	case charmclient.NewClientMsg:
+		m.cc = msg
+		m.status = linkInit
+		return m, InitLinkGen(m)
+
+	case charmclient.ErrMsg:
+		// Unknown error: fatal
+		m.err = msg.Err
+		return m, tea.Quit
+
+	case charmclient.SSHAuthErrorMsg:
+		if m.status == initCharmClient {
+			// SSH auth didn't work, so let's try generating keys
+			m.status = keygenRunning
+			m.keygen = keygen.NewModel()
+			return m, keygen.GenerateKeys
+		}
+		// We tried the keygen and it still didn't work: fatal
+		m.err = msg.Err
+		return m, tea.Quit
+
+	case keygen.DoneMsg:
+		// The keygen's finished, so let's try creating a Charm Client again
+		m.status = keygenFinished
+		return m, charmclient.NewClient(m.cfg)
+
 	case errMsg:
 		m.status = linkError
-		m.err = msg
+		m.err = msg.err
 		return m, nil
 
 	case linkTokenCreatedMsg:
@@ -222,12 +245,25 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case spinner.TickMsg:
-		var cmd tea.Cmd
-		m.spinner, cmd = spinner.Update(msg, m.spinner)
-		if m.status != linkInit {
+		switch m.status {
+		case initCharmClient, keygenRunning, linkInit:
+			newSpinnerModel, cmd := spinner.Update(msg, m.spinner)
+			m.spinner = newSpinnerModel
 			return m, cmd
 		}
 		return m, nil
+	}
+
+	if m.status == keygenRunning {
+		newKeygenModel, cmd := keygen.Update(msg, m.keygen)
+		mdl, ok := newKeygenModel.(keygen.Model)
+		if !ok {
+			// This shouldn't happen, but if it does, it's fatal
+			m.err = errors.New("could no assert model to keygen.Model in linkgen update")
+			return m, tea.Quit
+		}
+		m.keygen = mdl
+		return m, cmd
 	}
 
 	return m, nil
@@ -248,6 +284,15 @@ func View(model tea.Model) string {
 	))
 
 	switch m.status {
+	case initCharmClient:
+		s += preamble
+		s += spinner.View(m.spinner) + " Initializing..."
+	case keygenRunning:
+		s += preamble
+		if m.keygen.Status != keygen.StatusSuccess {
+			s += spinner.View(m.spinner)
+		}
+		s += keygen.View(m.keygen)
 	case linkInit:
 		s += preamble
 		s += spinner.View(m.spinner) + " Generating link..."
@@ -343,7 +388,7 @@ func generateLink(lh *linkHandler) tea.Cmd {
 	return func() tea.Msg {
 		select {
 		case err := <-lh.err:
-			return errMsg(err)
+			return errMsg{err}
 		case tok := <-lh.token:
 			return linkTokenCreatedMsg(tok)
 		}
@@ -375,6 +420,6 @@ func handleLinkTimeout(lh *linkHandler) tea.Cmd {
 // handleLinkError responds when a linking error is reported
 func handleLinkError(lh *linkHandler) tea.Cmd {
 	return func() tea.Msg {
-		return errMsg(<-lh.err)
+		return errMsg{<-lh.err}
 	}
 }

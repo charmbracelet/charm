@@ -48,18 +48,19 @@ type Model struct {
 func Init() (tea.Model, tea.Cmd) {
 	m := NewModel()
 	m.standalone = true
+
+	m.spinner = spinner.NewModel()
+	m.spinner.Frames = spinner.Dot
+	m.spinner.ForegroundColor = common.SpinnerColor
+
 	return m, tea.Batch(GenerateKeys, spinner.Tick(m.spinner))
 }
 
 func NewModel() Model {
-	s := spinner.NewModel()
-	s.Frames = spinner.Dot
-	s.ForegroundColor = common.SpinnerColor
 	return Model{
 		Status:     StatusRunning,
 		err:        nil,
 		standalone: false,
-		spinner:    s,
 	}
 }
 

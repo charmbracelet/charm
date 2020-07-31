@@ -235,7 +235,7 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 		// Initialize models that require a Charm client
 		m.info = info.NewModel(m.cc)
-		m.link = linkgen.NewModel(m.cc)
+		m.link = linkgen.NewModel()
 		m.username = username.NewModel(m.cc)
 		m.keys = keys.NewModel(m.cc)
 
@@ -294,7 +294,7 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		}
 		m.link = mdl
 		if m.link.Exit {
-			m.link = linkgen.NewModel(m.cc) // reset the state
+			m.link = linkgen.NewModel() // reset the state
 			m.status = statusReady
 		} else if m.link.Quit {
 			m.status = statusQuitting
@@ -331,7 +331,7 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	case linkChoice:
 		m.status = statusLinking
 		m.menuChoice = unsetChoice
-		cmd = linkgen.InitialCmd(m.link)
+		cmd = linkgen.InitLinkGen(m.link)
 	case keysChoice:
 		m.status = statusBrowsingKeys
 		m.menuChoice = unsetChoice
