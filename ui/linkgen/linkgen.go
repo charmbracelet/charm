@@ -106,6 +106,13 @@ func NewModel() Model {
 	}
 }
 
+func (m *Model) SetCharmClient(cc *charm.Client) {
+	if cc == nil {
+		panic("charm client is nil")
+	}
+	m.cc = cc
+}
+
 // Init is the Bubble Tea program's initialization function. This is used in
 // standalone mode.
 func Init(cfg *charm.Config) func() (tea.Model, tea.Cmd) {

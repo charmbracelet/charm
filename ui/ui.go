@@ -225,6 +225,7 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		// Initialize models that require a Charm client
 		m.info = info.NewModel(m.cc)
 		m.link = linkgen.NewModel()
+		m.link.SetCharmClient(m.cc)
 		m.username = username.NewModel(m.cc)
 		m.keys = keys.NewModel(m.cfg)
 		m.keys.SetCharmClient(m.cc)
