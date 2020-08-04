@@ -369,7 +369,7 @@ func (cc *Client) SetName(name string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s:%d/bio", cc.config.BioHost, cc.config.BioPort), buf)
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s:%d/v1/bio", cc.config.BioHost, cc.config.BioPort), buf)
 	if err != nil {
 		return nil, err
 	}
@@ -415,7 +415,7 @@ func (cc *Client) Bio() (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s:%d/id/%s", cc.config.BioHost, cc.config.BioPort, id), buf)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s:%d/v1/id/%s", cc.config.BioHost, cc.config.BioPort, id), buf)
 	if err != nil {
 		return nil, err
 	}
