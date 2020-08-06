@@ -1,14 +1,12 @@
 package charm
 
 import (
-	"bytes"
 	"crypto/rsa"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
-	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -16,7 +14,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/meowgorithm/babyenv"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/ssh"
@@ -98,10 +95,11 @@ func NewClient(cfg *Config) (*Client, error) {
 		authLock:           &sync.Mutex{},
 		initialSessionOnce: &sync.Once{},
 	}
-	err := cc.setJWTKey()
+	jk, err := jwtKey(cfg.JWTKey)
 	if err != nil {
 		return nil, err
 	}
+	cc.jwtPublicKey = jk
 
 	var sshKeys []string
 
@@ -383,35 +381,7 @@ func (cc *Client) SetName(name string) (*User, error) {
 	}
 	u := &User{}
 	u.Name = name
-	client := &http.Client{}
-	buf := &bytes.Buffer{}
-	err := json.NewEncoder(buf).Encode(u)
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s:%d/v1/bio", cc.config.BioHost, cc.config.BioPort), buf)
-	if err != nil {
-		return nil, err
-	}
-	jwt, err := cc.JWT()
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Add("Authorization", fmt.Sprintf("bearer %s", jwt))
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode == http.StatusConflict {
-		return nil, ErrNameTaken
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("server error: %d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
-	}
-	defer resp.Body.Close()
-	dec := json.NewDecoder(resp.Body)
-	err = dec.Decode(&u)
+	err := cc.AuthedRequest("POST", cc.config.BioHost, cc.config.BioPort, "/v1/bio", u, u)
 	if err != nil {
 		return nil, err
 	}
@@ -421,39 +391,11 @@ func (cc *Client) SetName(name string) (*User, error) {
 // Bio returns the user's profile
 func (cc *Client) Bio() (*User, error) {
 	u := &User{}
-	client := &http.Client{}
-	buf := &bytes.Buffer{}
-	err := json.NewEncoder(buf).Encode(u)
-	if err != nil {
-		return nil, err
-	}
 	id, err := cc.ID()
 	if err != nil {
 		return nil, err
 	}
-	jwt, err := cc.JWT()
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s:%d/v1/id/%s", cc.config.BioHost, cc.config.BioPort, id), buf)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Add("Authorization", fmt.Sprintf("bearer %s", jwt))
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode == http.StatusConflict {
-		return nil, ErrNameTaken
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("server error: %d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
-	}
-	defer resp.Body.Close()
-	dec := json.NewDecoder(resp.Body)
-	err = dec.Decode(&u)
+	err = cc.AuthedRequest("GET", cc.config.BioHost, cc.config.BioPort, fmt.Sprintf("/v1/id/%s", id), u, u)
 	if err != nil {
 		return nil, err
 	}
@@ -463,39 +405,6 @@ func (cc *Client) Bio() (*User, error) {
 // ValidateName validates a given name
 func ValidateName(name string) bool {
 	return nameValidator.MatchString(name)
-}
-
-func (cc *Client) Auth() (*Auth, error) {
-	cc.authLock.Lock()
-	defer cc.authLock.Unlock()
-	if cc.auth.claims == nil || cc.auth.claims.Valid() != nil {
-		auth := &Auth{}
-		s, err := cc.sshSession()
-		if err != nil {
-			return nil, err
-		}
-		defer s.Close()
-		b, err := s.Output("api-auth")
-		if err != nil {
-			return nil, err
-		}
-		err = json.Unmarshal(b, auth)
-		if err != nil {
-			return nil, err
-		}
-		token, err := jwt.ParseWithClaims(auth.JWT, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
-			return cc.jwtPublicKey, nil
-		})
-		if err != nil {
-			return nil, err
-		}
-		auth.claims = token.Claims.(*jwt.StandardClaims)
-		cc.auth = auth
-		if err != nil {
-			return nil, err
-		}
-	}
-	return cc.auth, nil
 }
 
 func (cc *Client) sshSession() (*ssh.Session, error) {

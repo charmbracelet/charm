@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 
@@ -271,6 +273,37 @@ var (
 			}
 		},
 	}
+
+	encryptCmd = &cobra.Command{
+		Use:    "encrypt",
+		Hidden: false,
+		Short:  "Encrypt stdin with your Charm account encryption key",
+		Args:   cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cc := initCharmClient()
+			b, err := ioutil.ReadAll(os.Stdin)
+			if err != nil {
+				return err
+			}
+			enc, gid, err := cc.Encrypt(b)
+			if err != nil {
+				return err
+			}
+			r := struct {
+				EncryptKey string `json:"encrypt_key"`
+				Data       string `json:"data"`
+			}{
+				EncryptKey: gid,
+				Data:       string(enc),
+			}
+			out, err := json.Marshal(r)
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(out))
+			return nil
+		},
+	}
 )
 
 func getCharmConfig() *charm.Config {
@@ -318,6 +351,7 @@ func main() {
 		keygenCmd,
 		linkCmd,
 		nameCmd,
+		encryptCmd,
 	)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

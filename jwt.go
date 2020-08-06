@@ -1,6 +1,7 @@
 package charm
 
 import (
+	"crypto/rsa"
 	"io/ioutil"
 
 	"github.com/dgrijalva/jwt-go"
@@ -18,28 +19,20 @@ UCQWDF1yPZY/K4XDj0at5gSnkvBn2NI7IP6Ps5aXaP8zuCjA9Lhj8JWlaGTKsZB+
 4doKSp/wMaMXyj34fMI26pmPdepmQqBXeGD9r94glOCVAgMBAAE=
 -----END PUBLIC KEY-----`
 
-// Auth is the authenticated users's charm id and jwt returned from the ssh server
-type Auth struct {
-	CharmID string `json:"charm_id"`
-	JWT     string `json:"jwt"`
-	claims  *jwt.StandardClaims
-}
-
-func (cc *Client) setJWTKey() error {
+func jwtKey(path string) (*rsa.PublicKey, error) {
 	var bk []byte
 	var err error
-	if cc.config.JWTKey != "" {
-		bk, err = ioutil.ReadFile(cc.config.JWTKey)
+	if path != "" {
+		bk, err = ioutil.ReadFile(path)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	} else {
 		bk = []byte(jwtPublicKey)
 	}
 	pk, err := jwt.ParseRSAPublicKeyFromPEM(bk)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	cc.jwtPublicKey = pk
-	return nil
+	return pk, nil
 }
