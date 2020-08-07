@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -102,7 +103,26 @@ func NewClient(cfg *Config) (*Client, error) {
 		return nil, err
 	}
 
-	if !cfg.ForceKey {
+	var sshKeys []string
+
+	if cfg.ForceKey && cfg.SSHKeyPath != "" {
+
+		// User wants to use a specific key
+		ext := filepath.Ext(cfg.SSHKeyPath)
+		if ext == ".pub" {
+			sshKeys = []string{
+				cfg.SSHKeyPath,
+				strings.TrimSuffix(cfg.SSHKeyPath, ext),
+			}
+		} else {
+			sshKeys = []string{
+				cfg.SSHKeyPath + ".pub",
+				cfg.SSHKeyPath,
+			}
+		}
+
+	} else {
+
 		// Try and use SSH agent for auth
 		am, err := agentAuthMethod()
 		if err == nil {
@@ -125,24 +145,24 @@ func NewClient(cfg *Config) (*Client, error) {
 				}
 			}
 		}
-	}
 
-	// If we're still here it means SSH agent either failed or isn't setup, so
-	// now we look for default SSH keys.
-	defaultSSHKeys, err := findSSHKeys()
-	if err != nil {
-		return nil, err
-	}
-	if len(defaultSSHKeys) == 0 {
-		// We didn't find any keys; give up
-		return nil, ErrMissingSSHAuth
+		// If we're still here it means SSH agent either failed or isn't setup, so
+		// now we look for default SSH keys.
+		sshKeys, err = findSSHKeys()
+		if err != nil {
+			return nil, err
+		}
+		if len(sshKeys) == 0 { // We didn't find any keys; give up
+			return nil, ErrMissingSSHAuth
+		}
+
 	}
 
 	// Try and use the keys we found
 	var pkam ssh.AuthMethod
-	for i := 0; i < len(defaultSSHKeys); i++ {
-		pkam, err = publicKeyAuthMethod(defaultSSHKeys[i])
-		if err != nil && i == len(defaultSSHKeys)-1 {
+	for i := 0; i < len(sshKeys); i++ {
+		pkam, err = publicKeyAuthMethod(sshKeys[i])
+		if err != nil && i == len(sshKeys)-1 {
 			return nil, ErrMissingSSHAuth
 		}
 	}
