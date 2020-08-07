@@ -9,9 +9,28 @@ import (
 	"time"
 
 	"github.com/calmh/randomart"
+	"github.com/charmbracelet/charm/ui/common"
 )
 
-var ErrMalformedKey = errors.New("malformed key; is it missing the algorithm type at the beginning?")
+var (
+	ErrMalformedKey = errors.New("malformed key; is it missing the algorithm type at the beginning?")
+)
+
+// Fingerprint is the fingerprint of an SSH key.
+type Fingerprint struct {
+	Algorithm string
+	Type      string
+	Value     string
+}
+
+// String outputs a string representation of the fingerprint.
+func (f Fingerprint) String() string {
+	return fmt.Sprintf(
+		"%s %s",
+		common.SubtleIndigoFg(strings.ToUpper(f.Algorithm)),
+		common.IndigoFg(f.Type+":"+f.Value),
+	)
+}
 
 // Key contains data and metadata for an SSH key
 type Key struct {
@@ -19,20 +38,27 @@ type Key struct {
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 }
 
-// Return the SHA256 fingerprint for the given key
-func (k Key) FingerprintSHA256() (string, error) {
+// Return the algorithm and SHA256 fingerprint for the given key
+func (k Key) FingerprintSHA256() (Fingerprint, error) {
 	keyParts := strings.Split(k.Key, " ")
 	if len(keyParts) != 2 {
-		return "", ErrMalformedKey
+		return Fingerprint{}, ErrMalformedKey
 	}
 
 	b, err := base64.StdEncoding.DecodeString(keyParts[1])
 	if err != nil {
-		return "", err
+		return Fingerprint{}, err
 	}
+
+	algo := strings.Replace(keyParts[0], "ssh-", "", -1)
 	sha256sum := sha256.Sum256(b)
 	hash := base64.RawStdEncoding.EncodeToString(sha256sum[:])
-	return fmt.Sprintf("SHA256:%s", hash), nil
+
+	return Fingerprint{
+		Algorithm: algo,
+		Type:      "SHA256",
+		Value:     hash,
+	}, nil
 }
 
 // RandomArt returns the randomart for the given key

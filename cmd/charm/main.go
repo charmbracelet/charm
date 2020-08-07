@@ -155,7 +155,7 @@ var (
 					}
 					fp, err := keys[i].FingerprintSHA256()
 					if err != nil {
-						fp = fmt.Sprintf("Could not generate fingerprint for key %s: %v\n\n", keys[i].Key, err)
+						fp.Value = fmt.Sprintf("Could not generate fingerprint for key %s: %v\n\n", keys[i].Key, err)
 					}
 					board, err := keys[i].RandomArt()
 					if err != nil {

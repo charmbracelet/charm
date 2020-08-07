@@ -17,6 +17,7 @@ var (
 	HasDarkBackground = te.HasDarkBackground()
 	SpinnerColor      string
 	Indigo            = NewColorPair("#7571F9", "#5A56E0")
+	SubtleIndigo      = NewColorPair("#514DC1", "#7D79F6")
 	Cream             = NewColorPair("#FFFDF5", "#FFFDF5")
 	YellowGreen       = NewColorPair("#ECFD65", "#04B575")
 	Fuschia           = NewColorPair("#EE6FF8", "#EE6FF8")
@@ -24,6 +25,9 @@ var (
 	Red               = NewColorPair("#ED567A", "#FF4672")
 	FaintRed          = NewColorPair("#C74665", "#FF6F91")
 	NoColor           = NewColorPair("", "")
+
+	IndigoFg       = te.Style{}.Foreground(Indigo.Color()).Styled
+	SubtleIndigoFg = te.Style{}.Foreground(SubtleIndigo.Color()).Styled
 )
 
 func init() {

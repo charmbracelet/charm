@@ -10,10 +10,9 @@ import (
 
 type styledKey struct {
 	date        string
-	fingerprint string
+	fingerprint charm.Fingerprint
 	line        string
 	keyLabel    string
-	keyVal      string
 	dateLabel   string
 	dateVal     string
 	note        string
@@ -23,7 +22,7 @@ func newStyledKey(key charm.Key, active bool) styledKey {
 	date := key.CreatedAt.Format("02 Jan 2006 15:04:05 MST")
 	fp, err := key.FingerprintSHA256()
 	if err != nil {
-		fp = "[error generating fingerprint]"
+		fp = charm.Fingerprint{Value: "[error generating fingerprint]"}
 	}
 
 	var note string
@@ -38,7 +37,6 @@ func newStyledKey(key charm.Key, active bool) styledKey {
 		fingerprint: fp,
 		line:        common.VerticalLine(common.StateNormal),
 		keyLabel:    "Key:",
-		keyVal:      te.String(fp).Foreground(common.Indigo.Color()).String(),
 		dateLabel:   "Added:",
 		dateVal:     te.String(date).Foreground(common.Indigo.Color()).String(),
 		note:        note,
@@ -56,7 +54,6 @@ func (k *styledKey) selected() {
 func (k *styledKey) deleting() {
 	k.line = common.VerticalLine(common.StateDeleting)
 	k.keyLabel = te.String("Key:").Foreground(common.Red.Color()).String()
-	k.keyVal = te.String(k.fingerprint).Foreground(common.FaintRed.Color()).String()
 	k.dateLabel = te.String("Added:").Foreground(common.Red.Color()).String()
 	k.dateVal = te.String(k.date).Foreground(common.FaintRed.Color()).String()
 }
@@ -70,7 +67,7 @@ func (k styledKey) render(state keyState) string {
 	}
 	return fmt.Sprintf(
 		"%s %s %s\n%s %s %s %s\n\n",
-		k.line, k.keyLabel, k.keyVal,
+		k.line, k.keyLabel, k.fingerprint.String(),
 		k.line, k.dateLabel, k.dateVal, k.note,
 	)
 }
