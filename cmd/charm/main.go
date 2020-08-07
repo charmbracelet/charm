@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -25,6 +27,11 @@ const (
 	wrapAt   = 78
 	indentBy = 2
 )
+
+type CryptFile struct {
+	EncryptKey string `json:"encrypt_key"`
+	Data       string `json:"data"`
+}
 
 func formatLong(s string) string {
 	return indent.String(wordwrap.String("\n"+s, wrapAt), indentBy)
@@ -289,18 +296,57 @@ var (
 			if err != nil {
 				return err
 			}
-			r := struct {
-				EncryptKey string `json:"encrypt_key"`
-				Data       string `json:"data"`
-			}{
+			cf := CryptFile{
 				EncryptKey: gid,
-				Data:       string(enc),
+				Data:       base64.StdEncoding.EncodeToString(enc),
 			}
-			out, err := json.Marshal(r)
+			out, err := json.Marshal(cf)
 			if err != nil {
 				return err
 			}
 			fmt.Println(string(out))
+			return nil
+		},
+	}
+
+	decryptCmd = &cobra.Command{
+		Use:    "decrypt",
+		Hidden: false,
+		Short:  "Decrypt stdin with your Charm account encryption key",
+		Args:   cobra.RangeArgs(0, 1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var r io.Reader
+			var err error
+
+			switch len(args) {
+			case 0:
+				r = os.Stdin
+			default:
+				f, err := os.Open(args[0])
+				defer f.Close()
+				r = f
+				if err != nil {
+					return err
+				}
+			}
+
+			cf := &CryptFile{}
+			jd := json.NewDecoder(r)
+			err = jd.Decode(cf)
+			if err != nil {
+				return err
+			}
+
+			d, err := base64.StdEncoding.DecodeString(cf.Data)
+			if err != nil {
+				return err
+			}
+			cc := initCharmClient()
+			out, err := cc.Decrypt(cf.EncryptKey, d)
+			if err != nil {
+				return err
+			}
+			fmt.Printf("%s", string(out))
 			return nil
 		},
 	}
@@ -352,6 +398,7 @@ func main() {
 		linkCmd,
 		nameCmd,
 		encryptCmd,
+		decryptCmd,
 	)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

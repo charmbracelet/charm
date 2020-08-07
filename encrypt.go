@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"strings"
 
 	"github.com/google/uuid"
@@ -29,8 +31,7 @@ func (cc *Client) addEncryptKey(pk string, gid string, key string) error {
 	}
 	w.Write([]byte(key))
 	w.Close()
-	encKey := string(buf.Bytes())
-
+	encKey := base64.StdEncoding.EncodeToString(buf.Bytes())
 	ek := EncryptKey{}
 	ek.PublicKey = pk
 	ek.GlobalID = gid
@@ -70,7 +71,12 @@ func (cc *Client) cryptCheck() error {
 		sids := sasquatch.FindIdentities()
 		ks := make([]*EncryptKey, 0)
 		for _, k := range cc.auth.EncryptKeys {
-			dr, err := sasquatch.Decrypt(strings.NewReader(k.Key), sids...)
+
+			ds, err := base64.StdEncoding.DecodeString(k.Key)
+			if err != nil {
+				return err
+			}
+			dr, err := sasquatch.Decrypt(bytes.NewReader(ds), sids...)
 			if err != nil {
 				return err
 			}
@@ -96,9 +102,50 @@ func (cc *Client) Encrypt(content []byte) ([]byte, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
-	// TODO encrypt content
-	return content, cc.auth.EncryptKeys[0].GlobalID, nil
+	k, err := cc.auth.defaultEncryptKey()
+	if err != nil {
+		return nil, "", err
+	}
+	buf := bytes.NewBuffer(nil)
+	r, err := sasquatch.NewScryptRecipient(k.Key)
+	if err != nil {
+		return nil, "", err
+	}
+	w, err := sasquatch.Encrypt(buf, r)
+	if err != nil {
+		return nil, "", err
+	}
+	w.Write(content)
+	w.Close()
+	return buf.Bytes(), k.GlobalID, nil
 }
 
-// func (cc *Client) decrypt(gid uuid.UUID, content []byte) ([]byte, error) {
-// }
+func (cc *Client) Decrypt(gid string, content []byte) ([]byte, error) {
+	err := cc.cryptCheck()
+	k, err := cc.auth.keyforID(gid)
+	if err != nil {
+		return nil, err
+	}
+	id, err := sasquatch.NewScryptIdentity(k.Key)
+	r, err := sasquatch.Decrypt(bytes.NewReader(content), id)
+	if err != nil {
+		return nil, err
+	}
+	return ioutil.ReadAll(r)
+}
+
+func (au *Auth) keyforID(gid string) (*EncryptKey, error) {
+	for _, k := range au.EncryptKeys {
+		if k.GlobalID == gid {
+			return k, nil
+		}
+	}
+	return nil, fmt.Errorf("Key not found for id %s", gid)
+}
+
+func (au *Auth) defaultEncryptKey() (*EncryptKey, error) {
+	if len(au.EncryptKeys) == 0 {
+		return nil, fmt.Errorf("No keys stored")
+	}
+	return au.EncryptKeys[0], nil
+}
