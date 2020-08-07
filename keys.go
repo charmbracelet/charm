@@ -11,6 +11,8 @@ import (
 	"github.com/calmh/randomart"
 )
 
+var ErrMalformedKey = errors.New("malformed key; is it missing the algorithm type at the beginning?")
+
 // Key contains data and metadata for an SSH key
 type Key struct {
 	Key       string     `json:"key"`
@@ -21,7 +23,7 @@ type Key struct {
 func (k Key) FingerprintSHA256() (string, error) {
 	keyParts := strings.Split(k.Key, " ")
 	if len(keyParts) != 2 {
-		return "", errors.New("malformed key; is it missing the algorithm type at the beginning?")
+		return "", ErrMalformedKey
 	}
 
 	b, err := base64.StdEncoding.DecodeString(keyParts[1])
@@ -35,13 +37,21 @@ func (k Key) FingerprintSHA256() (string, error) {
 
 // RandomArt returns the randomart for the given key
 func (k Key) RandomArt() (string, error) {
-	b, err := base64.StdEncoding.DecodeString(k.Key)
+	keyParts := strings.Split(k.Key, " ")
+	if len(keyParts) != 2 {
+		return "", ErrMalformedKey
+	}
+
+	b, err := base64.StdEncoding.DecodeString(keyParts[1])
 	if err != nil {
 		return "", err
 	}
 
+	algo := strings.ToUpper(strings.Replace(keyParts[0], "ssh-", "", -1))
+
+	// TODO: also add bit size of key
 	h := sha256.New()
 	_, _ = h.Write(b)
-	board := randomart.GenerateSubtitled(h.Sum(nil), "", "SHA256").String()
+	board := randomart.GenerateSubtitled(h.Sum(nil), algo, "SHA256").String()
 	return strings.TrimSpace(board), nil
 }
