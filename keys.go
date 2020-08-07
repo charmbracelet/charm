@@ -3,6 +3,7 @@ package charm
 import (
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -18,7 +19,12 @@ type Key struct {
 
 // Return the SHA256 fingerprint for the given key
 func (k Key) FingerprintSHA256() (string, error) {
-	b, err := base64.StdEncoding.DecodeString(k.Key)
+	keyParts := strings.Split(k.Key, " ")
+	if len(keyParts) != 2 {
+		return "", errors.New("malformed key; is it missing the algorithm type at the beginning?")
+	}
+
+	b, err := base64.StdEncoding.DecodeString(keyParts[1])
 	if err != nil {
 		return "", err
 	}
