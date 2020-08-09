@@ -20,37 +20,36 @@ const (
 	rsaDefaultBits = 4096
 )
 
-var (
+// MissingSSHKeysErr indicates we're missing some keys that we expected to
+// have after generating. This should be an extreme edge case.
+var MissingSSHKeysErr = errors.New("missing one or more keys; did something happen to them after they were generated?")
 
-	// MissingSSHKeysErr indicates we're missing some keys we thought we had.
-	// This should be an extreme edge case, as we're generating them here.
-	MissingSSHKeysErr = errors.New("missing one or more keys; did something happen to them after they were generated?")
-)
-
-// SSHKeysAlreadyExist is used when we're attempting to generate SSH keys
-// for you but found they already exist on disk.
+// SSHKeysAlreadyExistErr indicates that files already exist at the location at
+// whcih we're attempting to create SSH keys.
 type SSHKeysAlreadyExistErr struct {
 	path string
 }
 
-// Error returns the a human-readable error message for SSHKeysAlreadyExistErr
+// Error returns the a human-readable error message for SSHKeysAlreadyExistErr.
+// It satisfies the error interface.
 func (e SSHKeysAlreadyExistErr) Error() string {
 	return fmt.Sprintf("ssh key %s already exists", e.path)
 }
 
-// FilesystemError is used to signal there was a problem at the
+// FilesystemError is used to signal there was a problem creating keys at the
 // filesystem-level. For example, when we're unable to create a directory to
 // store new SSH keys in.
 type FilesystemErr struct {
 	error
 }
 
-// Error implements the error interface
+// Error returns a human-readable string for the erorr. It implements the error
+// interface.
 func (e FilesystemErr) Error() string {
 	return e.error.Error()
 }
 
-// SSHKeyPair holds a pair of SSH keys and associated methods
+// SSHKeyPair holds a pair of SSH keys and associated methods.
 type SSHKeyPair struct {
 	PrivateKeyPEM []byte
 	PublicKey     []byte
@@ -112,7 +111,7 @@ func (s *SSHKeyPair) GenerateEd25519Keys() error {
 	return nil
 }
 
-// GenerateRSAKeys creates a pair for RSA keys for SSH auth
+// GenerateRSAKeys creates a pair for RSA keys for SSH auth.
 func (s *SSHKeyPair) GenerateRSAKeys(bitSize int) error {
 
 	// Generate private key
@@ -150,9 +149,9 @@ func (s *SSHKeyPair) GenerateRSAKeys(bitSize int) error {
 	return nil
 }
 
-// PrepFilesystem makes sure state of the filesystem is as it needs to be in
-// order to write our keys to disk. It will create and/or set permissions on
-// the SSH directory we're going to write our keys to (generally ~/.ssh) as
+// PrepFilesystem makes sure the state of the filesystem is as it needs to be
+// in order to write our keys to disk. It will create and/or set permissions on
+// the SSH directory we're going to write our keys to (for example, ~/.ssh) as
 // well as make sure that no files exist at the location in which we're going
 // to write out keys.
 func (s *SSHKeyPair) PrepFilesystem() error {
@@ -205,7 +204,6 @@ func (s *SSHKeyPair) WriteKeys() error {
 		return err
 	}
 
-	// Write keys to disk
 	if err := writeKeyToFile(s.PrivateKeyPEM, s.privateKeyPath()); err != nil {
 		return err
 	}
@@ -216,7 +214,6 @@ func (s *SSHKeyPair) WriteKeys() error {
 	return nil
 }
 
-// writeKeyToFile write a key to a given path with appropriate permissions.
 func writeKeyToFile(keyBytes []byte, path string) error {
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
