@@ -1,4 +1,4 @@
-package charm
+package keygen
 
 import (
 	"crypto/ed25519"
@@ -223,4 +223,15 @@ func writeKeyToFile(keyBytes []byte, path string) error {
 		return ioutil.WriteFile(path, keyBytes, 0600)
 	}
 	return FilesystemErr{fmt.Errorf("file %s already exists", path)}
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false
+	}
+	if err != nil {
+		return false
+	}
+	return true
 }

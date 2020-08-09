@@ -520,17 +520,6 @@ func (cc *Client) sshSession() (*ssh.Session, error) {
 	return s, nil
 }
 
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		return false
-	}
-	if err != nil {
-		return false
-	}
-	return true
-}
-
 func publicKeyAuthMethod(kp string) (ssh.AuthMethod, error) {
 	keyPath, err := homedir.Expand(kp)
 	if err != nil {

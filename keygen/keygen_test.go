@@ -1,4 +1,4 @@
-package charm
+package keygen
 
 import (
 	"io/ioutil"

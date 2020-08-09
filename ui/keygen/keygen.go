@@ -6,7 +6,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/charm"
+	"github.com/charmbracelet/charm/keygen"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/muesli/reflow/indent"
 	"github.com/muesli/reflow/wordwrap"
@@ -131,7 +131,7 @@ func View(model tea.Model) string {
 		s += "  Generated keys"
 	case StatusError:
 		switch m.err.(type) {
-		case charm.SSHKeysAlreadyExistErr:
+		case keygen.SSHKeysAlreadyExistErr:
 			s += "You already have SSH keys :)"
 		default:
 			s += fmt.Sprintf("Uh oh, there's been an error: %v", m.err)
@@ -155,7 +155,7 @@ func View(model tea.Model) string {
 // GenerateKeys is a Tea command that generates a pair of SSH keys and writes
 // them to disk
 func GenerateKeys() tea.Msg {
-	_, err := charm.NewSSHKeyPair()
+	_, err := keygen.NewSSHKeyPair()
 	if err != nil {
 		return failedMsg{err}
 	}
