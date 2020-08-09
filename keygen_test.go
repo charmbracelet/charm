@@ -41,26 +41,26 @@ func TestSSHKeyGeneration(t *testing.T) {
 	})
 
 	t.Run("test write SSH keys", func(t *testing.T) {
-		k.keyDir = filepath.Join(dir, "ssh1")
+		k.KeyDir = filepath.Join(dir, "ssh1")
 		if err := k.PrepFilesystem(); err != nil {
 			t.Errorf("filesystem error: %v\n", err)
 		}
 		if err := k.WriteKeys(); err != nil {
-			t.Errorf("error writing SSH keys to %s: %v", k.keyDir, err)
+			t.Errorf("error writing SSH keys to %s: %v", k.KeyDir, err)
 		}
 		if testing.Verbose() {
-			t.Logf("Wrote keys to %s", k.keyDir)
+			t.Logf("Wrote keys to %s", k.KeyDir)
 		}
 	})
 
 	t.Run("test not overwriting existing keys", func(t *testing.T) {
-		k.keyDir = filepath.Join(dir, "ssh2")
+		k.KeyDir = filepath.Join(dir, "ssh2")
 		if err := k.PrepFilesystem(); err != nil {
 			t.Errorf("filesystem error: %v\n", err)
 		}
 
 		// Private key
-		filePath := filepath.Join(k.keyDir, k.filename)
+		filePath := filepath.Join(k.KeyDir, k.Filename)
 		if !touchTestFile(t, filePath) {
 			return
 		}

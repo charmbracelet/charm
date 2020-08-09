@@ -16,9 +16,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-const (
-	rsaDefaultBits = 4096
-)
+const rsaDefaultBits = 4096
 
 // MissingSSHKeysErr indicates we're missing some keys that we expected to
 // have after generating. This should be an extreme edge case.
@@ -53,16 +51,16 @@ func (e FilesystemErr) Error() string {
 type SSHKeyPair struct {
 	PrivateKeyPEM []byte
 	PublicKey     []byte
-	keyDir        string
-	filename      string // private key filename; public key will have .pub appended
+	KeyDir        string
+	Filename      string // private key filename; public key will have .pub appended
 }
 
 func (s SSHKeyPair) privateKeyPath() string {
-	return filepath.Join(s.keyDir, s.filename)
+	return filepath.Join(s.KeyDir, s.Filename)
 }
 
 func (s SSHKeyPair) publicKeyPath() string {
-	return filepath.Join(s.keyDir, s.filename+".pub")
+	return filepath.Join(s.KeyDir, s.Filename+".pub")
 }
 
 // NewSSHKeyPair generates an SSHKeyPair, which contains a pair of SSH keys.
@@ -106,8 +104,8 @@ func (s *SSHKeyPair) GenerateEd25519Keys() error {
 
 	s.PrivateKeyPEM = pemBlock
 	s.PublicKey = ssh.MarshalAuthorizedKey(publicKey) // serialize for public key file on disk
-	s.keyDir = "~/.ssh"
-	s.filename = "id_ed25519"
+	s.KeyDir = "~/.ssh"
+	s.Filename = "id_ed25519"
 	return nil
 }
 
@@ -144,8 +142,8 @@ func (s *SSHKeyPair) GenerateRSAKeys(bitSize int) error {
 
 	s.PrivateKeyPEM = pemBlock
 	s.PublicKey = ssh.MarshalAuthorizedKey(publicRSAKey)
-	s.keyDir = "~/.ssh"
-	s.filename = "id_rsa"
+	s.KeyDir = "~/.ssh"
+	s.Filename = "id_rsa"
 	return nil
 }
 
@@ -157,15 +155,15 @@ func (s *SSHKeyPair) GenerateRSAKeys(bitSize int) error {
 func (s *SSHKeyPair) PrepFilesystem() error {
 	var err error
 
-	s.keyDir, err = homedir.Expand(s.keyDir)
+	s.KeyDir, err = homedir.Expand(s.KeyDir)
 	if err != nil {
 		return err
 	}
 
-	info, err := os.Stat(s.keyDir)
+	info, err := os.Stat(s.KeyDir)
 	if os.IsNotExist(err) {
 		// Directory doesn't exist: create it
-		return os.Mkdir(s.keyDir, 0700)
+		return os.Mkdir(s.KeyDir, 0700)
 	}
 	if err != nil {
 		// There was another error statting the directory; something is awry
@@ -173,11 +171,11 @@ func (s *SSHKeyPair) PrepFilesystem() error {
 	}
 	if !info.IsDir() {
 		// It exist but it's not a directory
-		return FilesystemErr{fmt.Errorf("%s is not a directory", s.keyDir)}
+		return FilesystemErr{fmt.Errorf("%s is not a directory", s.KeyDir)}
 	}
 	if info.Mode().Perm() != 0700 {
 		// Permissions are wrong: fix 'em
-		if err := os.Chmod(s.keyDir, 0700); err != nil {
+		if err := os.Chmod(s.KeyDir, 0700); err != nil {
 			return FilesystemErr{err}
 		}
 	}
