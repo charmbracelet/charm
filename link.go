@@ -1,5 +1,10 @@
 package charm
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 type LinkStatus int
 
 const (
@@ -42,6 +47,116 @@ type LinkHandler interface {
 	Success(*Link)
 	Timeout(*Link)
 	Error(*Link)
+}
+
+// LinkGen initiates a linking session
+func (cc *Client) LinkGen(lh LinkHandler) error {
+	s, err := cc.sshSession()
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+	out, err := s.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	in, err := s.StdinPipe()
+	if err != nil {
+		return err
+	}
+
+	err = s.Start("api-link")
+	if err != nil {
+		return err
+	}
+
+	// initialize link request on server
+	var lr Link
+	dec := json.NewDecoder(out)
+	err = dec.Decode(&lr)
+	if err != nil {
+		return err
+	}
+	if !checkLinkStatus(lh, &lr) {
+		return nil
+	}
+
+	// waiting for link request, do we want to approve it?
+	err = dec.Decode(&lr)
+	if err != nil {
+		return err
+	}
+	if !checkLinkStatus(lh, &lr) {
+		return nil
+	}
+
+	// send approval response
+	var lm LinkerMessage
+	enc := json.NewEncoder(in)
+	if lh.Request(&lr) {
+		lm = LinkerMessage{"yes"}
+	} else {
+		lm = LinkerMessage{"no"}
+	}
+	err = enc.Encode(lm)
+	if err != nil {
+		return err
+	}
+	if lm.Message == "no" {
+		return nil
+	}
+
+	// get server response
+	err = dec.Decode(&lr)
+	if err != nil {
+		return err
+	}
+	checkLinkStatus(lh, &lr)
+	return nil
+}
+
+// Link joins in on a linking session initiated by LinkGen
+func (cc *Client) Link(lh LinkHandler, code string) error {
+	s, err := cc.sshSession()
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+	out, err := s.StdoutPipe()
+	if err != nil {
+		return err
+	}
+
+	err = s.Start(fmt.Sprintf("api-link %s", code))
+	if err != nil {
+		return err
+	}
+	var lr Link
+	dec := json.NewDecoder(out)
+	err = dec.Decode(&lr)
+	if err != nil {
+		return err
+	}
+	if !checkLinkStatus(lh, &lr) {
+		return nil
+	}
+
+	err = dec.Decode(&lr)
+	if err != nil {
+		return err
+	}
+	if !checkLinkStatus(lh, &lr) {
+		return nil
+	}
+
+	err = dec.Decode(&lr)
+	if err != nil {
+		return err
+	}
+	if !checkLinkStatus(lh, &lr) {
+		return nil
+	}
+	return nil
 }
 
 func checkLinkStatus(lh LinkHandler, l *Link) bool {
