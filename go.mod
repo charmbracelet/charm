@@ -12,10 +12,10 @@ require (
 	github.com/meowgorithm/babyenv v1.2.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/muesli/reflow v0.1.0
-	github.com/muesli/sasquatch v0.0.0-20200804043514-25bc18f314d9
+	github.com/muesli/sasquatch v0.0.0-20200811221207-66979d92330a
 	github.com/muesli/termenv v0.7.0
 	github.com/spf13/cobra v0.0.7
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
-	golang.org/x/sys v0.0.0-20200728102440-3e129f6d46b1 // indirect
+	golang.org/x/sys v0.0.0-20200810151505-1b9f1253b3ed // indirect
 )
