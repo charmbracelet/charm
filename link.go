@@ -153,11 +153,12 @@ func (cc *Client) Link(lh LinkHandler, code string) error {
 	if err != nil {
 		return err
 	}
-	if !checkLinkStatus(lh, &lr) {
-		return nil
+	err = cc.SyncEncryptKeys()
+	if err != nil {
+		return err
 	}
-
-	return cc.SyncEncryptKeys()
+	checkLinkStatus(lh, &lr)
+	return nil
 }
 
 // SyncEncryptKeys re-encodes all of the encrypt keys associated for this
