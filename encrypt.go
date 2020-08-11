@@ -19,6 +19,51 @@ type EncryptKey struct {
 	PublicKey string `json:"public_key,omitempty"`
 }
 
+func (cc *Client) Encrypt(content []byte) ([]byte, string, error) {
+	err := cc.cryptCheck()
+	if err != nil {
+		return nil, "", err
+	}
+	k, err := cc.auth.defaultEncryptKey()
+	if err != nil {
+		return nil, "", err
+	}
+	buf := bytes.NewBuffer(nil)
+	r, err := sasquatch.NewScryptRecipient(k.Key)
+	if err != nil {
+		return nil, "", err
+	}
+	w, err := sasquatch.Encrypt(buf, r)
+	if err != nil {
+		return nil, "", err
+	}
+	w.Write(content)
+	w.Close()
+	return buf.Bytes(), k.GlobalID, nil
+}
+
+func (cc *Client) Decrypt(gid string, content []byte) ([]byte, error) {
+	err := cc.cryptCheck()
+	k, err := cc.auth.keyforID(gid)
+	if err != nil {
+		return nil, err
+	}
+	id, err := sasquatch.NewScryptIdentity(k.Key)
+	r, err := sasquatch.Decrypt(bytes.NewReader(content), id)
+	if err != nil {
+		return nil, err
+	}
+	return ioutil.ReadAll(r)
+}
+
+func (cc *Client) encryptKeys() ([]*EncryptKey, error) {
+	err := cc.cryptCheck()
+	if err != nil {
+		return nil, err
+	}
+	return cc.auth.EncryptKeys, nil
+}
+
 func (cc *Client) addEncryptKey(pk string, gid string, key string) error {
 	buf := bytes.NewBuffer(nil)
 	r, err := sasquatch.ParseRecipient(pk)
@@ -95,43 +140,6 @@ func (cc *Client) cryptCheck() error {
 		cc.auth.encryptKeysDecrypted = true
 	}
 	return nil
-}
-
-func (cc *Client) Encrypt(content []byte) ([]byte, string, error) {
-	err := cc.cryptCheck()
-	if err != nil {
-		return nil, "", err
-	}
-	k, err := cc.auth.defaultEncryptKey()
-	if err != nil {
-		return nil, "", err
-	}
-	buf := bytes.NewBuffer(nil)
-	r, err := sasquatch.NewScryptRecipient(k.Key)
-	if err != nil {
-		return nil, "", err
-	}
-	w, err := sasquatch.Encrypt(buf, r)
-	if err != nil {
-		return nil, "", err
-	}
-	w.Write(content)
-	w.Close()
-	return buf.Bytes(), k.GlobalID, nil
-}
-
-func (cc *Client) Decrypt(gid string, content []byte) ([]byte, error) {
-	err := cc.cryptCheck()
-	k, err := cc.auth.keyforID(gid)
-	if err != nil {
-		return nil, err
-	}
-	id, err := sasquatch.NewScryptIdentity(k.Key)
-	r, err := sasquatch.Decrypt(bytes.NewReader(content), id)
-	if err != nil {
-		return nil, err
-	}
-	return ioutil.ReadAll(r)
 }
 
 func (au *Auth) keyforID(gid string) (*EncryptKey, error) {

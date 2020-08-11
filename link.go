@@ -43,6 +43,9 @@ type LinkHandler interface {
 	InvalidToken(*Link)
 	Request(*Link) bool
 	RequestDenied(*Link)
+	// StartEncryptKeySync(*Link)
+	// SuccessEncryptKeySync(*Link)
+	// FailedEncryptKeySync(*Link)
 	SameUser(*Link)
 	Success(*Link)
 	Timeout(*Link)
@@ -61,6 +64,10 @@ func (cc *Client) LinkGen(lh LinkHandler) error {
 		return err
 	}
 	in, err := s.StdinPipe()
+	if err != nil {
+		return err
+	}
+	cks, err := cc.AuthorizedKeysWithMetadata()
 	if err != nil {
 		return err
 	}
@@ -111,8 +118,10 @@ func (cc *Client) LinkGen(lh LinkHandler) error {
 	if err != nil {
 		return err
 	}
-	checkLinkStatus(lh, &lr)
-	return nil
+	if !checkLinkStatus(lh, &lr) {
+		return nil
+	}
+	return cc.linkEncryptKeys(cks.Keys)
 }
 
 // Link joins in on a linking session initiated by LinkGen
@@ -126,14 +135,17 @@ func (cc *Client) Link(lh LinkHandler, code string) error {
 	if err != nil {
 		return err
 	}
-
+	cks, err := cc.AuthorizedKeysWithMetadata()
+	if err != nil {
+		return err
+	}
 	err = s.Start(fmt.Sprintf("api-link %s", code))
 	if err != nil {
 		return err
 	}
 	var lr Link
 	dec := json.NewDecoder(out)
-	err = dec.Decode(&lr)
+	err = dec.Decode(&lr) // Start Request
 	if err != nil {
 		return err
 	}
@@ -141,7 +153,7 @@ func (cc *Client) Link(lh LinkHandler, code string) error {
 		return nil
 	}
 
-	err = dec.Decode(&lr)
+	err = dec.Decode(&lr) // Token Check
 	if err != nil {
 		return err
 	}
@@ -149,12 +161,49 @@ func (cc *Client) Link(lh LinkHandler, code string) error {
 		return nil
 	}
 
-	err = dec.Decode(&lr)
+	err = dec.Decode(&lr) // Results
 	if err != nil {
 		return err
 	}
 	if !checkLinkStatus(lh, &lr) {
 		return nil
+	}
+
+	err = cc.linkEncryptKeys(cks.Keys)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (cc *Client) linkEncryptKeys(diff []Key) error {
+	var ks []Key
+	eks, err := cc.encryptKeys()
+	if err != nil {
+		return err
+	}
+	cks, err := cc.AuthorizedKeysWithMetadata()
+	if err != nil {
+		return err
+	}
+	if diff != nil {
+		ks = make([]Key, 0)
+		dm := make(map[string]bool)
+		for _, k := range cks.Keys {
+			dm[k.Key] = true
+		}
+		for _, k := range diff {
+			if _, ok := dm[k.Key]; !ok {
+				ks = append(ks, k)
+			}
+		}
+	} else {
+		ks = cks.Keys
+	}
+	for _, k := range ks {
+		for _, ek := range eks {
+			cc.addEncryptKey(k.Key, ek.GlobalID, ek.Key)
+		}
 	}
 	return nil
 }
