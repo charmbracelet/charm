@@ -90,8 +90,6 @@ func (cc *Client) cryptCheck() error {
 	if err != nil {
 		return err
 	}
-	cc.authLock.Lock()
-	defer cc.authLock.Unlock()
 	if len(cc.auth.EncryptKeys) == 0 {
 		// if there are no encrypt keys, make one for the public key returned from auth
 		b := make([]byte, 64)
