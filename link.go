@@ -43,9 +43,6 @@ type LinkHandler interface {
 	InvalidToken(*Link)
 	Request(*Link) bool
 	RequestDenied(*Link)
-	// StartEncryptKeySync(*Link)
-	// SuccessEncryptKeySync(*Link)
-	// FailedEncryptKeySync(*Link)
 	SameUser(*Link)
 	Success(*Link)
 	Timeout(*Link)
@@ -67,11 +64,6 @@ func (cc *Client) LinkGen(lh LinkHandler) error {
 	if err != nil {
 		return err
 	}
-	cks, err := cc.AuthorizedKeysWithMetadata()
-	if err != nil {
-		return err
-	}
-
 	err = s.Start("api-link")
 	if err != nil {
 		return err
@@ -121,7 +113,7 @@ func (cc *Client) LinkGen(lh LinkHandler) error {
 	if !checkLinkStatus(lh, &lr) {
 		return nil
 	}
-	return cc.linkEncryptKeys(cks.Keys)
+	return cc.SyncEncryptKeys()
 }
 
 // Link joins in on a linking session initiated by LinkGen
@@ -132,10 +124,6 @@ func (cc *Client) Link(lh LinkHandler, code string) error {
 	}
 	defer s.Close()
 	out, err := s.StdoutPipe()
-	if err != nil {
-		return err
-	}
-	cks, err := cc.AuthorizedKeysWithMetadata()
 	if err != nil {
 		return err
 	}
@@ -169,15 +157,12 @@ func (cc *Client) Link(lh LinkHandler, code string) error {
 		return nil
 	}
 
-	err = cc.linkEncryptKeys(cks.Keys)
-	if err != nil {
-		return err
-	}
-	return nil
+	return cc.SyncEncryptKeys()
 }
 
-func (cc *Client) linkEncryptKeys(diff []Key) error {
-	var ks []Key
+// SyncEncryptKeys re-encodes all of the encrypt keys associated for this
+// public key with all other linked publick keys
+func (cc *Client) SyncEncryptKeys() error {
 	eks, err := cc.encryptKeys()
 	if err != nil {
 		return err
@@ -186,21 +171,7 @@ func (cc *Client) linkEncryptKeys(diff []Key) error {
 	if err != nil {
 		return err
 	}
-	if diff != nil {
-		ks = make([]Key, 0)
-		dm := make(map[string]bool)
-		for _, k := range cks.Keys {
-			dm[k.Key] = true
-		}
-		for _, k := range diff {
-			if _, ok := dm[k.Key]; !ok {
-				ks = append(ks, k)
-			}
-		}
-	} else {
-		ks = cks.Keys
-	}
-	for _, k := range ks {
+	for _, k := range cks.Keys {
 		for _, ek := range eks {
 			cc.addEncryptKey(k.Key, ek.GlobalID, ek.Key)
 		}
