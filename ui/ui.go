@@ -224,8 +224,6 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 		// Initialize models that require a Charm client
 		m.info = info.NewModel(m.cc)
-		m.link = linkgen.NewModel()
-		m.link.SetCharmClient(m.cc)
 		m.username = username.NewModel(m.cc)
 		m.keys = keys.NewModel(m.cfg)
 		m.keys.SetCharmClient(m.cc)
@@ -323,6 +321,8 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	case linkChoice:
 		m.status = statusLinking
 		m.menuChoice = unsetChoice
+		m.link = linkgen.NewModel()
+		m.link.SetCharmClient(m.cc)
 		cmd = linkgen.InitLinkGen(m.link)
 	case keysChoice:
 		m.status = statusBrowsingKeys
