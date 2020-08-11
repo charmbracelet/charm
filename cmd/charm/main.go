@@ -350,6 +350,17 @@ var (
 			return nil
 		},
 	}
+
+	keySyncCmd = &cobra.Command{
+		Use:    "sync-keys",
+		Hidden: true,
+		Short:  "Re-encrypt encrypt keys for all linked public keys",
+		Args:   cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cc := initCharmClient()
+			return cc.SyncEncryptKeys()
+		},
+	}
 )
 
 func getCharmConfig() *charm.Config {
@@ -399,6 +410,7 @@ func main() {
 		nameCmd,
 		encryptCmd,
 		decryptCmd,
+		keySyncCmd,
 	)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
