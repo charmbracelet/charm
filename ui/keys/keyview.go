@@ -2,15 +2,32 @@ package keys
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
 	te "github.com/muesli/termenv"
 )
 
+// wrap fingerprint to support additional states
+type fingerprint struct {
+	charm.Fingerprint
+}
+
+func (f fingerprint) state(s keyState) string {
+	if s == keyDeleting {
+		return fmt.Sprintf(
+			"%s %s",
+			common.FaintRedFg(strings.ToUpper(f.Algorithm)),
+			common.RedFg(f.Type+":"+f.Value),
+		)
+	}
+	return f.String()
+}
+
 type styledKey struct {
 	date        string
-	fingerprint charm.Fingerprint
+	fingerprint fingerprint
 	line        string
 	keyLabel    string
 	dateLabel   string
@@ -34,7 +51,7 @@ func newStyledKey(key charm.Key, active bool) styledKey {
 	// Default state
 	return styledKey{
 		date:        date,
-		fingerprint: fp,
+		fingerprint: fingerprint{fp},
 		line:        common.VerticalLine(common.StateNormal),
 		keyLabel:    "Key:",
 		dateLabel:   "Added:",
@@ -67,7 +84,7 @@ func (k styledKey) render(state keyState) string {
 	}
 	return fmt.Sprintf(
 		"%s %s %s\n%s %s %s %s\n\n",
-		k.line, k.keyLabel, k.fingerprint.String(),
+		k.line, k.keyLabel, k.fingerprint.state(state),
 		k.line, k.dateLabel, k.dateVal, k.note,
 	)
 }

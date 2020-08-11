@@ -28,6 +28,8 @@ var (
 
 	IndigoFg       = te.Style{}.Foreground(Indigo.Color()).Styled
 	SubtleIndigoFg = te.Style{}.Foreground(SubtleIndigo.Color()).Styled
+	RedFg          = te.Style{}.Foreground(Red.Color()).Styled
+	FaintRedFg     = te.Style{}.Foreground(FaintRed.Color()).Styled
 )
 
 func init() {
