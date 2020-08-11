@@ -10,6 +10,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/mattn/go-isatty v0.0.12
 	github.com/meowgorithm/babyenv v1.2.1
+	github.com/mikesmitty/edkey v0.0.0-20170222072505-3356ea4e686a
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/muesli/reflow v0.1.0
 	github.com/muesli/sasquatch v0.0.0-20200811221207-66979d92330a

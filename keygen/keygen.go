@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/mikesmitty/edkey"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/ssh"
 )
@@ -84,25 +85,19 @@ func NewSSHKeyPair() (*SSHKeyPair, error) {
 // GenerateEd25519Keys creates a pair of EdD25519 keys for SSH auth.
 func (s *SSHKeyPair) GenerateEd25519Keys() error {
 	// Generate keys
-	_, privateKey, err := ed25519.GenerateKey(rand.Reader)
-	if err != nil {
-		return err
-	}
-
-	// Get ASN.1 DER format
-	x509Encoded, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	pubKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		return err
 	}
 
 	// Encode PEM
 	pemBlock := pem.EncodeToMemory(&pem.Block{
-		Type:  "PRIVATE KEY",
-		Bytes: x509Encoded,
+		Type:  "OPENSSH PRIVATE KEY",
+		Bytes: edkey.MarshalED25519PrivateKey(privateKey),
 	})
 
 	// Prepare public key
-	publicKey, err := ssh.NewPublicKey(privateKey.Public())
+	publicKey, err := ssh.NewPublicKey(pubKey)
 	if err != nil {
 		return err
 	}
