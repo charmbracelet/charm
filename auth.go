@@ -49,3 +49,9 @@ func (cc *Client) Auth() (*Auth, error) {
 	}
 	return cc.auth, nil
 }
+
+func (cc *Client) InvalidateAuth() {
+	cc.authLock.Lock()
+	defer cc.authLock.Unlock()
+	cc.auth.claims = nil
+}

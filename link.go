@@ -164,7 +164,7 @@ func (cc *Client) Link(lh LinkHandler, code string) error {
 // SyncEncryptKeys re-encodes all of the encrypt keys associated for this
 // public key with all other linked publick keys
 func (cc *Client) SyncEncryptKeys() error {
-	cc.auth.claims = nil
+	cc.InvalidateAuth()
 	eks, err := cc.encryptKeys()
 	if err != nil {
 		return err
