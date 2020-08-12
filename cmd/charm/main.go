@@ -391,12 +391,10 @@ func initCharmClient() *charm.Client {
 	return cc
 }
 
-func main() {
-	// General flags
+func init() {
 	rootCmd.PersistentFlags().StringVarP(&identityFile, "identity", "i", "", "path to identity file (that is, an ssh private key)")
 	rootCmd.Flags().BoolVarP(&forceKey, "force-key", "f", false, "for the use of the SSH key on disk (that is, ignore ssh-agent)")
 
-	// Keys flags
 	keysCmd.Flags().BoolVarP(&simpleOutput, "simple", "s", false, "simple, non-interactive output (good for scripts)")
 	keysCmd.Flags().BoolVarP(&randomart, "randomart", "r", false, "print SSH 5.1 randomart for each key (the Drunken Bishop algorithm)")
 
@@ -411,7 +409,11 @@ func main() {
 		encryptCmd,
 		decryptCmd,
 		keySyncCmd,
+		completionCmd,
 	)
+}
+
+func main() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
