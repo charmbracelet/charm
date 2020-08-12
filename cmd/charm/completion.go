@@ -20,7 +20,10 @@ $ charm completion bash > /etc/bash_completion.d/charm
 MacOS:
 $ charm completion bash > /usr/local/etc/bash_completion.d/charm
 
-Or, to just load for the current session:
+Note that on macOS you'll need to have bash completion installed. The easiest
+way to do this is with Homewbrew. For more info run: brew info bash-completion.
+
+Or, to just load Charm completion for the current session:
 $ source <(charm completion bash)
 
 ` + common.Keyword("Zsh") + `
