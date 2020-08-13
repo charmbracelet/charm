@@ -27,13 +27,9 @@ const (
 	cancelButton
 )
 
-const (
-	prompt = "> "
-)
+const prompt = "> "
 
-var (
-	focusedPrompt = te.String(prompt).Foreground(common.Fuschia.Color()).String()
-)
+var focusedPrompt = te.String(prompt).Foreground(common.Fuschia.Color()).String()
 
 // NameSetMsg is sent when a new name has been set successfully. It contains
 // the new name.
@@ -45,7 +41,13 @@ type NameTakenMsg struct{}
 // NameInvalidMsg is sent when the requested username has failed validation
 type NameInvalidMsg struct{}
 
-type errMsg error
+type errMsg struct {
+	err error
+}
+
+func (e errMsg) Error() string {
+	return e.err.Error()
+}
 
 // Model holds the state of the username UI.
 type Model struct {
@@ -283,7 +285,7 @@ func setName(m Model) tea.Cmd {
 		} else if err == charm.ErrNameInvalid {
 			return NameInvalidMsg{}
 		} else if err != nil {
-			return errMsg(err)
+			return errMsg{err}
 		}
 
 		return NameSetMsg(u.Name)
