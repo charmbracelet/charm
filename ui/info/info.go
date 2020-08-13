@@ -19,7 +19,13 @@ var (
 // contains the user's profile data.
 type GotBioMsg *charm.User
 
-type errMsg error
+type errMsg struct {
+	err error
+}
+
+func (e errMsg) Error() string {
+	return e.err.Error()
+}
 
 // Model stores the state of the info user interface.
 type Model struct {
@@ -89,7 +95,7 @@ func GetBio(cc *charm.Client) tea.Cmd {
 	return func() tea.Msg {
 		user, err := cc.Bio()
 		if err != nil {
-			return errMsg(err)
+			return errMsg{err}
 		}
 
 		return GotBioMsg(user)
