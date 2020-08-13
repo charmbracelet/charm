@@ -121,27 +121,32 @@ func NewClient(cfg *Config) (*Client, error) {
 
 	} else {
 
-		// Try and use SSH agent for auth
-		am, err := agentAuthMethod()
-		if err == nil {
-			cc.sshConfig = &ssh.ClientConfig{
-				User:            "charm",
-				Auth:            []ssh.AuthMethod{am},
-				HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-			}
+		// Note: we're skipping agent if the user is forcing a key
+		if !cfg.ForceKey {
 
-			// Dial session here as agent may still not work
-			c, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cc.config.IDHost, cc.config.IDPort), cc.sshConfig)
+			// Try and use SSH agent for auth
+			am, err := agentAuthMethod()
 			if err == nil {
-				// Successful dial; let's try and finish up here
+				cc.sshConfig = &ssh.ClientConfig{
+					User:            "charm",
+					Auth:            []ssh.AuthMethod{am},
+					HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+				}
 
-				s, err := c.NewSession()
+				// Dial session here as agent may still not work
+				c, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cc.config.IDHost, cc.config.IDPort), cc.sshConfig)
 				if err == nil {
-					// It worked. Cache dialed session and use SSH agent for auth!
-					cc.initialSession = s
-					return cc, nil
+					// Successful dial; let's try and finish up here
+
+					s, err := c.NewSession()
+					if err == nil {
+						// It worked. Cache dialed session and use SSH agent for auth!
+						cc.initialSession = s
+						return cc, nil
+					}
 				}
 			}
+
 		}
 
 		// If we're still here it means SSH agent either failed or isn't setup, so
