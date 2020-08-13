@@ -5,23 +5,16 @@ import (
 	te "github.com/muesli/termenv"
 )
 
-const (
-	wrapAt = 60
-)
+const wrapAt = 60
 
 var (
 	// Color wraps termenv.ColorProfile.Color, which produces a termenv color
 	// for use in termenv styling.
 	Color func(string) te.Color = te.ColorProfile().Color
-)
 
-var (
 	// HasDarkBackground stores whether or not the terminal has a dark
 	// background.
 	HasDarkBackground = te.HasDarkBackground()
-
-	// SpinnerColor stores the color of the spinner.
-	SpinnerColor string
 )
 
 // Colors for dark and light backgrounds.
@@ -34,6 +27,7 @@ var (
 	Green                  = NewColorPair("#04B575", "#04B575")
 	Red                    = NewColorPair("#ED567A", "#FF4672")
 	FaintRed               = NewColorPair("#C74665", "#FF6F91")
+	SpinnerColor           = NewColorPair("#747373", "#8E8E8E")
 	NoColor                = NewColorPair("", "")
 )
 
@@ -44,14 +38,6 @@ var (
 	RedFg                              = te.Style{}.Foreground(Red.Color()).Styled
 	FaintRedFg                         = te.Style{}.Foreground(FaintRed.Color()).Styled
 )
-
-func init() {
-	if HasDarkBackground {
-		SpinnerColor = "#747373"
-	} else {
-		SpinnerColor = "#8E8E8E"
-	}
-}
 
 // ColorPair is a pair of colors, one intended for a dark background and the
 // other intended for a light background. We'll automatically determine which

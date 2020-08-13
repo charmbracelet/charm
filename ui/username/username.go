@@ -105,7 +105,7 @@ func NewModel(cc *charm.Client) Model {
 
 	spinnerModel := spinner.NewModel()
 	spinnerModel.Frames = spinner.Dot
-	spinnerModel.ForegroundColor = common.SpinnerColor
+	spinnerModel.ForegroundColor = common.SpinnerColor.String()
 
 	return Model{
 		Done:    false,
