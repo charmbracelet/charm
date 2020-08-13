@@ -158,25 +158,15 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 				m.indexForward()
 			case "shift+tab":
 				m.indexBackward()
-			case "l":
-				fallthrough
-			case "k":
-				fallthrough
-			case "right":
+			case "l", "k", "right":
 				if m.index != textInput {
 					m.indexForward()
 				}
-			case "h":
-				fallthrough
-			case "j":
-				fallthrough
-			case "left":
+			case "h", "j", "left":
 				if m.index != textInput {
 					m.indexBackward()
 				}
-			case "up":
-				fallthrough
-			case "down":
+			case "up", "down":
 				if m.index == textInput {
 					m.indexForward()
 				} else {

@@ -89,11 +89,7 @@ func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c":
-			fallthrough
-		case "esc":
-			fallthrough
-		case "q":
+		case "ctrl+c", "esc", "q":
 			m.status = quitting
 			return m, tea.Quit
 		default:

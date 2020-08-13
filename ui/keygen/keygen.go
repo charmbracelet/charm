@@ -70,11 +70,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c":
-			fallthrough
-		case "esc":
-			fallthrough
-		case "q":
+		case "ctrl+c", "esc", "q":
 			m.Status = StatusQuitting
 			return m, tea.Quit
 		}
