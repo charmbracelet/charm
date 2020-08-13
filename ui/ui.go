@@ -21,7 +21,8 @@ import (
 
 const indentAmount = 2
 
-// NewProgram returns a new Tea program
+// NewProgram returns a new Bubble Tea program. Use this to start up the
+// Charm TUI.
 func NewProgram(cfg *charm.Config) *tea.Program {
 	if cfg.Logfile != "" {
 		log.Println("-- Starting Charm ----------------")
@@ -46,7 +47,6 @@ const (
 	statusError
 )
 
-// String prints the status as a string. This is just for debugging purposes.
 func (s status) String() string {
 	return [...]string{
 		"initializing",
@@ -155,16 +155,12 @@ func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
 			switch msg.String() {
 
 			// Quit
-			case "q":
-				fallthrough
-			case "esc":
+			case "q", "esc":
 				m.status = statusQuitting
 				return m, tea.Quit
 
 			// Prev menu item
-			case "up":
-				fallthrough
-			case "k":
+			case "up", "k":
 				m.menuIndex--
 				if m.menuIndex < 0 {
 					m.menuIndex = len(menuChoices) - 1
@@ -175,9 +171,7 @@ func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
 				m.menuChoice = menuChoice(m.menuIndex)
 
 			// Next menu item
-			case "down":
-				fallthrough
-			case "j":
+			case "down", "j":
 				m.menuIndex++
 				if m.menuIndex >= len(menuChoices) {
 					m.menuIndex = 0
@@ -198,7 +192,7 @@ func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
 
 	case charmclient.SSHAuthErrorMsg:
 		if m.status == statusInit {
-			// SSH auth didn't work so let's try generating keys/
+			// SSH auth didn't work so let's try generating keys
 			m.status = statusKeygen
 			return m, keygen.GenerateKeys
 		}
@@ -252,6 +246,8 @@ func updateChilden(msg tea.Msg, m model) (model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch m.status {
+
+	// Keygen
 	case statusKeygen:
 		keygenModel, newCmd := keygen.Update(msg, tea.Model(m.keygen))
 		mdl, ok := keygenModel.(keygen.Model)
@@ -261,6 +257,8 @@ func updateChilden(msg tea.Msg, m model) (model, tea.Cmd) {
 		}
 		cmd = newCmd
 		m.keygen = mdl
+
+	// User info
 	case statusFetching:
 		m.info, cmd = info.Update(msg, m.info)
 		if m.info.Quit {
@@ -269,6 +267,8 @@ func updateChilden(msg tea.Msg, m model) (model, tea.Cmd) {
 			return m, tea.Quit
 		}
 		return m, cmd
+
+	// Link generator
 	case statusLinking:
 		linkModel, cmd := linkgen.Update(msg, tea.Model(m.link))
 		mdl, ok := linkModel.(linkgen.Model)
@@ -284,6 +284,8 @@ func updateChilden(msg tea.Msg, m model) (model, tea.Cmd) {
 			m.status = statusQuitting
 			return m, tea.Quit
 		}
+
+	// Key browser
 	case statusBrowsingKeys:
 		var newModel tea.Model
 		newModel, cmd = keys.Update(msg, m.keys)
@@ -301,6 +303,8 @@ func updateChilden(msg tea.Msg, m model) (model, tea.Cmd) {
 			m.status = statusQuitting
 			return m, tea.Quit
 		}
+
+	// Username tool
 	case statusSettingUsername:
 		m.username, cmd = username.Update(msg, m.username)
 		if m.username.Done {
@@ -312,6 +316,7 @@ func updateChilden(msg tea.Msg, m model) (model, tea.Cmd) {
 		}
 	}
 
+	// Handle the menu
 	switch m.menuChoice {
 	case linkChoice:
 		m.status = statusLinking
@@ -319,14 +324,17 @@ func updateChilden(msg tea.Msg, m model) (model, tea.Cmd) {
 		m.link = linkgen.NewModel()
 		m.link.SetCharmClient(m.cc)
 		cmd = linkgen.InitLinkGen(m.link)
+
 	case keysChoice:
 		m.status = statusBrowsingKeys
 		m.menuChoice = unsetChoice
 		cmd = keys.LoadKeys(m.keys)
+
 	case setUsernameChoice:
 		m.status = statusSettingUsername
 		m.menuChoice = unsetChoice
 		cmd = username.InitialCmd(m.username)
+
 	case exitChoice:
 		m.status = statusQuitting
 		cmd = tea.Quit
