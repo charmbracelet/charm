@@ -22,10 +22,11 @@ func (m MarkdownsByCreatedAtDesc) Swap(i, j int)      { m[i], m[j] = m[j], m[i] 
 func (m MarkdownsByCreatedAtDesc) Less(i, j int) bool { return m[i].CreatedAt.After(*m[j].CreatedAt) }
 
 type Markdown struct {
-	ID        int        `json:"id"`
-	Note      string     `json:"note"`
-	Body      string     `json:"body,omitempty"`
-	CreatedAt *time.Time `json:"created_at"`
+	ID           int        `json:"id"`
+	EncryptKeyID string     `json:"encrypt_key_id"`
+	Note         string     `json:"note"`
+	Body         string     `json:"body,omitempty"`
+	CreatedAt    *time.Time `json:"created_at"`
 }
 
 func (cc *Client) GetNews(page int) ([]*Markdown, error) {
@@ -62,6 +63,13 @@ func (cc *Client) GetStash(page int) ([]*Markdown, error) {
 	if err != nil {
 		return nil, err
 	}
+	for i, md := range stash {
+		en, err := cc.Decrypt(md.EncryptKeyID, []byte(md.Note))
+		if err != nil {
+			return nil, err
+		}
+		stash[i].Note = string(en)
+	}
 	return stash, nil
 }
 
@@ -75,6 +83,16 @@ func (cc *Client) GetStashMarkdown(markdownID int) (*Markdown, error) {
 	if err != nil {
 		return nil, err
 	}
+	eb, err := cc.Decrypt(md.EncryptKeyID, []byte(md.Body))
+	if err != nil {
+		return nil, err
+	}
+	md.Body = string(eb)
+	en, err := cc.Decrypt(md.EncryptKeyID, []byte(md.Note))
+	if err != nil {
+		return nil, err
+	}
+	md.Note = string(en)
 	return &md, nil
 }
 
@@ -83,7 +101,9 @@ func (cc *Client) StashMarkdown(note string, body string) error {
 	if err != nil {
 		return err
 	}
-	md := &Markdown{Note: note, Body: body}
+	eb, gid, err := cc.Encrypt([]byte(body))
+	en, gid, err := cc.Encrypt([]byte(note))
+	md := &Markdown{Note: string(en), Body: string(eb), EncryptKeyID: gid}
 	return cc.makeAPIRequest("POST", fmt.Sprintf("%s/stash", auth.CharmID), md, nil)
 }
 
@@ -100,7 +120,12 @@ func (cc *Client) SetMarkdownNote(markdownID int, note string) error {
 	if err != nil {
 		return err
 	}
-	md := &Markdown{Note: note}
+	md, err := cc.GetStashMarkdown(markdownID)
+	if err != nil {
+		return err
+	}
+	en, _, err := cc.EncryptWithKey(md.EncryptKeyID, []byte(note))
+	md.Note = string(en)
 	return cc.makeAPIRequest("PUT", fmt.Sprintf("%s/stash/%d", auth.CharmID, markdownID), md, nil)
 }
 
