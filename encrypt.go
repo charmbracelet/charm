@@ -20,11 +20,20 @@ type EncryptKey struct {
 }
 
 func (cc *Client) Encrypt(content []byte) ([]byte, string, error) {
+	return cc.EncryptWithKey("", content)
+}
+
+func (cc *Client) EncryptWithKey(id string, content []byte) ([]byte, string, error) {
+	var k *EncryptKey
 	err := cc.cryptCheck()
 	if err != nil {
 		return nil, "", err
 	}
-	k, err := cc.auth.defaultEncryptKey()
+	if id == "" {
+		k, err = cc.auth.defaultEncryptKey()
+	} else {
+		k, err = cc.auth.keyForID(id)
+	}
 	if err != nil {
 		return nil, "", err
 	}
@@ -44,7 +53,7 @@ func (cc *Client) Encrypt(content []byte) ([]byte, string, error) {
 
 func (cc *Client) Decrypt(gid string, content []byte) ([]byte, error) {
 	err := cc.cryptCheck()
-	k, err := cc.auth.keyforID(gid)
+	k, err := cc.auth.keyForID(gid)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +149,7 @@ func (cc *Client) cryptCheck() error {
 	return nil
 }
 
-func (au *Auth) keyforID(gid string) (*EncryptKey, error) {
+func (au *Auth) keyForID(gid string) (*EncryptKey, error) {
 	for _, k := range au.EncryptKeys {
 		if k.GlobalID == gid {
 			return k, nil
