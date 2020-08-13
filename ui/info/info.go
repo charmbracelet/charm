@@ -82,7 +82,7 @@ func bioView(u *charm.User) string {
 	if u.Name != "" {
 		username = u.Name
 	} else {
-		username = te.String("(none set)").Foreground(color("241")).String()
+		username = common.Subtle("(none set)")
 	}
 	return common.KeyValueView(
 		"Username", username,
