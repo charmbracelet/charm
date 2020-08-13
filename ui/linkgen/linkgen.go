@@ -147,9 +147,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 			}
 			m.Quit = true
 			return m, nil
-		case "q":
-			fallthrough
-		case "esc":
+		case "q", "esc":
 			if m.standalone {
 				m.status = quitting
 				return m, tea.Quit
