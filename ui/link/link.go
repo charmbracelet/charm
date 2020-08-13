@@ -225,8 +225,6 @@ func paddedView(s string) string {
 	return indent.String(fmt.Sprintf("\n%s\n\n", s), 2)
 }
 
-// COMMANDS
-
 func handleLinkRequest(m model) tea.Cmd {
 
 	go func() {

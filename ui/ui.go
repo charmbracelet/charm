@@ -81,8 +81,6 @@ var menuChoices = map[menuChoice]string{
 	exitChoice:        "Exit",
 }
 
-// MODEL
-
 // Model holds the state for this program
 type Model struct {
 	cfg        *charm.Config
@@ -100,8 +98,6 @@ type Model struct {
 	username username.Model
 	keys     keys.Model
 }
-
-// INIT
 
 func initialize(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
 	return func() (tea.Model, tea.Cmd) {
@@ -123,8 +119,6 @@ func initialize(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
 		)
 	}
 }
-
-// UPDATE
 
 func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	m, ok := model.(Model)
@@ -327,7 +321,7 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	case keysChoice:
 		m.status = statusBrowsingKeys
 		m.menuChoice = unsetChoice
-		cmd = keys.InitLoadKeys(m.keys)
+		cmd = keys.LoadKeys(m.keys)
 	case setUsernameChoice:
 		m.status = statusSettingUsername
 		m.menuChoice = unsetChoice
@@ -339,8 +333,6 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 	return m, cmd
 }
-
-// VIEW
 
 func view(model tea.Model) string {
 	m, ok := model.(Model)

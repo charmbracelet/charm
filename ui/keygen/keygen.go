@@ -17,6 +17,7 @@ const indentAmount = 2
 
 type status int
 
+// General states
 const (
 	StatusRunning status = iota
 	StatusError
@@ -25,16 +26,13 @@ const (
 	StatusQuitting
 )
 
-// MSG
-
-type failedMsg struct {
-	err error
-}
+type failedMsg struct{ err error }
 type successMsg struct{}
+
+// DoneMsg is sent when the keygen has completely finished running.
 type DoneMsg struct{}
 
-// MODEL
-
+// Model is the Bubble Tea model which stores the state of the keygen.
 type Model struct {
 	Status        status
 	err           error
@@ -43,8 +41,7 @@ type Model struct {
 	terminalWidth int
 }
 
-// INIT
-
+// Init is the Bubble Tea initialization function for the keygen.
 func Init() (tea.Model, tea.Cmd) {
 	m := NewModel()
 	m.standalone = true
@@ -56,16 +53,14 @@ func Init() (tea.Model, tea.Cmd) {
 	return m, tea.Batch(GenerateKeys, spinner.Tick(m.spinner))
 }
 
+// NewModel returns a new keygen model in its initial state.
 func NewModel() Model {
 	return Model{
-		Status:     StatusRunning,
-		err:        nil,
-		standalone: false,
+		Status: StatusRunning,
 	}
 }
 
-// UPDATE
-
+// Update is the Bubble Tea update loop for the keygen.
 func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	m, ok := model.(Model)
 	if !ok {
@@ -110,8 +105,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// VIEWS
-
+// View renders the view from the keygen model.
 func View(model tea.Model) string {
 	m, ok := model.(Model)
 	if !ok {
@@ -150,10 +144,8 @@ func View(model tea.Model) string {
 	return s
 }
 
-// COMMANDS
-
-// GenerateKeys is a Tea command that generates a pair of SSH keys and writes
-// them to disk
+// GenerateKeys is a Bubble Tea command that generates a pair of SSH keys and
+// writes them to disk
 func GenerateKeys() tea.Msg {
 	_, err := keygen.NewSSHKeyPair()
 	if err != nil {

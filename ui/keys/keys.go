@@ -44,15 +44,11 @@ func NewProgram(cfg *charm.Config) *tea.Program {
 	return tea.NewProgram(Init(cfg), Update, View)
 }
 
-// MSG
-
 type keysLoadedMsg charm.Keys
 type unlinkedKeyMsg int
 type errMsg struct {
 	err error
 }
-
-// MODEL
 
 // Model is the Tea state model for this user interface
 type Model struct {
@@ -77,6 +73,8 @@ func (m *Model) getSelectedIndex() int {
 	return m.index + m.pager.Page*m.pager.PerPage
 }
 
+// UpdatePaging runs an update against the underlying pagination model as well
+// as performing some related tasks on this model.
 func (m *Model) UpdatePaging(msg tea.Msg) {
 
 	// Handle paging
@@ -88,6 +86,8 @@ func (m *Model) UpdatePaging(msg tea.Msg) {
 	m.index = min(m.index, numItems-1)
 }
 
+// SetCharmClient sets a pointer to the charm client on the model. The Charm
+// Client is necessary for all network-related operations.
 func (m *Model) SetCharmClient(cc *charm.Client) {
 	if cc == nil {
 		panic("charm client is nil")
@@ -122,8 +122,6 @@ func NewModel(cfg *charm.Config) Model {
 	}
 }
 
-// INIT
-
 // Init is the Tea initialization function.
 func Init(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
 	return func() (tea.Model, tea.Cmd) {
@@ -136,8 +134,6 @@ func Init(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
 		)
 	}
 }
-
-// UPDATE
 
 // Update is the tea update function which handles incoming messages
 func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
@@ -229,7 +225,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	case charmclient.NewClientMsg:
 		m.cc = msg
 		m.state = stateLoading
-		return m, InitLoadKeys(m)
+		return m, LoadKeys(m)
 
 	case keygen.DoneMsg:
 		m.state = stateKeygenFinished
@@ -294,8 +290,6 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 	return m, nil
 }
-
-// VIEW
 
 // View renders the current UI into a string
 func View(model tea.Model) string {
@@ -415,20 +409,19 @@ func promptDeleteAccountView() string {
 		te.String("(y/N)").Foreground(common.FaintRed.Color()).String()
 }
 
-// COMMANDS
-
-func InitLoadKeys(m Model) tea.Cmd {
+// LoadKeys returns the command necessary for loading the keys.
+func LoadKeys(m Model) tea.Cmd {
 	if m.standalone {
-		return LoadKeys(m.cc)
+		return fetchKeys(m.cc)
 	}
 	return tea.Batch(
-		LoadKeys(m.cc),
+		fetchKeys(m.cc),
 		spinner.Tick(m.spinner),
 	)
 }
 
-// LoadKeys loads the current set of keys from the server
-func LoadKeys(cc *charm.Client) tea.Cmd {
+// fetchKeys loads the current set of keys via the charm client.
+func fetchKeys(cc *charm.Client) tea.Cmd {
 	return func() tea.Msg {
 		ak, err := cc.AuthorizedKeysWithMetadata()
 		if err != nil {

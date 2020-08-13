@@ -35,8 +35,6 @@ var (
 	focusedPrompt = te.String(prompt).Foreground(common.Fuschia.Color()).String()
 )
 
-// MSG
-
 // NameSetMsg is sent when a new name has been set successfully. It contains
 // the new name.
 type NameSetMsg string
@@ -49,8 +47,7 @@ type NameInvalidMsg struct{}
 
 type errMsg error
 
-// MODEL
-
+// Model holds the state of the username UI.
 type Model struct {
 	Done bool // true when it's time to exit this view
 	Quit bool // true when the user wants to quit the whole program
@@ -94,6 +91,7 @@ func (m *Model) indexBackward() {
 	m.updateFocus()
 }
 
+// NewModel returns a new username model in its initial state.
 func NewModel(cc *charm.Client) Model {
 
 	inputModel := input.NewModel()
@@ -120,6 +118,7 @@ func NewModel(cc *charm.Client) Model {
 	}
 }
 
+// Init is the Bubble Tea initialization function.
 func Init(cc *charm.Client) func() (tea.Model, tea.Cmd) {
 	return func() (tea.Model, tea.Cmd) {
 		m := NewModel(cc)
@@ -127,12 +126,12 @@ func Init(cc *charm.Client) func() (tea.Model, tea.Cmd) {
 	}
 }
 
+// InitialCmd returns the initial command.
 func InitialCmd(m Model) tea.Cmd {
 	return input.Blink(m.input)
 }
 
-// UPDATE
-
+// Update is the Bubble Tea update loop.
 func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
@@ -244,8 +243,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	}
 }
 
-// VIEWS
-
+// View renders current view from the model.
 func View(m Model) string {
 	s := "Enter a new username\n\n"
 	s += input.View(m.input) + "\n\n"
@@ -268,8 +266,6 @@ func nameSetView(m Model) string {
 func spinnerView(m Model) string {
 	return spinner.View(m.spinner) + " Submitting..."
 }
-
-// COMMANDS
 
 // Attempt to update the username on the server
 func setName(m Model) tea.Cmd {

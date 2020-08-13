@@ -15,14 +15,13 @@ var (
 	purpleFg = "#7571F9"
 )
 
-// MSG
-
+// GotBioMsg is sent when we've successfully fetched the user's bio. It
+// contains the user's profile data.
 type GotBioMsg *charm.User
 
 type errMsg error
 
-// MODEL
-
+// Model stores the state of the info user interface.
 type Model struct {
 	Quit bool // signals it's time to exit the whole application
 	Err  error
@@ -30,6 +29,7 @@ type Model struct {
 	cc   *charm.Client
 }
 
+// NewModel returns a new Model in its initial state.
 func NewModel(cc *charm.Client) Model {
 	return Model{
 		Quit: false,
@@ -38,8 +38,7 @@ func NewModel(cc *charm.Client) Model {
 	}
 }
 
-// UPDATE
-
+// Update is the Bubble Tea update loop.
 func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	var cmd tea.Cmd
 
@@ -66,8 +65,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	return m, cmd
 }
 
-// VIEW
-
+// View renders the current view from the model.
 func View(m Model) string {
 	if m.Err != nil {
 		return "error: " + m.Err.Error()
@@ -90,9 +88,7 @@ func bioView(u *charm.User) string {
 	)
 }
 
-// COMMANDS
-
-// GetBio fetches the authenticated user's bio
+// GetBio fetches the authenticated user's bio.
 func GetBio(cc *charm.Client) tea.Cmd {
 	return func() tea.Msg {
 		user, err := cc.Bio()

@@ -13,23 +13,36 @@ var (
 	// Color wraps termenv.ColorProfile.Color, which produces a termenv color
 	// for use in termenv styling.
 	Color func(string) te.Color = te.ColorProfile().Color
+)
 
+var (
+	// HasDarkBackground stores whether or not the terminal has a dark
+	// background.
 	HasDarkBackground = te.HasDarkBackground()
-	SpinnerColor      string
-	Indigo            = NewColorPair("#7571F9", "#5A56E0")
-	SubtleIndigo      = NewColorPair("#514DC1", "#7D79F6")
-	Cream             = NewColorPair("#FFFDF5", "#FFFDF5")
-	YellowGreen       = NewColorPair("#ECFD65", "#04B575")
-	Fuschia           = NewColorPair("#EE6FF8", "#EE6FF8")
-	Green             = NewColorPair("#04B575", "#04B575")
-	Red               = NewColorPair("#ED567A", "#FF4672")
-	FaintRed          = NewColorPair("#C74665", "#FF6F91")
-	NoColor           = NewColorPair("", "")
 
-	IndigoFg       = te.Style{}.Foreground(Indigo.Color()).Styled
-	SubtleIndigoFg = te.Style{}.Foreground(SubtleIndigo.Color()).Styled
-	RedFg          = te.Style{}.Foreground(Red.Color()).Styled
-	FaintRedFg     = te.Style{}.Foreground(FaintRed.Color()).Styled
+	// SpinnerColor stores the color of the spinner.
+	SpinnerColor string
+)
+
+// Colors for dark and light backgrounds.
+var (
+	Indigo       ColorPair = NewColorPair("#7571F9", "#5A56E0")
+	SubtleIndigo           = NewColorPair("#514DC1", "#7D79F6")
+	Cream                  = NewColorPair("#FFFDF5", "#FFFDF5")
+	YellowGreen            = NewColorPair("#ECFD65", "#04B575")
+	Fuschia                = NewColorPair("#EE6FF8", "#EE6FF8")
+	Green                  = NewColorPair("#04B575", "#04B575")
+	Red                    = NewColorPair("#ED567A", "#FF4672")
+	FaintRed               = NewColorPair("#C74665", "#FF6F91")
+	NoColor                = NewColorPair("", "")
+)
+
+// Functions for styling strings.
+var (
+	IndigoFg       func(string) string = te.Style{}.Foreground(Indigo.Color()).Styled
+	SubtleIndigoFg                     = te.Style{}.Foreground(SubtleIndigo.Color()).Styled
+	RedFg                              = te.Style{}.Foreground(Red.Color()).Styled
+	FaintRedFg                         = te.Style{}.Foreground(FaintRed.Color()).Styled
 )
 
 func init() {
@@ -40,15 +53,20 @@ func init() {
 	}
 }
 
+// ColorPair is a pair of colors, one intended for a dark background and the
+// other intended for a light background. We'll automatically determine which
+// of these colors to use.
 type ColorPair struct {
 	Dark  string
 	Light string
 }
 
+// NewColorPair is a helper function for creating a ColorPair.
 func NewColorPair(dark, light string) ColorPair {
 	return ColorPair{dark, light}
 }
 
+// Color returns the appropriate termenv.Color for the terminal background.
 func (c ColorPair) Color() te.Color {
 	if HasDarkBackground {
 		return Color(c.Dark)
@@ -56,6 +74,8 @@ func (c ColorPair) Color() te.Color {
 	return Color(c.Light)
 }
 
+// String returns a string representation of the color appropriate for the
+// current terminal background.
 func (c ColorPair) String() string {
 	if HasDarkBackground {
 		return c.Dark
@@ -88,8 +108,8 @@ func Subtle(s string) string {
 
 // HELP
 
-// Help renders text intended to display at help text, usually at the bottom of
-// a view.
+// HelpView renders text intended to display at help text, often at the
+// bottom of a view.
 func HelpView(sections ...string) string {
 	var s string
 	if len(sections) == 0 {
@@ -110,29 +130,33 @@ func helpDivider() string {
 
 // BUTTONS
 
-// Button view renders something that resembles a button
+// Button view renders something that resembles a button.
 func ButtonView(text string, focused bool) string {
 	return buttonStyling(text, false, focused)
 }
 
+// YesButtonView return a button reading "Yes".
 func YesButtonView(focused bool) string {
 	return buttonStyling("  ", false, focused) +
 		buttonStyling("Y", true, focused) +
 		buttonStyling("es  ", false, focused)
 }
 
+// NoButtonView returns a button reading "No."
 func NoButtonView(focused bool) string {
 	return buttonStyling("  ", false, focused) +
 		buttonStyling("N", true, focused) +
 		buttonStyling("o  ", false, focused)
 }
 
+// OKButtonView returns a button reading "OK".
 func OKButtonView(focused bool, defaultButton bool) string {
 	return buttonStyling("  ", false, focused) +
 		buttonStyling("OK", defaultButton, focused) +
 		buttonStyling("  ", false, focused)
 }
 
+// CancelButtonView returns a button reading "Cancel."
 func CancelButtonView(focused bool, defaultButton bool) string {
 	return buttonStyling("  ", false, focused) +
 		buttonStyling("Cancel", defaultButton, focused) +

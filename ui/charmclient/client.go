@@ -5,17 +5,22 @@ import (
 	"github.com/charmbracelet/charm"
 )
 
+// NewClientMsg is sent when we've successfully created a charm client.
 type NewClientMsg *charm.Client
 
+// SSHAuthErrorMsg is sent when charm client creation has failed due to a
+// problem with SSH.
 type SSHAuthErrorMsg struct {
 	Err error
 }
 
+// ErrMsg is sent for general, non-SSH related errors encountered when creating
+// a Charm Client.
 type ErrMsg struct {
 	Err error
 }
 
-// NewClient is a Bubble Tea command for creating a Charm client
+// NewClient is a Bubble Tea command for creating a Charm client.
 func NewClient(cfg *charm.Config) tea.Cmd {
 	return func() tea.Msg {
 		cc, err := charm.NewClient(cfg)

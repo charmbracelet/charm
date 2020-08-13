@@ -77,6 +77,7 @@ func (m Model) rejectRequest() (Model, tea.Cmd) {
 	return m, nil
 }
 
+// NewModel returns a new Model in its initial state.
 func NewModel() Model {
 	lh := &linkHandler{
 		err:      make(chan error),
@@ -106,6 +107,7 @@ func NewModel() Model {
 	}
 }
 
+// SetCharmClient sets the charm client on the Model.
 func (m *Model) SetCharmClient(cc *charm.Client) {
 	if cc == nil {
 		panic("charm client is nil")
