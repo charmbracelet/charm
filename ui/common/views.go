@@ -10,7 +10,7 @@ import (
 // State is a general UI state used to help style components
 type State int
 
-// possible states
+// UI states.
 const (
 	StateNormal State = iota
 	StateSelected
@@ -19,7 +19,7 @@ const (
 	StateDeleting
 )
 
-// VerticalLine return a vertical line colored according to the given state
+// VerticalLine return a vertical line colored according to the given state.
 func VerticalLine(state State) string {
 	var c te.Color
 	switch state {
@@ -39,7 +39,7 @@ func VerticalLine(state State) string {
 		String()
 }
 
-// KeyValueView renders key-value pairs
+// KeyValueView renders key-value pairs.
 func KeyValueView(stuff ...string) string {
 	if len(stuff) == 0 {
 		return ""
@@ -60,4 +60,74 @@ func KeyValueView(stuff ...string) string {
 		index++
 	}
 	return strings.TrimSpace(s)
+}
+
+// HELP
+
+// HelpView renders text intended to display at help text, often at the
+// bottom of a view.
+func HelpView(sections ...string) string {
+	var s string
+	if len(sections) == 0 {
+		return s
+	}
+	for i := 0; i < len(sections); i++ {
+		s += te.String(sections[i]).Foreground(NewColorPair("#5C5C5C", "#9B9B9B").Color()).String()
+		if i < len(sections)-1 {
+			s += helpDivider()
+		}
+	}
+	return s
+}
+
+func helpDivider() string {
+	return te.String(" • ").Foreground(NewColorPair("#3C3C3C", "#DDDADA").Color()).String()
+}
+
+// BUTTONS
+
+// ButtonView renders something that resembles a button.
+func ButtonView(text string, focused bool) string {
+	return buttonStyling(text, false, focused)
+}
+
+// YesButtonView return a button reading "Yes".
+func YesButtonView(focused bool) string {
+	return buttonStyling("  ", false, focused) +
+		buttonStyling("Y", true, focused) +
+		buttonStyling("es  ", false, focused)
+}
+
+// NoButtonView returns a button reading "No."
+func NoButtonView(focused bool) string {
+	return buttonStyling("  ", false, focused) +
+		buttonStyling("N", true, focused) +
+		buttonStyling("o  ", false, focused)
+}
+
+// OKButtonView returns a button reading "OK".
+func OKButtonView(focused bool, defaultButton bool) string {
+	return buttonStyling("  ", false, focused) +
+		buttonStyling("OK", defaultButton, focused) +
+		buttonStyling("  ", false, focused)
+}
+
+// CancelButtonView returns a button reading "Cancel."
+func CancelButtonView(focused bool, defaultButton bool) string {
+	return buttonStyling("  ", false, focused) +
+		buttonStyling("Cancel", defaultButton, focused) +
+		buttonStyling("  ", false, focused)
+}
+
+func buttonStyling(str string, underline, focused bool) string {
+	var s te.Style = te.String(str).Foreground(Cream.Color())
+	if focused {
+		s = s.Background(Fuschia.Color())
+	} else {
+		s = s.Background(ColorPair{"#827983", "#BDB0BE"}.Color())
+	}
+	if underline {
+		s = s.Underline()
+	}
+	return s.String()
 }
