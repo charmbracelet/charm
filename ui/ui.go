@@ -65,6 +65,7 @@ func (s status) String() string {
 // menuChoice represents a chosen menu item
 type menuChoice int
 
+// menu choices
 const (
 	linkChoice menuChoice = iota
 	keysChoice
@@ -73,7 +74,7 @@ const (
 	unsetChoice // set when no choice has been made
 )
 
-// menu text corresponding to menu choices. these are presented to the user
+// menu text corresponding to menu choices. these are presented to the user.
 var menuChoices = map[menuChoice]string{
 	linkChoice:        "Link a machine",
 	keysChoice:        "Manage linked keys",
@@ -81,8 +82,8 @@ var menuChoices = map[menuChoice]string{
 	exitChoice:        "Exit",
 }
 
-// Model holds the state for this program
-type Model struct {
+// Model holds the state for this program.
+type model struct {
 	cfg        *charm.Config
 	cc         *charm.Client
 	user       *charm.User
@@ -105,7 +106,7 @@ func initialize(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
 		s.Frames = spinner.Dot
 		s.ForegroundColor = "244"
 
-		m := Model{
+		m := model{
 			cfg:        cfg,
 			status:     statusInit,
 			menuChoice: unsetChoice,
@@ -120,10 +121,10 @@ func initialize(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
 	}
 }
 
-func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
-	m, ok := model.(Model)
+func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
+	m, ok := mdl.(model)
 	if !ok {
-		return Model{
+		return model{
 			err: errors.New("could not perform assertion on model in update"),
 		}, nil
 	}
@@ -247,7 +248,7 @@ func update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
+func updateChilden(msg tea.Msg, m model) (model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch m.status {
@@ -334,8 +335,8 @@ func updateChilden(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	return m, cmd
 }
 
-func view(model tea.Model) string {
-	m, ok := model.(Model)
+func view(mdl tea.Model) string {
+	m, ok := mdl.(model)
 	if !ok {
 		m.err = errors.New("could not perform assertion on model in view")
 		m.status = statusError
@@ -400,14 +401,14 @@ func menuView(currentIndex int) string {
 	return s
 }
 
-func quitView(m Model) string {
+func quitView(m model) string {
 	if m.err != nil {
 		return fmt.Sprintf("Uh oh, there’s been an error: %v\n", m.err)
 	}
 	return "Thanks for using Charm!\n"
 }
 
-func footerView(m Model) string {
+func footerView(m model) string {
 	if m.err != nil {
 		return errorView(m.err)
 	}
