@@ -2,9 +2,11 @@ package charm
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 )
@@ -64,36 +66,32 @@ func (cc *Client) GetStash(page int) ([]*Markdown, error) {
 		return nil, err
 	}
 	for i, md := range stash {
-		en, err := cc.Decrypt(md.EncryptKeyID, []byte(md.Note))
+		dm, err := cc.decryptMarkdown(md)
 		if err != nil {
 			return nil, err
 		}
-		stash[i].Note = string(en)
+		stash[i] = dm
+
 	}
 	return stash, nil
 }
 
 func (cc *Client) GetStashMarkdown(markdownID int) (*Markdown, error) {
-	var md Markdown
+	var md *Markdown
 	auth, err := cc.Auth()
 	if err != nil {
 		return nil, err
 	}
-	err = cc.makeAPIRequest("GET", fmt.Sprintf("%s/stash/%d", auth.CharmID, markdownID), nil, &md)
+	err = cc.makeAPIRequest("GET", fmt.Sprintf("%s/stash/%d", auth.CharmID, markdownID), nil, md)
 	if err != nil {
 		return nil, err
 	}
-	eb, err := cc.Decrypt(md.EncryptKeyID, []byte(md.Body))
+	md, err = cc.decryptMarkdown(md)
 	if err != nil {
 		return nil, err
 	}
-	md.Body = string(eb)
-	en, err := cc.Decrypt(md.EncryptKeyID, []byte(md.Note))
-	if err != nil {
-		return nil, err
-	}
-	md.Note = string(en)
-	return &md, nil
+	log.Println(md)
+	return md, nil
 }
 
 func (cc *Client) StashMarkdown(note string, body string) error {
@@ -101,9 +99,8 @@ func (cc *Client) StashMarkdown(note string, body string) error {
 	if err != nil {
 		return err
 	}
-	eb, gid, err := cc.Encrypt([]byte(body))
-	en, gid, err := cc.Encrypt([]byte(note))
-	md := &Markdown{Note: string(en), Body: string(eb), EncryptKeyID: gid}
+	md := &Markdown{Note: note, Body: body}
+	md, err = cc.encryptMarkdown(md)
 	return cc.makeAPIRequest("POST", fmt.Sprintf("%s/stash", auth.CharmID), md, nil)
 }
 
@@ -124,8 +121,8 @@ func (cc *Client) SetMarkdownNote(markdownID int, note string) error {
 	if err != nil {
 		return err
 	}
-	en, _, err := cc.EncryptWithKey(md.EncryptKeyID, []byte(note))
-	md.Note = string(en)
+	md.Note = note
+	md, err = cc.encryptMarkdown(md)
 	return cc.makeAPIRequest("PUT", fmt.Sprintf("%s/stash/%d", auth.CharmID, markdownID), md, nil)
 }
 
@@ -136,6 +133,62 @@ func (cc *Client) authorizeRequest(req *http.Request) error {
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("bearer %s", auth.JWT))
 	return nil
+}
+
+func (cc *Client) encryptMarkdown(md *Markdown) (*Markdown, error) {
+	mde := &Markdown{}
+	mde.ID = md.ID
+	mde.CreatedAt = md.CreatedAt
+	eb, gid, err := cc.Encrypt([]byte(md.Body))
+	if err != nil {
+		return nil, err
+	}
+	encBody := base64.StdEncoding.EncodeToString(eb)
+	mde.Body = encBody
+	mde.EncryptKeyID = gid
+	if md.Note != "" {
+		ed, _, err := cc.EncryptWithKey(gid, []byte(md.Note))
+		if err != nil {
+			return nil, err
+		}
+		encNote := base64.StdEncoding.EncodeToString(ed)
+		mde.Note = encNote
+	}
+	return mde, nil
+}
+
+func (cc *Client) decryptMarkdown(mde *Markdown) (*Markdown, error) {
+	md := &Markdown{}
+	md.ID = mde.ID
+	md.CreatedAt = mde.CreatedAt
+	if mde.EncryptKeyID == "" {
+		md.Note = mde.Note
+		md.Body = mde.Body
+		return md, nil
+	}
+	if mde.Note != "" {
+		encNote, err := base64.StdEncoding.DecodeString(mde.Note)
+		if err != nil {
+			return nil, err
+		}
+		decNote, err := cc.Decrypt(mde.EncryptKeyID, encNote)
+		if err != nil {
+			return nil, err
+		}
+		md.Note = string(decNote)
+	}
+	if mde.Body != "" {
+		encBody, err := base64.StdEncoding.DecodeString(mde.Body)
+		if err != nil {
+			return nil, err
+		}
+		decBody, err := cc.Decrypt(mde.EncryptKeyID, encBody)
+		if err != nil {
+			return nil, err
+		}
+		md.Body = string(decBody)
+	}
+	return md, nil
 }
 
 func (cc *Client) makeAPIRequest(method string, apiPath string, body interface{}, result interface{}) error {
