@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 )
@@ -77,21 +76,20 @@ func (cc *Client) GetStash(page int) ([]*Markdown, error) {
 }
 
 func (cc *Client) GetStashMarkdown(markdownID int) (*Markdown, error) {
-	var md *Markdown
+	var md Markdown
 	auth, err := cc.Auth()
 	if err != nil {
 		return nil, err
 	}
-	err = cc.makeAPIRequest("GET", fmt.Sprintf("%s/stash/%d", auth.CharmID, markdownID), nil, md)
+	err = cc.makeAPIRequest("GET", fmt.Sprintf("%s/stash/%d", auth.CharmID, markdownID), nil, &md)
 	if err != nil {
 		return nil, err
 	}
-	md, err = cc.decryptMarkdown(md)
+	mdDec, err := cc.decryptMarkdown(&md)
 	if err != nil {
 		return nil, err
 	}
-	log.Println(md)
-	return md, nil
+	return mdDec, nil
 }
 
 func (cc *Client) StashMarkdown(note string, body string) error {
