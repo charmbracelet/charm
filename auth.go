@@ -8,12 +8,11 @@ import (
 
 // Auth is the authenticated user's charm id and jwt returned from the ssh server
 type Auth struct {
-	CharmID              string        `json:"charm_id"`
-	JWT                  string        `json:"jwt"`
-	PublicKey            string        `json:"public_key"`
-	EncryptKeys          []*EncryptKey `json:"encrypt_keys"`
-	claims               *jwt.StandardClaims
-	encryptKeysDecrypted bool
+	CharmID     string        `json:"charm_id"`
+	JWT         string        `json:"jwt"`
+	PublicKey   string        `json:"public_key"`
+	EncryptKeys []*EncryptKey `json:"encrypt_keys"`
+	claims      *jwt.StandardClaims
 }
 
 func (cc *Client) Auth() (*Auth, error) {
@@ -41,7 +40,6 @@ func (cc *Client) Auth() (*Auth, error) {
 			return nil, err
 		}
 		auth.claims = token.Claims.(*jwt.StandardClaims)
-		auth.encryptKeysDecrypted = false
 		cc.auth = auth
 		if err != nil {
 			return nil, err

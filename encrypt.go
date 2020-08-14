@@ -24,16 +24,11 @@ func (cc *Client) Encrypt(content []byte) ([]byte, string, error) {
 }
 
 func (cc *Client) EncryptWithKey(id string, content []byte) ([]byte, string, error) {
-	var k *EncryptKey
 	err := cc.cryptCheck()
 	if err != nil {
 		return nil, "", err
 	}
-	if id == "" {
-		k, err = cc.auth.defaultEncryptKey()
-	} else {
-		k, err = cc.auth.keyForID(id)
-	}
+	k, err := cc.keyForID(id)
 	if err != nil {
 		return nil, "", err
 	}
@@ -53,7 +48,7 @@ func (cc *Client) EncryptWithKey(id string, content []byte) ([]byte, string, err
 
 func (cc *Client) Decrypt(gid string, content []byte) ([]byte, error) {
 	err := cc.cryptCheck()
-	k, err := cc.auth.keyForID(gid)
+	k, err := cc.keyForID(gid)
 	if err != nil {
 		return nil, err
 	}
@@ -95,11 +90,13 @@ func (cc *Client) addEncryptKey(pk string, gid string, key string) error {
 }
 
 func (cc *Client) cryptCheck() error {
+	cc.encryptKeyLock.Lock()
+	defer cc.encryptKeyLock.Unlock()
 	auth, err := cc.Auth()
 	if err != nil {
 		return err
 	}
-	if len(cc.auth.EncryptKeys) == 0 {
+	if len(cc.auth.EncryptKeys) == 0 && len(cc.plainTextEncryptKeys) == 0 {
 		// if there are no encrypt keys, make one for the public key returned from auth
 		b := make([]byte, 64)
 		_, err := rand.Read(b)
@@ -115,10 +112,10 @@ func (cc *Client) cryptCheck() error {
 		if err != nil {
 			return err
 		}
-		cc.auth.EncryptKeys = []*EncryptKey{ek}
-		cc.auth.encryptKeysDecrypted = true
+		cc.plainTextEncryptKeys = []*EncryptKey{ek}
+		return nil
 	}
-	if cc.auth.encryptKeysDecrypted == false {
+	if len(cc.auth.EncryptKeys) != len(cc.plainTextEncryptKeys) {
 		// if the encryptKeys haven't been decrypted yet, use the sasquatch ids to decrypt them
 		sids := sasquatch.FindIdentities()
 		ks := make([]*EncryptKey, 0)
@@ -143,24 +140,24 @@ func (cc *Client) cryptCheck() error {
 			dk.GlobalID = k.GlobalID
 			ks = append(ks, dk)
 		}
-		cc.auth.EncryptKeys = ks
-		cc.auth.encryptKeysDecrypted = true
+		cc.plainTextEncryptKeys = ks
 	}
 	return nil
 }
 
-func (au *Auth) keyForID(gid string) (*EncryptKey, error) {
-	for _, k := range au.EncryptKeys {
+func (cc *Client) keyForID(gid string) (*EncryptKey, error) {
+	cc.encryptKeyLock.Lock()
+	defer cc.encryptKeyLock.Unlock()
+	if gid == "" {
+		if len(cc.plainTextEncryptKeys) == 0 {
+			return nil, fmt.Errorf("No keys stored")
+		}
+		return cc.plainTextEncryptKeys[0], nil
+	}
+	for _, k := range cc.plainTextEncryptKeys {
 		if k.GlobalID == gid {
 			return k, nil
 		}
 	}
 	return nil, fmt.Errorf("Key not found for id %s", gid)
-}
-
-func (au *Auth) defaultEncryptKey() (*EncryptKey, error) {
-	if len(au.EncryptKeys) == 0 {
-		return nil, fmt.Errorf("No keys stored")
-	}
-	return au.EncryptKeys[0], nil
 }

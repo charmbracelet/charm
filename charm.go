@@ -53,13 +53,15 @@ type Config struct {
 
 // Client is the Charm client
 type Client struct {
-	auth               *Auth
-	config             *Config
-	sshConfig          *ssh.ClientConfig
-	jwtPublicKey       *rsa.PublicKey
-	authLock           *sync.Mutex
-	initialSession     *ssh.Session
-	initialSessionOnce *sync.Once
+	config               *Config
+	auth                 *Auth
+	authLock             *sync.Mutex
+	sshConfig            *ssh.ClientConfig
+	jwtPublicKey         *rsa.PublicKey
+	plainTextEncryptKeys []*EncryptKey
+	encryptKeyLock       *sync.Mutex
+	initialSession       *ssh.Session
+	initialSessionOnce   *sync.Once
 }
 
 // User represents a Charm user
@@ -93,6 +95,7 @@ func NewClient(cfg *Config) (*Client, error) {
 		config:             cfg,
 		auth:               &Auth{},
 		authLock:           &sync.Mutex{},
+		encryptKeyLock:     &sync.Mutex{},
 		initialSessionOnce: &sync.Once{},
 	}
 	jk, err := jwtKey(cfg.JWTKey)
