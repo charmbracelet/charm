@@ -65,7 +65,7 @@ func (cc *Client) encryptKeys() ([]*EncryptKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	return cc.auth.EncryptKeys, nil
+	return cc.plainTextEncryptKeys, nil
 }
 
 func (cc *Client) addEncryptKey(pk string, gid string, key string) error {
