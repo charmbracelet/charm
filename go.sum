@@ -83,6 +83,8 @@ github.com/mitchellh/go-homedir v1.1.0 h1:lukF9ziXFxDFPkA1vsr5zpc1XuPDn/wFntq5mG
 github.com/mitchellh/go-homedir v1.1.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrkLzIz1N1q0pr0=
 github.com/mitchellh/mapstructure v1.1.2 h1:fmNYVwqnSfB9mZU6OS2O6GsXM+wcskZDuKQzvN1EDeE=
 github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
+github.com/muesli/go-app-paths v0.2.1 h1:Qi+2igkDX2aPqyRddp7P0sMQIBwBqhkfQfNcjdGjL6Y=
+github.com/muesli/go-app-paths v0.2.1/go.mod h1:SxS3Umca63pcFcLtbjVb+J0oD7cl4ixQWoBKhGEtEho=
 github.com/muesli/reflow v0.1.0 h1:oQdpLfO56lr5pgLvqD0TcjW85rDjSYSBVdiG1Ch1ddM=
 github.com/muesli/reflow v0.1.0/go.mod h1:I9bWAt7QTg/que/qmUCJBGlj7wEq8OAFBjPNjc6xK4I=
 github.com/muesli/sasquatch v0.0.0-20200811221207-66979d92330a h1:Hw/15RYEOUD6T9UCRkUmNBa33kJkH33Fui6hE4sRLKU=

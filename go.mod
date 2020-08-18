@@ -12,6 +12,7 @@ require (
 	github.com/meowgorithm/babyenv v1.2.1
 	github.com/mikesmitty/edkey v0.0.0-20170222072505-3356ea4e686a
 	github.com/mitchellh/go-homedir v1.1.0
+	github.com/muesli/go-app-paths v0.2.1
 	github.com/muesli/reflow v0.1.0
 	github.com/muesli/sasquatch v0.0.0-20200811221207-66979d92330a
 	github.com/muesli/termenv v0.7.1
