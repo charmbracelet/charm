@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"github.com/meowgorithm/babyenv"
 	"github.com/mitchellh/go-homedir"
 	gap "github.com/muesli/go-app-paths"
+	"github.com/muesli/sasquatch"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 )
@@ -420,4 +422,50 @@ func findCharmKeys() (pathsToKeys []string, err error) {
 	}
 
 	return found, nil
+}
+
+const privateKeySizeLimit = 1 << 24 // 16 MiB
+
+func parsePrivateKey(file string) (interface{}, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	contents, err := ioutil.ReadAll(io.LimitReader(f, privateKeySizeLimit))
+	if err != nil {
+		return nil, err
+	}
+	if len(contents) == privateKeySizeLimit {
+		return nil, fmt.Errorf("key size exceeded limit")
+	}
+
+	return ssh.ParseRawPrivateKey(contents)
+}
+
+func findSSHSigners() []ssh.Signer {
+	var r []ssh.Signer
+
+	// from agent
+	signers, err := sasquatch.SSHAgentSigners()
+	if err == nil {
+		r = append(r, signers...)
+	}
+
+	files, _ := findSSHKeys()
+	for _, file := range files {
+		k, err := parsePrivateKey(file)
+		if err != nil {
+			continue
+		}
+
+		signer, err := ssh.NewSignerFromKey(k)
+		if err != nil {
+			continue
+		}
+		r = append(r, signer)
+	}
+
+	return r
 }
