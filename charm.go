@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"sync"
 	"time"
 
@@ -63,8 +62,6 @@ type Client struct {
 	jwtPublicKey         *rsa.PublicKey
 	plainTextEncryptKeys []*EncryptKey
 	encryptKeyLock       *sync.Mutex
-	initialSession       *ssh.Session
-	initialSessionOnce   *sync.Once
 }
 
 // User represents a Charm user
@@ -95,11 +92,10 @@ func ConfigFromEnv() (*Config, error) {
 // NewClient creates a new Charm client
 func NewClient(cfg *Config) (*Client, error) {
 	cc := &Client{
-		config:             cfg,
-		auth:               &Auth{},
-		authLock:           &sync.Mutex{},
-		encryptKeyLock:     &sync.Mutex{},
-		initialSessionOnce: &sync.Once{},
+		config:         cfg,
+		auth:           &Auth{},
+		authLock:       &sync.Mutex{},
+		encryptKeyLock: &sync.Mutex{},
 	}
 	jk, err := jwtKey(cfg.JWTKey)
 	if err != nil {
@@ -107,64 +103,33 @@ func NewClient(cfg *Config) (*Client, error) {
 	}
 	cc.jwtPublicKey = jk
 
-	var sshKeys []string
+	/*
+		var sshSigners []ssh.Signer
 
-	if cfg.ForceKey && cfg.SSHKeyPath != "" {
-
-		// User wants to use a specific key
-		ext := filepath.Ext(cfg.SSHKeyPath)
-		if ext == ".pub" {
-			sshKeys = []string{
-				cfg.SSHKeyPath,
-				strings.TrimSuffix(cfg.SSHKeyPath, ext),
+		if cfg.ForceKey && cfg.SSHKeyPath != "" {
+			// User wants to use a specific key
+			sshKey := strings.TrimSuffix(cfg.SSHKeyPath, ".pub")
+			k, err := parsePrivateKey(sshKey)
+			if err != nil {
+				return nil, err
 			}
+
+			signer, err := ssh.NewSignerFromKey(k)
+			if err != nil {
+				return nil, err
+			}
+			sshSigners = append(sshSigners, signer)
 		} else {
-			sshKeys = []string{
-				cfg.SSHKeyPath + ".pub",
-				cfg.SSHKeyPath,
-			}
+			sshSigners = findSSHSigners()
 		}
+	*/
 
-	} else {
-
-		// Note: we're skipping agent if the user is forcing a key
-		if !cfg.ForceKey {
-
-			// Try and use SSH agent for auth
-			am, err := agentAuthMethod()
-			if err == nil {
-				cc.sshConfig = &ssh.ClientConfig{
-					User:            "charm",
-					Auth:            []ssh.AuthMethod{am},
-					HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-				}
-
-				// Dial session here as agent may still not work
-				c, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cc.config.IDHost, cc.config.IDPort), cc.sshConfig)
-				if err == nil {
-					// Successful dial; let's try and finish up here
-
-					s, err := c.NewSession()
-					if err == nil {
-						// It worked. Cache dialed session and use SSH agent for auth!
-						cc.initialSession = s
-						return cc, nil
-					}
-				}
-			}
-
-		}
-
-		// If we're still here it means SSH agent either failed or isn't setup, so
-		// now we look for default SSH keys.
-		sshKeys, err = findSSHKeys()
-		if err != nil {
-			return nil, err
-		}
-		if len(sshKeys) == 0 { // We didn't find any keys; give up
-			return nil, ErrMissingSSHAuth
-		}
-
+	sshKeys, err := findCharmKeys()
+	if err != nil {
+		return nil, err
+	}
+	if len(sshKeys) == 0 { // We didn't find any keys; give up
+		return nil, ErrMissingSSHAuth
 	}
 
 	// Try and use the keys we found
@@ -305,21 +270,11 @@ func ValidateName(name string) bool {
 }
 
 func (cc *Client) sshSession() (*ssh.Session, error) {
-	var s *ssh.Session
-
-	// On first run we may have already dialed a session to test ssh agent
-	cc.initialSessionOnce.Do(func() {
-		s = cc.initialSession
-	})
-	if s != nil {
-		return s, nil
-	}
-
 	c, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cc.config.IDHost, cc.config.IDPort), cc.sshConfig)
 	if err != nil {
 		return nil, err
 	}
-	s, err = c.NewSession()
+	s, err := c.NewSession()
 	if err != nil {
 		return nil, err
 	}
