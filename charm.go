@@ -16,6 +16,7 @@ import (
 
 	"github.com/meowgorithm/babyenv"
 	"github.com/mitchellh/go-homedir"
+	gap "github.com/muesli/go-app-paths"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 )
@@ -381,6 +382,39 @@ func findSSHKeys() (pathsToKeys []string, err error) {
 		case "id_ecdsa":
 			fallthrough
 		case "id_ed25519":
+			found = append(found, f)
+		}
+	}
+
+	return found, nil
+}
+
+// findCharmKeys looks in a user's XDG charm-dir for possible encryption keys.
+// If no keys are found we return an empty slice.
+func findCharmKeys() (pathsToKeys []string, err error) {
+	scope := gap.NewScope(gap.User, "charm")
+	keyDirs, err := scope.DataDirs()
+	if err != nil {
+		return nil, err
+	}
+
+	m, err := filepath.Glob(filepath.Join(keyDirs[0], "charm_*"))
+	if err != nil {
+		return nil, err
+	}
+
+	if len(m) == 0 {
+		return nil, nil
+	}
+
+	var found []string
+	for _, f := range m {
+		switch filepath.Base(f) {
+		case "charm_rsa":
+			fallthrough
+		case "charm_ecdsa":
+			fallthrough
+		case "charm_ed25519":
 			found = append(found, f)
 		}
 	}
