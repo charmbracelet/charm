@@ -143,7 +143,7 @@ func View(model tea.Model) string {
 // GenerateKeys is a Bubble Tea command that generates a pair of SSH keys and
 // writes them to disk
 func GenerateKeys() tea.Msg {
-	_, err := keygen.NewSSHKeyPair()
+	_, err := keygen.NewSSHKeyPair(nil)
 	if err != nil {
 		return failedMsg{err}
 	}

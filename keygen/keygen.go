@@ -14,6 +14,7 @@ import (
 
 	"github.com/mikesmitty/edkey"
 	"github.com/mitchellh/go-homedir"
+	gap "github.com/muesli/go-app-paths"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -71,9 +72,9 @@ func (s SSHKeyPair) publicKeyPath() string {
 
 // NewSSHKeyPair generates an SSHKeyPair, which contains a pair of SSH keys.
 // The keys are written to disk.
-func NewSSHKeyPair() (*SSHKeyPair, error) {
+func NewSSHKeyPair(passphrase []byte) (*SSHKeyPair, error) {
 	s := &SSHKeyPair{}
-	if err := s.GenerateEd25519Keys(); err != nil {
+	if err := s.GenerateRSAKeys(rsaDefaultBits, passphrase); err != nil {
 		return nil, err
 	}
 	if err := s.WriteKeys(); err != nil {
@@ -102,16 +103,21 @@ func (s *SSHKeyPair) GenerateEd25519Keys() error {
 		return err
 	}
 
+	scope := gap.NewScope(gap.User, "charm")
+	dataPath, err := scope.DataPath("")
+	if err != nil {
+		return err
+	}
+
 	s.PrivateKeyPEM = pemBlock
 	s.PublicKey = ssh.MarshalAuthorizedKey(publicKey) // serialize for public key file on disk
-	s.KeyDir = "~/.ssh"
-	s.Filename = "id_ed25519"
+	s.KeyDir = dataPath
+	s.Filename = "charm_ed25519"
 	return nil
 }
 
 // GenerateRSAKeys creates a pair for RSA keys for SSH auth.
-func (s *SSHKeyPair) GenerateRSAKeys(bitSize int) error {
-
+func (s *SSHKeyPair) GenerateRSAKeys(bitSize int, passphrase []byte) error {
 	// Generate private key
 	privateKey, err := rsa.GenerateKey(rand.Reader, bitSize)
 	if err != nil {
@@ -127,12 +133,22 @@ func (s *SSHKeyPair) GenerateRSAKeys(bitSize int) error {
 	// Get ASN.1 DER format
 	x509Encoded := x509.MarshalPKCS1PrivateKey(privateKey)
 
-	// Private key in PEM format
-	pemBlock := pem.EncodeToMemory(&pem.Block{
+	block := &pem.Block{
 		Type:    "RSA PRIVATE KEY",
 		Headers: nil,
 		Bytes:   x509Encoded,
-	})
+	}
+
+	// encrypt private key with passphrase
+	if len(passphrase) > 0 {
+		block, err = x509.EncryptPEMBlock(rand.Reader, block.Type, block.Bytes, passphrase, x509.PEMCipherAES256)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Private key in PEM format
+	pemBlock := pem.EncodeToMemory(block)
 
 	// Generate public key
 	publicRSAKey, err := ssh.NewPublicKey(privateKey.Public())
@@ -140,10 +156,16 @@ func (s *SSHKeyPair) GenerateRSAKeys(bitSize int) error {
 		return err
 	}
 
+	scope := gap.NewScope(gap.User, "charm")
+	dataPath, err := scope.DataPath("")
+	if err != nil {
+		return err
+	}
+
 	s.PrivateKeyPEM = pemBlock
 	s.PublicKey = ssh.MarshalAuthorizedKey(publicRSAKey)
-	s.KeyDir = "~/.ssh"
-	s.Filename = "id_rsa"
+	s.KeyDir = dataPath
+	s.Filename = "charm_rsa"
 	return nil
 }
 
