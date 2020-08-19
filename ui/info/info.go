@@ -6,13 +6,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
-	te "github.com/muesli/termenv"
-)
-
-var (
-	color    = te.ColorProfile().Color
-	purpleBg = "#5A56E0"
-	purpleFg = "#7571F9"
 )
 
 // GotBioMsg is sent when we've successfully fetched the user's bio. It
