@@ -24,20 +24,20 @@ import (
 
 var nameValidator = regexp.MustCompile("^[a-zA-Z0-9]{1,50}$")
 
-// ErrMissingSSHAuth is used when the user is missing SSH credentials
+// ErrMissingSSHAuth is used when the user is missing SSH credentials.
 var ErrMissingSSHAuth = errors.New("missing ssh auth")
 
 // ErrNameTaken is used when a user attempts to set a username and that
-// username is already taken
+// username is already taken.
 var ErrNameTaken = errors.New("name already taken")
 
-// ErrNameInvalid is used when a username is invalid
+// ErrNameInvalid is used when a username is invalid.
 var ErrNameInvalid = errors.New("invalid name")
 
-// ErrCouldNotUnlinkKey is used when a key can't be deleted
+// ErrCouldNotUnlinkKey is used when a key can't be deleted.
 var ErrCouldNotUnlinkKey = errors.New("could not unlink key")
 
-// Config contains the Charm client configuration
+// Config contains the Charm client configuration.
 type Config struct {
 	IDHost      string `env:"CHARM_ID_HOST" default:"id.charm.sh"`
 	IDPort      int    `env:"CHARM_ID_PORT" default:"22"`
@@ -53,7 +53,7 @@ type Config struct {
 	ForceKey    bool
 }
 
-// Client is the Charm client
+// Client is the Charm client.
 type Client struct {
 	config               *Config
 	auth                 *Auth
@@ -64,7 +64,7 @@ type Client struct {
 	encryptKeyLock       *sync.Mutex
 }
 
-// User represents a Charm user
+// User represents a Charm user.
 type User struct {
 	CharmID   string     `json:"charm_id"`
 	Name      string     `json:"name"`

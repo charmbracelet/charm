@@ -49,7 +49,7 @@ func (e FilesystemErr) Error() string {
 	return e.error.Error()
 }
 
-// Unwrap returne the underlying error
+// Unwrap returne the underlying error.
 func (e FilesystemErr) Unwrap() error {
 	return e.error
 }

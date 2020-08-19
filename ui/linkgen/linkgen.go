@@ -43,7 +43,7 @@ func NewProgram(cfg *charm.Config) *tea.Program {
 	return tea.NewProgram(Init(cfg), Update, View)
 }
 
-// Model is the tea model for the link initiator program
+// Model is the tea model for the link initiator program.
 type Model struct {
 	lh            *linkHandler
 	standalone    bool          // true if this is running as a stadalone tea program
@@ -61,13 +61,13 @@ type Model struct {
 	keygen        keygen.Model
 }
 
-// acceptRequest rejects the current linking request
+// acceptRequest rejects the current linking request.
 func (m Model) acceptRequest() (Model, tea.Cmd) {
 	m.lh.response <- true
 	return m, nil
 }
 
-// rejectRequset rejects the current linking request
+// rejectRequset rejects the current linking request.
 func (m Model) rejectRequest() (Model, tea.Cmd) {
 	m.lh.response <- false
 	m.status = linkRequestDenied
@@ -127,7 +127,7 @@ func Init(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
 	}
 }
 
-// Update is the Tea update loop
+// Update is the Tea update loop.
 func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	m, ok := model.(Model)
 	if !ok {
@@ -272,7 +272,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// View renders the UI
+// View renders the UI.
 func View(model tea.Model) string {
 	m, ok := model.(Model)
 	if !ok {
@@ -426,7 +426,7 @@ func handleLinkTimeout(lh *linkHandler) tea.Cmd {
 	}
 }
 
-// handleLinkError responds when a linking error is reported
+// handleLinkError responds when a linking error is reported.
 func handleLinkError(lh *linkHandler) tea.Cmd {
 	return func() tea.Msg {
 		return errMsg{<-lh.err}

@@ -7,7 +7,7 @@ import (
 	te "github.com/muesli/termenv"
 )
 
-// State is a general UI state used to help style components
+// State is a general UI state used to help style components.
 type State int
 
 // UI states.
@@ -98,7 +98,7 @@ func YesButtonView(focused bool) string {
 		buttonStyling("es  ", false, focused)
 }
 
-// NoButtonView returns a button reading "No."
+// NoButtonView returns a button reading "No.".
 func NoButtonView(focused bool) string {
 	return buttonStyling("  ", false, focused) +
 		buttonStyling("N", true, focused) +
@@ -112,7 +112,7 @@ func OKButtonView(focused bool, defaultButton bool) string {
 		buttonStyling("  ", false, focused)
 }
 
-// CancelButtonView returns a button reading "Cancel."
+// CancelButtonView returns a button reading "Cancel.".
 func CancelButtonView(focused bool, defaultButton bool) string {
 	return buttonStyling("  ", false, focused) +
 		buttonStyling("Cancel", defaultButton, focused) +

@@ -18,7 +18,7 @@ const (
 	submitting
 )
 
-// index specifies the UI element that's in focus
+// index specifies the UI element that's in focus.
 type index int
 
 const (
@@ -35,10 +35,10 @@ var focusedPrompt = te.String(prompt).Foreground(common.Fuschia.Color()).String(
 // the new name.
 type NameSetMsg string
 
-// NameTakenMsg is sent when the requested username has already been taken
+// NameTakenMsg is sent when the requested username has already been taken.
 type NameTakenMsg struct{}
 
-// NameInvalidMsg is sent when the requested username has failed validation
+// NameInvalidMsg is sent when the requested username has failed validation.
 type NameInvalidMsg struct{}
 
 type errMsg struct {
@@ -75,7 +75,7 @@ func (m *Model) updateFocus() {
 	}
 }
 
-// Move the focus index one unit forward
+// Move the focus index one unit forward.
 func (m *Model) indexForward() {
 	m.index++
 	if m.index > cancelButton {
@@ -84,7 +84,7 @@ func (m *Model) indexForward() {
 	m.updateFocus()
 }
 
-// Move the focus index one unit Backwards
+// Move the focus index one unit backwards.
 func (m *Model) indexBackward() {
 	m.index--
 	if m.index < textInput {
@@ -259,7 +259,7 @@ func spinnerView(m Model) string {
 	return spinner.View(m.spinner) + " Submitting..."
 }
 
-// Attempt to update the username on the server
+// Attempt to update the username on the server.
 func setName(m Model) tea.Cmd {
 	return func() tea.Msg {
 
