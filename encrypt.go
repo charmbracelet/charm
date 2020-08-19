@@ -32,6 +32,7 @@ func (cc *Client) EncryptWithKey(id string, content []byte) ([]byte, string, err
 	if err != nil {
 		return nil, "", err
 	}
+
 	buf := bytes.NewBuffer(nil)
 	r, err := sasquatch.NewScryptRecipient(k.Key)
 	if err != nil {
@@ -43,20 +44,30 @@ func (cc *Client) EncryptWithKey(id string, content []byte) ([]byte, string, err
 	}
 	w.Write(content)
 	w.Close()
+
 	return buf.Bytes(), k.GlobalID, nil
 }
 
 func (cc *Client) Decrypt(gid string, content []byte) ([]byte, error) {
 	err := cc.cryptCheck()
+	if err != nil {
+		return nil, err
+	}
 	k, err := cc.keyForID(gid)
 	if err != nil {
 		return nil, err
 	}
+
 	id, err := sasquatch.NewScryptIdentity(k.Key)
+	if err != nil {
+		return nil, err
+	}
+
 	r, err := sasquatch.Decrypt(bytes.NewReader(content), id)
 	if err != nil {
 		return nil, err
 	}
+
 	return ioutil.ReadAll(r)
 }
 

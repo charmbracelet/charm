@@ -175,7 +175,10 @@ func (cc *Client) SyncEncryptKeys() error {
 	}
 	for _, k := range cks.Keys {
 		for _, ek := range eks {
-			cc.addEncryptKey(k.Key, ek.GlobalID, ek.Key)
+			err := cc.addEncryptKey(k.Key, ek.GlobalID, ek.Key)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

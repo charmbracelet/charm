@@ -97,8 +97,13 @@ func (cc *Client) StashMarkdown(note string, body string) error {
 	if err != nil {
 		return err
 	}
+
 	md := &Markdown{Note: note, Body: body}
 	md, err = cc.encryptMarkdown(md)
+	if err != nil {
+		return err
+	}
+
 	return cc.makeAPIRequest("POST", fmt.Sprintf("%s/stash", auth.CharmID), md, nil)
 }
 
@@ -107,6 +112,7 @@ func (cc *Client) DeleteMarkdown(markdownID int) error {
 	if err != nil {
 		return err
 	}
+
 	return cc.makeAPIRequest("DELETE", fmt.Sprintf("%s/stash/%d", auth.CharmID, markdownID), nil, nil)
 }
 
@@ -115,12 +121,17 @@ func (cc *Client) SetMarkdownNote(markdownID int, note string) error {
 	if err != nil {
 		return err
 	}
+
 	md, err := cc.GetStashMarkdown(markdownID)
 	if err != nil {
 		return err
 	}
 	md.Note = note
 	md, err = cc.encryptMarkdown(md)
+	if err != nil {
+		return err
+	}
+
 	return cc.makeAPIRequest("PUT", fmt.Sprintf("%s/stash/%d", auth.CharmID, markdownID), md, nil)
 }
 
