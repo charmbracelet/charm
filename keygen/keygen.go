@@ -20,9 +20,9 @@ import (
 
 const rsaDefaultBits = 4096
 
-// MissingSSHKeysErr indicates we're missing some keys that we expected to
+// ErrMissingSSHKeys indicates we're missing some keys that we expected to
 // have after generating. This should be an extreme edge case.
-var MissingSSHKeysErr = errors.New("missing one or more keys; did something happen to them after they were generated?")
+var ErrMissingSSHKeys = errors.New("missing one or more keys; did something happen to them after they were generated?")
 
 // SSHKeysAlreadyExistErr indicates that files already exist at the location at
 // whcih we're attempting to create SSH keys.
@@ -217,7 +217,7 @@ func (s *SSHKeyPair) PrepFilesystem() error {
 // WriteKeys writes the SSH key pair to disk.
 func (s *SSHKeyPair) WriteKeys() error {
 	if len(s.PrivateKeyPEM) == 0 || len(s.PublicKey) == 0 {
-		return MissingSSHKeysErr
+		return ErrMissingSSHKeys
 	}
 
 	if err := s.PrepFilesystem(); err != nil {
