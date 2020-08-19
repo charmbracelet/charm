@@ -20,11 +20,6 @@ const (
 	indentBy = 2
 )
 
-type CryptFile struct {
-	EncryptKey string `json:"encrypt_key"`
-	Data       string `json:"data"`
-}
-
 func formatLong(s string) string {
 	return indent.String(wordwrap.String("\n"+s, wrapAt), indentBy)
 }

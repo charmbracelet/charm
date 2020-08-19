@@ -10,6 +10,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type CryptFile struct {
+	EncryptKey string `json:"encrypt_key"`
+	Data       string `json:"data"`
+}
+
 var (
 	encryptCmd = &cobra.Command{
 		Use:    "encrypt",
