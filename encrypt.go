@@ -89,6 +89,22 @@ func (cc *Client) addEncryptKey(pk string, gid string, key string) error {
 	return cc.AuthedRequest("POST", cc.config.BioHost, cc.config.BioPort, "/v1/encrypt-key", &ek, nil)
 }
 
+func (cc *Client) findIdentities() ([]sasquatch.Identity, error) {
+	keys, err := findCharmKeys()
+	if err != nil {
+		return nil, err
+	}
+
+	var ids []sasquatch.Identity
+	for _, v := range keys {
+		id, err := sasquatch.ParseIdentitiesFile(v)
+		if err == nil {
+			ids = append(ids, id...)
+		}
+	}
+	return ids, nil
+}
+
 func (cc *Client) cryptCheck() error {
 	cc.encryptKeyLock.Lock()
 	defer cc.encryptKeyLock.Unlock()
@@ -117,7 +133,10 @@ func (cc *Client) cryptCheck() error {
 	}
 	if len(cc.auth.EncryptKeys) != len(cc.plainTextEncryptKeys) {
 		// if the encryptKeys haven't been decrypted yet, use the sasquatch ids to decrypt them
-		sids := sasquatch.FindIdentities()
+		sids, err := cc.findIdentities()
+		if err != nil {
+			return err
+		}
 		ks := make([]*EncryptKey, 0)
 		for _, k := range cc.auth.EncryptKeys {
 
