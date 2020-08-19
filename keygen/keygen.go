@@ -25,7 +25,7 @@ const rsaDefaultBits = 4096
 var ErrMissingSSHKeys = errors.New("missing one or more keys; did something happen to them after they were generated?")
 
 // SSHKeysAlreadyExistErr indicates that files already exist at the location at
-// whcih we're attempting to create SSH keys.
+// which we're attempting to create SSH keys.
 type SSHKeysAlreadyExistErr struct {
 	path string
 }
