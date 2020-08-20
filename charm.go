@@ -261,6 +261,9 @@ func (cc *Client) Bio() (*User, error) {
 	if err != nil {
 		return nil, err
 	}
+	if u == nil {
+		return nil, errors.New("no user data received")
+	}
 	return u, nil
 }
 
