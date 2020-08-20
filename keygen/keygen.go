@@ -1,6 +1,7 @@
 package keygen
 
 import (
+	"bytes"
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/rsa"
@@ -10,6 +11,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/user"
 	"path/filepath"
 
 	"github.com/mikesmitty/edkey"
@@ -109,8 +111,11 @@ func (s *SSHKeyPair) GenerateEd25519Keys() error {
 		return err
 	}
 
+	// serialize for public key file on disk
+	serializedPublicKey := ssh.MarshalAuthorizedKey(publicKey)
+
 	s.PrivateKeyPEM = pemBlock
-	s.PublicKey = ssh.MarshalAuthorizedKey(publicKey) // serialize for public key file on disk
+	s.PublicKey = pubKeyWithMemo(serializedPublicKey)
 	s.KeyDir = dataPath
 	s.Filename = "charm_ed25519"
 	return nil
@@ -162,8 +167,11 @@ func (s *SSHKeyPair) GenerateRSAKeys(bitSize int, passphrase []byte) error {
 		return err
 	}
 
+	// serialize for public key file on disk
+	serializedPubKey := ssh.MarshalAuthorizedKey(publicRSAKey)
+
 	s.PrivateKeyPEM = pemBlock
-	s.PublicKey = ssh.MarshalAuthorizedKey(publicRSAKey)
+	s.PublicKey = pubKeyWithMemo(serializedPubKey)
 	s.KeyDir = dataPath
 	s.Filename = "charm_rsa"
 	return nil
@@ -251,4 +259,22 @@ func fileExists(path string) bool {
 		return false
 	}
 	return true
+}
+
+// attaches a user@host suffix to a serialized public key. returns the original
+// pubkey if we can't get the username or host.
+func pubKeyWithMemo(pubKey []byte) []byte {
+	u, err := user.Current()
+	if err != nil {
+		return pubKey
+	}
+	h, err := os.Hostname()
+	if err != nil {
+		return pubKey
+	}
+
+	return append(
+		bytes.TrimRight(pubKey, "\n"),
+		[]byte(" "+u.Username+"@"+h+"\n")...,
+	)
 }
