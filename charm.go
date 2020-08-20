@@ -66,11 +66,11 @@ type Client struct {
 
 // User represents a Charm user.
 type User struct {
-	CharmID   string     `json:"charm_id"`
-	Name      string     `json:"name"`
-	Email     string     `json:"email"`
-	Bio       string     `json:"bio"`
-	CreatedAt *time.Time `json:"created_at"`
+	CharmID   string    `json:"charm_id"`
+	Name      string    `json:"name"`
+	Email     string    `json:"email"`
+	Bio       string    `json:"bio"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // Keys is a server response returned when the user queries for the keys linked
