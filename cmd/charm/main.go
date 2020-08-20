@@ -33,6 +33,9 @@ func isTTY() bool {
 }
 
 var (
+	Version   = ""
+	CommitSHA = ""
+
 	simpleOutput bool
 	randomart    bool
 	/*
@@ -98,6 +101,15 @@ func initCharmClient() *charm.Client {
 }
 
 func init() {
+	if len(CommitSHA) >= 7 {
+		vt := rootCmd.VersionTemplate()
+		rootCmd.SetVersionTemplate(vt[:len(vt)-1] + " (" + CommitSHA[0:7] + ")\n")
+	}
+	if Version == "" {
+		Version = "unknown (built from source)"
+	}
+	rootCmd.Version = Version
+
 	// rootCmd.PersistentFlags().StringVarP(&identityFile, "identity", "i", "", "path to identity file (that is, an ssh private key)")
 	// rootCmd.Flags().BoolVarP(&forceKey, "force-key", "f", false, "for the use of the SSH key on disk (that is, ignore ssh-agent)")
 

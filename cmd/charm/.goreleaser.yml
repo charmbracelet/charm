@@ -1,0 +1,97 @@
+project_name: charm
+
+env:
+  - GO111MODULE=on
+
+before:
+  hooks:
+  - go mod download
+
+builds:
+  - id: "charm"
+    binary: charm
+    ldflags: -s -w -X main.Version={{ .Version }} -X main.CommitSHA={{ .Commit }}
+    goos:
+      - linux
+      #- freebsd
+      - windows
+    goarch:
+      - amd64
+      - arm64
+      - 386
+      - arm
+    goarm:
+      - 6
+      - 7
+    hooks:
+      post:
+        - upx "{{ .Path }}"
+  - id: "darwin"
+    binary: "charm"
+    ldflags: -s -w -X main.Version={{ .Version }} -X main.CommitSHA={{ .Commit }}
+    goos:
+      - darwin
+    goarch:
+      - amd64
+    hooks:
+      post:
+       - upx "{{ .Path }}"
+
+archives:
+  - id: default
+    builds:
+      - charm
+    format_overrides:
+      - goos: windows
+        format: zip
+    replacements:
+      windows: Windows
+      386: i386
+      amd64: x86_64
+  - id: darwin
+    builds:
+      - darwin
+    replacements:
+      darwin: Darwin
+      amd64: x86_64
+
+nfpms:
+  -
+    builds:
+    - charm
+
+    vendor: charmbracelet
+    homepage: "https://charm.sh/"
+    maintainer: "Christian Rocha <christian@charm.sh>"
+    description: "Manage your Charm account and encrypt/decrypt data"
+    license: MIT
+    formats:
+      - deb
+      - rpm
+    bindir: /usr/bin
+
+brews:
+  - ids:
+    - darwin
+    tap:
+      owner: charmbracelet
+      name: homebrew-tap
+    commit_author:
+      name: "Christian Rocha"
+      email: "christian@charm.sh"
+    homepage: "https://charm.sh/"
+    description: "Manage your Charm account and encrypt/decrypt data"
+
+signs:
+  - artifacts: checksum
+
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
