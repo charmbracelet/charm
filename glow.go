@@ -20,14 +20,14 @@ type MarkdownsByCreatedAtDesc []*Markdown
 // Sort implementation for MarkdownByCreatedAt
 func (m MarkdownsByCreatedAtDesc) Len() int           { return len(m) }
 func (m MarkdownsByCreatedAtDesc) Swap(i, j int)      { m[i], m[j] = m[j], m[i] }
-func (m MarkdownsByCreatedAtDesc) Less(i, j int) bool { return m[i].CreatedAt.After(*m[j].CreatedAt) }
+func (m MarkdownsByCreatedAtDesc) Less(i, j int) bool { return m[i].CreatedAt.After(m[j].CreatedAt) }
 
 type Markdown struct {
-	ID           int        `json:"id"`
-	EncryptKeyID string     `json:"encrypt_key_id"`
-	Note         string     `json:"note"`
-	Body         string     `json:"body,omitempty"`
-	CreatedAt    *time.Time `json:"created_at"`
+	ID           int       `json:"id"`
+	EncryptKeyID string    `json:"encrypt_key_id"`
+	Note         string    `json:"note"`
+	Body         string    `json:"body,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 func (cc *Client) GetNews(page int) ([]*Markdown, error) {
