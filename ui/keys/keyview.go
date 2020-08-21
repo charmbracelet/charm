@@ -28,7 +28,7 @@ func (f fingerprint) state(s keyState) string {
 type styledKey struct {
 	date        string
 	fingerprint fingerprint
-	line        string
+	gutter      string
 	keyLabel    string
 	dateLabel   string
 	dateVal     string
@@ -52,7 +52,7 @@ func newStyledKey(key charm.Key, active bool) styledKey {
 	return styledKey{
 		date:        date,
 		fingerprint: fingerprint{fp},
-		line:        common.VerticalLine(common.StateNormal),
+		gutter:      " ",
 		keyLabel:    "Key:",
 		dateLabel:   "Added:",
 		dateVal:     te.String(date).Foreground(common.Indigo.Color()).String(),
@@ -62,14 +62,14 @@ func newStyledKey(key charm.Key, active bool) styledKey {
 
 // Selected state
 func (k *styledKey) selected() {
-	k.line = common.VerticalLine(common.StateSelected)
+	k.gutter = common.VerticalLine(common.StateSelected)
 	k.keyLabel = te.String("Key:").Foreground(common.Fuschia.Color()).String()
 	k.dateLabel = te.String("Added:").Foreground(common.Fuschia.Color()).String()
 }
 
 // Deleting state
 func (k *styledKey) deleting() {
-	k.line = common.VerticalLine(common.StateDeleting)
+	k.gutter = common.VerticalLine(common.StateDeleting)
 	k.keyLabel = te.String("Key:").Foreground(common.Red.Color()).String()
 	k.dateLabel = te.String("Added:").Foreground(common.Red.Color()).String()
 	k.dateVal = te.String(k.date).Foreground(common.FaintRed.Color()).String()
@@ -84,7 +84,7 @@ func (k styledKey) render(state keyState) string {
 	}
 	return fmt.Sprintf(
 		"%s %s %s\n%s %s %s %s\n\n",
-		k.line, k.keyLabel, k.fingerprint.state(state),
-		k.line, k.dateLabel, k.dateVal, k.note,
+		k.gutter, k.keyLabel, k.fingerprint.state(state),
+		k.gutter, k.dateLabel, k.dateVal, k.note,
 	)
 }
