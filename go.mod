@@ -15,8 +15,9 @@ require (
 	github.com/muesli/go-app-paths v0.2.1
 	github.com/muesli/reflow v0.1.0
 	github.com/muesli/sasquatch v0.0.0-20200811221207-66979d92330a
-	github.com/muesli/termenv v0.7.0
+	github.com/muesli/termenv v0.7.2
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
+	golang.org/x/sys v0.0.0-20200821140526-fda516888d29 // indirect
 )
