@@ -39,18 +39,18 @@ var ErrCouldNotUnlinkKey = errors.New("could not unlink key")
 
 // Config contains the Charm client configuration.
 type Config struct {
-	IDHost      string `env:"CHARM_ID_HOST" default:"id.charm.sh"`
-	IDPort      int    `env:"CHARM_ID_PORT" default:"22"`
-	BioHost     string `env:"CHARM_BIO_HOST" default:"https://bio.charm.sh"`
-	BioPort     int    `env:"CHARM_BIO_PORT" default:"443"`
-	GlowHost    string `env:"CHARM_GLOW_HOST" default:"https://glow.charm.sh"`
-	GlowPort    int    `env:"CHARM_GLOW_PORT" default:"443"`
-	JWTKey      string `env:"CHARM_JWT_KEY" default:""`
-	UseSSHAgent bool   `env:"CHARM_USE_SSH_AGENT" default:"true"`
-	SSHKeyPath  string `env:"CHARM_SSH_KEY_PATH" default:"~/.ssh/id_rsa"`
-	Debug       bool   `env:"CHARM_DEBUG" default:"false"`
-	Logfile     string `env:"CHARM_LOGFILE" default:""`
-	ForceKey    bool
+	IDHost   string `env:"CHARM_ID_HOST" default:"id.charm.sh"`
+	IDPort   int    `env:"CHARM_ID_PORT" default:"22"`
+	BioHost  string `env:"CHARM_BIO_HOST" default:"https://bio.charm.sh"`
+	BioPort  int    `env:"CHARM_BIO_PORT" default:"443"`
+	GlowHost string `env:"CHARM_GLOW_HOST" default:"https://glow.charm.sh"`
+	GlowPort int    `env:"CHARM_GLOW_PORT" default:"443"`
+	JWTKey   string `env:"CHARM_JWT_KEY" default:""`
+	// UseSSHAgent bool   `env:"CHARM_USE_SSH_AGENT" default:"true"`
+	// SSHKeyPath  string `env:"CHARM_SSH_KEY_PATH" default:"~/.ssh/id_rsa"`
+	Debug    bool   `env:"CHARM_DEBUG" default:"false"`
+	Logfile  string `env:"CHARM_LOGFILE" default:""`
+	ForceKey bool
 }
 
 // Client is the Charm client.
