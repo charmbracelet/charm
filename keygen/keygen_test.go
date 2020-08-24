@@ -78,7 +78,6 @@ func TestSSHKeyGeneration(t *testing.T) {
 		if err := k.WriteKeys(); err == nil {
 			t.Errorf("we wrote the public key over an existing file, but we were not supposed to")
 		}
-
 	})
 }
 

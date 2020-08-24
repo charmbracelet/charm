@@ -141,9 +141,7 @@ func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
-
 	case tea.KeyMsg:
-
 		switch msg.Type {
 		case tea.KeyCtrlC:
 			m.status = statusQuitting
@@ -151,9 +149,7 @@ func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
 		}
 
 		if m.status == statusReady { // Process keys for the menu
-
 			switch msg.String() {
-
 			// Quit
 			case "q", "esc":
 				m.status = statusQuitting
@@ -231,7 +227,6 @@ func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
 		m.status = statusReady
 		m.username = username.NewModel(m.cc) // reset the state
 		m.info.User.Name = string(msg)
-
 	}
 
 	m, cmd = updateChilden(msg, m)
@@ -246,7 +241,6 @@ func updateChilden(msg tea.Msg, m model) (model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch m.status {
-
 	// Keygen
 	case statusKeygen:
 		keygenModel, newCmd := keygen.Update(msg, tea.Model(m.keygen))
@@ -406,6 +400,7 @@ func menuView(currentIndex int) string {
 		}
 		s += e
 	}
+
 	return s
 }
 

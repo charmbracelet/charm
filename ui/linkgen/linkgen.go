@@ -74,6 +74,7 @@ func (m Model) rejectRequest() (Model, tea.Cmd) {
 	if m.standalone {
 		return m, tea.Quit
 	}
+
 	return m, nil
 }
 
@@ -123,6 +124,7 @@ func Init(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
 		m.status = initCharmClient
 		m.standalone = true
 		m.cfg = cfg
+
 		return m, tea.Batch(charmclient.NewClient(cfg), spinner.Tick(m.spinner))
 	}
 }
@@ -136,9 +138,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-
 		switch msg.String() {
-
 		// General keybindings
 		case "ctrl+c":
 			if m.standalone {
@@ -158,7 +158,6 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 		// State-specific keybindings
 		default:
 			switch m.status {
-
 			case linkRequested:
 				switch msg.String() {
 				case "j", "h", "right", "tab":
@@ -187,7 +186,6 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 				// Any key exits
 				m.Exit = true
 				return m, nil
-
 			}
 		}
 
@@ -374,7 +372,6 @@ func InitLinkGen(m Model) tea.Cmd {
 //     tea.Batch(HandleLinkRequest(model)...)
 //
 func HandleLinkRequest(m Model) []tea.Cmd {
-
 	go func() {
 		if err := m.cc.LinkGen(m.lh); err != nil {
 			m.lh.err <- err

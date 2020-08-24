@@ -55,11 +55,13 @@ func (cc *Client) GetStash(page int) ([]*Markdown, error) {
 	if page < 1 {
 		return nil, ErrorPageOutOfBounds
 	}
+
 	var stash []*Markdown
 	auth, err := cc.Auth()
 	if err != nil {
 		return nil, err
 	}
+
 	err = cc.makeAPIRequest("GET", fmt.Sprintf("%s/stash?page=%d", auth.CharmID, page), nil, &stash)
 	if err != nil {
 		return nil, err
@@ -70,8 +72,8 @@ func (cc *Client) GetStash(page int) ([]*Markdown, error) {
 			return nil, err
 		}
 		stash[i] = dm
-
 	}
+
 	return stash, nil
 }
 
@@ -81,6 +83,7 @@ func (cc *Client) GetStashMarkdown(markdownID int) (*Markdown, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	err = cc.makeAPIRequest("GET", fmt.Sprintf("%s/stash/%d", auth.CharmID, markdownID), nil, &md)
 	if err != nil {
 		return nil, err
@@ -89,6 +92,7 @@ func (cc *Client) GetStashMarkdown(markdownID int) (*Markdown, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return mdDec, nil
 }
 

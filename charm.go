@@ -198,10 +198,12 @@ func (cc *Client) AuthorizedKeysWithMetadata() (*Keys, error) {
 		return nil, err
 	}
 	defer s.Close()
+
 	b, err := s.Output("api-keys")
 	if err != nil {
 		return nil, err
 	}
+
 	var k Keys
 	err = json.Unmarshal(b, &k)
 	return &k, err
@@ -422,6 +424,7 @@ func findSSHSigners() []ssh.Signer {
 		if err != nil {
 			continue
 		}
+
 		r = append(r, signer)
 	}
 

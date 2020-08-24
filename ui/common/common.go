@@ -57,6 +57,7 @@ func (c ColorPair) Color() te.Color {
 	if HasDarkBackground {
 		return Color(c.Dark)
 	}
+
 	return Color(c.Light)
 }
 
@@ -66,6 +67,7 @@ func (c ColorPair) String() string {
 	if HasDarkBackground {
 		return c.Dark
 	}
+
 	return c.Light
 }
 

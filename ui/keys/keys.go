@@ -76,7 +76,6 @@ func (m *Model) getSelectedIndex() int {
 // UpdatePaging runs an update against the underlying pagination model as well
 // as performing some related tasks on this model.
 func (m *Model) UpdatePaging(msg tea.Msg) {
-
 	// Handle paging
 	m.pager.SetTotalPages(len(m.keys))
 	m.pager, _ = pager.Update(msg, m.pager)
@@ -147,7 +146,6 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-
 		case "ctrl+c", "q", "esc":
 			if m.standalone {
 				m.state = stateQuitting
@@ -305,7 +303,6 @@ func View(model tea.Model) string {
 	var s string
 
 	switch m.state {
-
 	case stateInitCharmClient:
 		s = spinner.View(m.spinner) + " Initializing...\n\n"
 	case stateKeygenRunning:
@@ -337,7 +334,6 @@ func View(model tea.Model) string {
 		default:
 			s += "\n\n" + helpView(m)
 		}
-
 	}
 
 	if m.standalone {

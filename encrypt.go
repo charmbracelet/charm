@@ -91,6 +91,7 @@ func (cc *Client) addEncryptKey(pk string, gid string, key string) error {
 	}
 	w.Write([]byte(key))
 	w.Close()
+
 	encKey := base64.StdEncoding.EncodeToString(buf.Bytes())
 	ek := EncryptKey{}
 	ek.PublicKey = pk
@@ -123,6 +124,7 @@ func (cc *Client) cryptCheck() error {
 	if err != nil {
 		return err
 	}
+
 	if len(cc.auth.EncryptKeys) == 0 && len(cc.plainTextEncryptKeys) == 0 {
 		// if there are no encrypt keys, make one for the public key returned from auth
 		b := make([]byte, 64)
@@ -140,8 +142,10 @@ func (cc *Client) cryptCheck() error {
 			return err
 		}
 		cc.plainTextEncryptKeys = []*EncryptKey{ek}
+
 		return nil
 	}
+
 	if len(cc.auth.EncryptKeys) != len(cc.plainTextEncryptKeys) {
 		// if the encryptKeys haven't been decrypted yet, use the sasquatch ids to decrypt them
 		sids, err := cc.findIdentities()
@@ -159,11 +163,13 @@ func (cc *Client) cryptCheck() error {
 			if err != nil {
 				return err
 			}
+
 			buf := new(strings.Builder)
 			_, err = io.Copy(buf, dr)
 			if err != nil {
 				return err
 			}
+
 			dk := &EncryptKey{}
 			dk.Key = buf.String()
 			dk.PublicKey = k.PublicKey
@@ -172,12 +178,14 @@ func (cc *Client) cryptCheck() error {
 		}
 		cc.plainTextEncryptKeys = ks
 	}
+
 	return nil
 }
 
 func (cc *Client) keyForID(gid string) (*EncryptKey, error) {
 	cc.encryptKeyLock.Lock()
 	defer cc.encryptKeyLock.Unlock()
+
 	if gid == "" {
 		if len(cc.plainTextEncryptKeys) == 0 {
 			return nil, fmt.Errorf("No keys stored")
@@ -189,5 +197,6 @@ func (cc *Client) keyForID(gid string) (*EncryptKey, error) {
 			return k, nil
 		}
 	}
+
 	return nil, fmt.Errorf("Key not found for id %s", gid)
 }

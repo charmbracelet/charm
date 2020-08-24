@@ -18,6 +18,7 @@ type Auth struct {
 func (cc *Client) Auth() (*Auth, error) {
 	cc.authLock.Lock()
 	defer cc.authLock.Unlock()
+
 	if cc.auth.claims == nil || cc.auth.claims.Valid() != nil {
 		auth := &Auth{}
 		s, err := cc.sshSession()
@@ -25,6 +26,7 @@ func (cc *Client) Auth() (*Auth, error) {
 			return nil, err
 		}
 		defer s.Close()
+
 		b, err := s.Output("api-auth")
 		if err != nil {
 			return nil, err
@@ -33,12 +35,14 @@ func (cc *Client) Auth() (*Auth, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		token, err := jwt.ParseWithClaims(auth.JWT, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
 			return cc.jwtPublicKey, nil
 		})
 		if err != nil {
 			return nil, err
 		}
+
 		auth.claims = token.Claims.(*jwt.StandardClaims)
 		cc.auth = auth
 		if err != nil {

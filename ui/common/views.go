@@ -34,6 +34,7 @@ func VerticalLine(state State) string {
 	default:
 		c = NewColorPair("#646464", "#BCBCBC").Color()
 	}
+
 	return te.String("│").
 		Foreground(c).
 		String()
@@ -44,6 +45,7 @@ func KeyValueView(stuff ...string) string {
 	if len(stuff) == 0 {
 		return ""
 	}
+
 	var (
 		s     string
 		index = 0
@@ -59,6 +61,7 @@ func KeyValueView(stuff ...string) string {
 		s += "\n"
 		index++
 	}
+
 	return strings.TrimSpace(s)
 }
 
@@ -71,12 +74,14 @@ func HelpView(sections ...string) string {
 	if len(sections) == 0 {
 		return s
 	}
+
 	for i := 0; i < len(sections); i++ {
 		s += te.String(sections[i]).Foreground(NewColorPair("#5C5C5C", "#9B9B9B").Color()).String()
 		if i < len(sections)-1 {
 			s += helpDivider()
 		}
 	}
+
 	return s
 }
 
@@ -129,5 +134,6 @@ func buttonStyling(str string, underline, focused bool) string {
 	if underline {
 		s = s.Underline()
 	}
+
 	return s.String()
 }

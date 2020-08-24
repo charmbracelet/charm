@@ -60,6 +60,7 @@ func initialize(cfg *charm.Config, code string) func() (tea.Model, tea.Cmd) {
 	sp := spinner.NewModel()
 	sp.ForegroundColor = "241"
 	sp.Frames = spinner.Dot
+
 	return func() (tea.Model, tea.Cmd) {
 		m := model{
 			cfg:           cfg,
@@ -70,6 +71,7 @@ func initialize(cfg *charm.Config, code string) func() (tea.Model, tea.Cmd) {
 			err:           nil,
 			spinner:       sp,
 		}
+
 		return m, tea.Batch(
 			charmclient.NewClient(cfg),
 			spinner.Tick(sp),
@@ -86,7 +88,6 @@ func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
-
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "esc", "q":
@@ -222,7 +223,6 @@ func paddedView(s string) string {
 }
 
 func handleLinkRequest(m model) tea.Cmd {
-
 	go func() {
 		if err := m.cc.Link(m.lh, m.code); err != nil {
 			m.lh.err <- err

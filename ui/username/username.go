@@ -81,6 +81,7 @@ func (m *Model) indexForward() {
 	if m.index > cancelButton {
 		m.index = textInput
 	}
+
 	m.updateFocus()
 }
 
@@ -90,12 +91,12 @@ func (m *Model) indexBackward() {
 	if m.index < textInput {
 		m.index = cancelButton
 	}
+
 	m.updateFocus()
 }
 
 // NewModel returns a new username model in its initial state.
 func NewModel(cc *charm.Client) Model {
-
 	inputModel := input.NewModel()
 	inputModel.CursorColor = common.Fuschia.String()
 	inputModel.Placeholder = "divagurl2000"
@@ -136,10 +137,8 @@ func InitialCmd(m Model) tea.Cmd {
 // Update is the Bubble Tea update loop.
 func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
-
 	case tea.KeyMsg:
 		switch msg.Type {
-
 		case tea.KeyCtrlC: // quit
 			m.Quit = true
 			return m, nil
@@ -181,6 +180,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 					m.state = submitting
 					m.errMsg = ""
 					m.newName = strings.TrimSpace(m.input.Value())
+
 					return m, tea.Batch(
 						setName(m), // fire off the command, too
 						spinner.Tick(m.spinner),
@@ -196,6 +196,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 			if m.index == textInput {
 				var cmd tea.Cmd
 				m.input, cmd = input.Update(msg, m.input)
+
 				return m, cmd
 			}
 
@@ -207,6 +208,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		m.errMsg = common.Subtle("Sorry, ") +
 			te.String(m.newName).Foreground(common.Red.Color()).String() +
 			common.Subtle(" is taken.")
+
 		return m, nil
 
 	case NameInvalidMsg:
@@ -214,6 +216,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		head := te.String("Invalid name. ").Foreground(common.Red.Color()).String()
 		body := common.Subtle("Names can only contain plain letters and numbers and must be less than 50 characters. And no emojis, kiddo.")
 		m.errMsg = common.Wrap(head + body)
+
 		return m, nil
 
 	case errMsg:
@@ -221,16 +224,19 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 		head := te.String("Oh, what? There was a curious error we were not expecting. ").Foreground(common.Red.Color()).String()
 		body := common.Subtle(msg.Error())
 		m.errMsg = common.Wrap(head + body)
+
 		return m, nil
 
 	case spinner.TickMsg:
 		var cmd tea.Cmd
 		m.spinner, cmd = spinner.Update(msg, m.spinner)
+
 		return m, cmd
 
 	default:
 		var cmd tea.Cmd
 		m.input, cmd = input.Update(msg, m.input) // Do we still need this?
+
 		return m, cmd
 	}
 }
@@ -239,6 +245,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 func View(m Model) string {
 	s := "Enter a new username\n\n"
 	s += input.View(m.input) + "\n\n"
+
 	if m.state == submitting {
 		s += spinnerView(m)
 	} else {
@@ -248,6 +255,7 @@ func View(m Model) string {
 			s += "\n\n" + m.errMsg
 		}
 	}
+
 	return s
 }
 
@@ -262,7 +270,6 @@ func spinnerView(m Model) string {
 // Attempt to update the username on the server.
 func setName(m Model) tea.Cmd {
 	return func() tea.Msg {
-
 		// Validate before resetting the session to potentially save some
 		// network traffic and keep things feeling speedy.
 		if !charm.ValidateName(m.newName) {
