@@ -32,13 +32,14 @@ func (f Fingerprint) String() string {
 	)
 }
 
-// Key contains data and metadata for an SSH key
+// Key contains data and metadata for an SSH key.
 type Key struct {
 	Key       string     `json:"key"`
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 }
 
-// Return the algorithm and SHA256 fingerprint for the given key
+// FingerprintSHA256 returns the algorithm and SHA256 fingerprint for the given
+// key.
 func (k Key) FingerprintSHA256() (Fingerprint, error) {
 	keyParts := strings.Split(k.Key, " ")
 	if len(keyParts) != 2 {
@@ -61,7 +62,7 @@ func (k Key) FingerprintSHA256() (Fingerprint, error) {
 	}, nil
 }
 
-// RandomArt returns the randomart for the given key
+// RandomArt returns the randomart for the given key.
 func (k Key) RandomArt() (string, error) {
 	keyParts := strings.Split(k.Key, " ")
 	if len(keyParts) != 2 {

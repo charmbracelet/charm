@@ -9,7 +9,7 @@ import (
 	te "github.com/muesli/termenv"
 )
 
-// wrap fingerprint to support additional states
+// wrap fingerprint to support additional states.
 type fingerprint struct {
 	charm.Fingerprint
 }

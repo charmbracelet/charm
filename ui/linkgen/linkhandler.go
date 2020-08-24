@@ -6,13 +6,13 @@ import (
 	"github.com/charmbracelet/charm"
 )
 
-// linkRequest carries metadata pertaining to a link request
+// linkRequest carries metadata pertaining to a link request.
 type linkRequest struct {
 	pubKey      string
 	requestAddr string
 }
 
-// linkHandler implements the charm.LinkHandler interface
+// linkHandler implements the charm.LinkHandler interface.
 type linkHandler struct {
 	err      chan error
 	token    chan string
@@ -42,7 +42,7 @@ func (lh *linkHandler) Request(l *charm.Link) bool {
 
 func (lh *linkHandler) RequestDenied(l *charm.Link) {}
 
-// Successful link, but this account has already been linked
+// Successful link, but this account has already been linked.
 func (lh *linkHandler) SameUser(l *charm.Link) {
 	lh.success <- true
 }

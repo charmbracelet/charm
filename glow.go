@@ -17,7 +17,7 @@ var ErrorPageOutOfBounds = errors.New("page must be a value of 1 or greater")
 // field.
 type MarkdownsByCreatedAtDesc []*Markdown
 
-// Sort implementation for MarkdownByCreatedAt
+// Sort implementation for MarkdownByCreatedAt.
 func (m MarkdownsByCreatedAtDesc) Len() int           { return len(m) }
 func (m MarkdownsByCreatedAtDesc) Swap(i, j int)      { m[i], m[j] = m[j], m[i] }
 func (m MarkdownsByCreatedAtDesc) Less(i, j int) bool { return m[i].CreatedAt.After(m[j].CreatedAt) }

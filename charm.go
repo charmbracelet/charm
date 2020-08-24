@@ -80,7 +80,7 @@ type Keys struct {
 	Keys      []Key `json:"keys"`
 }
 
-// ConfigFromEnv loads the configuration from the environment
+// ConfigFromEnv loads the configuration from the environment.
 func ConfigFromEnv() (*Config, error) {
 	var cfg Config
 	if err := babyenv.Parse(&cfg); err != nil {
@@ -89,7 +89,7 @@ func ConfigFromEnv() (*Config, error) {
 	return &cfg, nil
 }
 
-// NewClient creates a new Charm client
+// NewClient creates a new Charm client.
 func NewClient(cfg *Config) (*Client, error) {
 	cc := &Client{
 		config:         cfg,
@@ -149,7 +149,7 @@ func NewClient(cfg *Config) (*Client, error) {
 	return cc, nil
 }
 
-// JWT returns a JSON web token for the user
+// JWT returns a JSON web token for the user.
 func (cc *Client) JWT() (string, error) {
 	s, err := cc.sshSession()
 	if err != nil {
@@ -163,7 +163,7 @@ func (cc *Client) JWT() (string, error) {
 	return string(jwt), nil
 }
 
-// ID returns the user's ID
+// ID returns the user's ID.
 func (cc *Client) ID() (string, error) {
 	s, err := cc.sshSession()
 	if err != nil {
@@ -177,7 +177,7 @@ func (cc *Client) ID() (string, error) {
 	return string(id), nil
 }
 
-// AuthorizedKeys returns the keys linked to a user's account
+// AuthorizedKeys returns the keys linked to a user's account.
 func (cc *Client) AuthorizedKeys() (string, error) {
 	s, err := cc.sshSession()
 	if err != nil {
@@ -191,7 +191,7 @@ func (cc *Client) AuthorizedKeys() (string, error) {
 	return string(keys), nil
 }
 
-// AuthorizedKeys fetches keys linked to a user's account, with metadata
+// AuthorizedKeys fetches keys linked to a user's account, with metadata.
 func (cc *Client) AuthorizedKeysWithMetadata() (*Keys, error) {
 	s, err := cc.sshSession()
 	if err != nil {
@@ -207,7 +207,7 @@ func (cc *Client) AuthorizedKeysWithMetadata() (*Keys, error) {
 	return &k, err
 }
 
-// UnlinkAuthorizedKey removes an authorized key from the user's Charm account
+// UnlinkAuthorizedKey removes an authorized key from the user's Charm account.
 func (cc *Client) UnlinkAuthorizedKey(key string) error {
 	s, err := cc.sshSession()
 	if err != nil {
@@ -236,7 +236,7 @@ func (cc *Client) UnlinkAuthorizedKey(key string) error {
 	return nil
 }
 
-// SetName sets the account's username
+// SetName sets the account's username.
 func (cc *Client) SetName(name string) (*User, error) {
 	if !ValidateName(name) {
 		return nil, ErrNameInvalid
@@ -250,7 +250,7 @@ func (cc *Client) SetName(name string) (*User, error) {
 	return u, nil
 }
 
-// Bio returns the user's profile
+// Bio returns the user's profile.
 func (cc *Client) Bio() (*User, error) {
 	u := &User{}
 	id, err := cc.ID()
@@ -267,7 +267,7 @@ func (cc *Client) Bio() (*User, error) {
 	return u, nil
 }
 
-// ValidateName validates a given name
+// ValidateName validates a given name.
 func ValidateName(name string) bool {
 	return nameValidator.MatchString(name)
 }

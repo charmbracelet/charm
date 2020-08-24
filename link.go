@@ -35,7 +35,7 @@ type LinkerMessage struct {
 	Message string `json:"message"`
 }
 
-// LinkHandler handles linking operations
+// LinkHandler handles linking operations.
 type LinkHandler interface {
 	TokenCreated(*Link)
 	TokenSent(*Link)
@@ -49,7 +49,7 @@ type LinkHandler interface {
 	Error(*Link)
 }
 
-// LinkGen initiates a linking session
+// LinkGen initiates a linking session.
 func (cc *Client) LinkGen(lh LinkHandler) error {
 	s, err := cc.sshSession()
 	if err != nil {
@@ -116,7 +116,7 @@ func (cc *Client) LinkGen(lh LinkHandler) error {
 	return cc.SyncEncryptKeys()
 }
 
-// Link joins in on a linking session initiated by LinkGen
+// Link joins in on a linking session initiated by LinkGen.
 func (cc *Client) Link(lh LinkHandler, code string) error {
 	s, err := cc.sshSession()
 	if err != nil {
@@ -162,7 +162,7 @@ func (cc *Client) Link(lh LinkHandler, code string) error {
 }
 
 // SyncEncryptKeys re-encodes all of the encrypt keys associated for this
-// public key with all other linked publick keys
+// public key with all other linked publick keys.
 func (cc *Client) SyncEncryptKeys() error {
 	cc.InvalidateAuth()
 	eks, err := cc.encryptKeys()

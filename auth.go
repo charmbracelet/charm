@@ -6,7 +6,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-// Auth is the authenticated user's charm id and jwt returned from the ssh server
+// Auth is the authenticated user's charm id and jwt returned from the ssh server.
 type Auth struct {
 	CharmID     string        `json:"charm_id"`
 	JWT         string        `json:"jwt"`

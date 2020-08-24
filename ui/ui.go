@@ -31,7 +31,7 @@ func NewProgram(cfg *charm.Config) *tea.Program {
 	return tea.NewProgram(initialize(cfg), update, view)
 }
 
-// status is used to indicate a high level application state
+// status is used to indicate a high level application state.
 type status int
 
 const (
@@ -62,7 +62,7 @@ func (s status) String() string {
 	}[s]
 }
 
-// menuChoice represents a chosen menu item
+// menuChoice represents a chosen menu item.
 type menuChoice int
 
 // menu choices

@@ -82,7 +82,7 @@ func TestSSHKeyGeneration(t *testing.T) {
 	})
 }
 
-// touchTestFile is a utility function we're using in testing
+// touchTestFile is a utility function we're using in testing.
 func touchTestFile(t *testing.T, path string) (ok bool) {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0700); err != nil {

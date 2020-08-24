@@ -39,7 +39,7 @@ const (
 	keyDeleting
 )
 
-// NewProgram creates a new Tea program
+// NewProgram creates a new Tea program.
 func NewProgram(cfg *charm.Config) *tea.Program {
 	return tea.NewProgram(Init(cfg), Update, View)
 }
@@ -50,7 +50,7 @@ type errMsg struct {
 	err error
 }
 
-// Model is the Tea state model for this user interface
+// Model is the Tea state model for this user interface.
 type Model struct {
 	cc             *charm.Client
 	cfg            *charm.Config
@@ -95,7 +95,7 @@ func (m *Model) SetCharmClient(cc *charm.Client) {
 	m.cc = cc
 }
 
-// NewModel creates a new model with defaults
+// NewModel creates a new model with defaults.
 func NewModel(cfg *charm.Config) Model {
 	p := pager.NewModel()
 	p.PerPage = keysPerPage
@@ -135,7 +135,7 @@ func Init(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
 	}
 }
 
-// Update is the tea update function which handles incoming messages
+// Update is the tea update function which handles incoming messages.
 func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	m, ok := model.(Model)
 	if !ok {
@@ -291,7 +291,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// View renders the current UI into a string
+// View renders the current UI into a string.
 func View(model tea.Model) string {
 	m, ok := model.(Model)
 	if !ok {
@@ -431,7 +431,7 @@ func fetchKeys(cc *charm.Client) tea.Cmd {
 	}
 }
 
-// unlinkKey deletes the selected key
+// unlinkKey deletes the selected key.
 func unlinkKey(m Model) tea.Cmd {
 	return func() tea.Msg {
 		err := m.cc.UnlinkAuthorizedKey(m.keys[m.getSelectedIndex()].Key)
