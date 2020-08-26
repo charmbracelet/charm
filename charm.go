@@ -80,6 +80,17 @@ type Keys struct {
 	Keys      []Key `json:"keys"`
 }
 
+// DataPath returns the Charm data path for the current user. This is where
+// Charm keys are stored.
+func DataPath() (string, error) {
+	scope := gap.NewScope(gap.User, "charm")
+	dataPath, err := scope.DataPath("")
+	if err != nil {
+		return "", err
+	}
+	return dataPath, nil
+}
+
 // ConfigFromEnv loads the configuration from the environment.
 func ConfigFromEnv() (*Config, error) {
 	var cfg Config

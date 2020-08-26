@@ -14,9 +14,9 @@ import (
 	"os/user"
 	"path/filepath"
 
+	"github.com/charmbracelet/charm"
 	"github.com/mikesmitty/edkey"
 	"github.com/mitchellh/go-homedir"
-	gap "github.com/muesli/go-app-paths"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -105,8 +105,7 @@ func (s *SSHKeyPair) GenerateEd25519Keys() error {
 		return err
 	}
 
-	scope := gap.NewScope(gap.User, "charm")
-	dataPath, err := scope.DataPath("")
+	dataPath, err := charm.DataPath()
 	if err != nil {
 		return err
 	}
@@ -161,8 +160,7 @@ func (s *SSHKeyPair) GenerateRSAKeys(bitSize int, passphrase []byte) error {
 		return err
 	}
 
-	scope := gap.NewScope(gap.User, "charm")
-	dataPath, err := scope.DataPath("")
+	dataPath, err := charm.DataPath()
 	if err != nil {
 		return err
 	}
