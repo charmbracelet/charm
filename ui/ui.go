@@ -43,6 +43,7 @@ const (
 	statusLinking
 	statusBrowsingKeys
 	statusSettingUsername
+	statusShowBackupInfo
 	statusQuitting
 	statusError
 )
@@ -57,6 +58,7 @@ func (s status) String() string {
 		"linking",
 		"browsing keys",
 		"setting username",
+		"showing backup info",
 		"quitting",
 		"error",
 	}[s]
@@ -70,6 +72,7 @@ const (
 	linkChoice menuChoice = iota
 	keysChoice
 	setUsernameChoice
+	backupChoice
 	exitChoice
 	unsetChoice // set when no choice has been made
 )
@@ -79,6 +82,7 @@ var menuChoices = map[menuChoice]string{
 	linkChoice:        "Link a machine",
 	keysChoice:        "Manage linked keys",
 	setUsernameChoice: "Set Username",
+	backupChoice:      "Backup",
 	exitChoice:        "Exit",
 }
 
@@ -308,6 +312,19 @@ func updateChilden(msg tea.Msg, m model) (model, tea.Cmd) {
 			m.status = statusQuitting
 			return m, tea.Quit
 		}
+
+	case statusShowBackupInfo:
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch msg.String() {
+			case "q":
+				m.status = statusQuitting
+				return m, tea.Quit
+			case "esc":
+				m.status = statusReady
+				return m, nil
+			}
+		}
 	}
 
 	// Handle the menu
@@ -328,6 +345,10 @@ func updateChilden(msg tea.Msg, m model) (model, tea.Cmd) {
 		m.status = statusSettingUsername
 		m.menuChoice = unsetChoice
 		cmd = username.InitialCmd(m.username)
+
+	case backupChoice:
+		m.status = statusShowBackupInfo
+		m.menuChoice = unsetChoice
 
 	case exitChoice:
 		m.status = statusQuitting
@@ -371,6 +392,8 @@ func view(mdl tea.Model) string {
 		s += keys.View(m.keys)
 	case statusSettingUsername:
 		s += username.View(m.username)
+	case statusShowBackupInfo:
+		s += backupView(m)
 	case statusQuitting:
 		s += quitView(m)
 	case statusError:
@@ -402,6 +425,21 @@ func menuView(currentIndex int) string {
 	}
 
 	return s
+}
+
+func backupView(m model) string {
+	p, err := charm.DataPath()
+	if err != nil {
+		return errorView(err)
+	}
+	s := "Your Charm account uses with SSH keys specific to Charm. These keys are automatically cut the first time you authenticate. It’s " + te.String("very important").Bold().String() + " that you keep these keys safe as they’re the keys to your account.\n\n"
+	s += "You can make a quick backup of your keys by running:\n\n"
+	s += "  " + common.Code("charm backup-keys") + "\n\n"
+	s += "Your keys can also be found at:\n\n"
+	s += "  " + common.Keyword(p) + "\n\n"
+	s += "For more info see " + common.Code("charm backup-keys -h") + ". And we’ll be adding more recovery features in the near future.\n\n"
+	s += common.HelpView("esc: back", "q: quit") + "\n\n"
+	return common.Wrap(s)
 }
 
 func quitView(m model) string {
