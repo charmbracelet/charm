@@ -38,10 +38,6 @@ var (
 
 	simpleOutput bool
 	randomart    bool
-	/*
-		identityFile string
-		forceKey     bool
-	*/
 
 	rootCmd = &cobra.Command{
 		Use:   "charm",

@@ -46,8 +46,6 @@ type Config struct {
 	GlowHost string `env:"CHARM_GLOW_HOST" default:"https://glow.charm.sh"`
 	GlowPort int    `env:"CHARM_GLOW_PORT" default:"443"`
 	JWTKey   string `env:"CHARM_JWT_KEY" default:""`
-	// UseSSHAgent bool   `env:"CHARM_USE_SSH_AGENT" default:"true"`
-	// SSHKeyPath  string `env:"CHARM_SSH_KEY_PATH" default:"~/.ssh/id_rsa"`
 	Debug    bool   `env:"CHARM_DEBUG" default:"false"`
 	Logfile  string `env:"CHARM_LOGFILE" default:""`
 	ForceKey bool
@@ -113,27 +111,6 @@ func NewClient(cfg *Config) (*Client, error) {
 		return nil, err
 	}
 	cc.jwtPublicKey = jk
-
-	/*
-		var sshSigners []ssh.Signer
-
-		if cfg.ForceKey && cfg.SSHKeyPath != "" {
-			// User wants to use a specific key
-			sshKey := strings.TrimSuffix(cfg.SSHKeyPath, ".pub")
-			k, err := parsePrivateKey(sshKey)
-			if err != nil {
-				return nil, err
-			}
-
-			signer, err := ssh.NewSignerFromKey(k)
-			if err != nil {
-				return nil, err
-			}
-			sshSigners = append(sshSigners, signer)
-		} else {
-			sshSigners = findSSHSigners()
-		}
-	*/
 
 	sshKeys, err := findCharmKeys()
 	if err != nil {
