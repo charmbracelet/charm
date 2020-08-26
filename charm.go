@@ -59,6 +59,7 @@ type Client struct {
 	sshConfig            *ssh.ClientConfig
 	jwtPublicKey         *rsa.PublicKey
 	plainTextEncryptKeys []*EncryptKey
+	authKeyPaths         []string
 	encryptKeyLock       *sync.Mutex
 }
 
@@ -112,7 +113,7 @@ func NewClient(cfg *Config) (*Client, error) {
 	}
 	cc.jwtPublicKey = jk
 
-	sshKeys, err := findCharmKeys()
+	sshKeys, err := findAuthKeys()
 	if err != nil {
 		return nil, err
 	}
@@ -128,6 +129,7 @@ func NewClient(cfg *Config) (*Client, error) {
 			return nil, ErrMissingSSHAuth
 		}
 	}
+	cc.authKeyPaths = sshKeys
 
 	cc.sshConfig = &ssh.ClientConfig{
 		User:            "charm",
@@ -195,6 +197,11 @@ func (cc *Client) AuthorizedKeysWithMetadata() (*Keys, error) {
 	var k Keys
 	err = json.Unmarshal(b, &k)
 	return &k, err
+}
+
+// AuthKeyPaths returns the full file path of the Charm auth SSH keys.
+func (cc *Client) AuthKeyPaths() []string {
+	return cc.authKeyPaths
 }
 
 // UnlinkAuthorizedKey removes an authorized key from the user's Charm account.
@@ -339,16 +346,14 @@ func findSSHKeys() (pathsToKeys []string, err error) {
 	return found, nil
 }
 
-// findCharmKeys looks in a user's XDG charm-dir for possible encryption keys.
+// findCharmKeys looks in a user's XDG charm-dir for possible auth keys.
 // If no keys are found we return an empty slice.
-func findCharmKeys() (pathsToKeys []string, err error) {
-	scope := gap.NewScope(gap.User, "charm")
-	keyDirs, err := scope.DataDirs()
+func findAuthKeys() (pathsToKeys []string, err error) {
+	keyPath, err := DataPath()
 	if err != nil {
 		return nil, err
 	}
-
-	m, err := filepath.Glob(filepath.Join(keyDirs[0], "charm_*"))
+	m, err := filepath.Glob(filepath.Join(keyPath, "charm_*"))
 	if err != nil {
 		return nil, err
 	}

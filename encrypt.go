@@ -102,7 +102,7 @@ func (cc *Client) addEncryptKey(pk string, gid string, key string) error {
 }
 
 func (cc *Client) findIdentities() ([]sasquatch.Identity, error) {
-	keys, err := findCharmKeys()
+	keys, err := findAuthKeys()
 	if err != nil {
 		return nil, err
 	}
