@@ -22,6 +22,10 @@ var (
 			if err != nil {
 				return err
 			}
+			err = backupFile.Chmod(0600)
+			if err != nil {
+				return err
+			}
 			defer backupFile.Close()
 			tarball := tar.NewWriter(backupFile)
 			defer tarball.Close()
