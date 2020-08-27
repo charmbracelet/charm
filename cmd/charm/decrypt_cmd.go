@@ -7,15 +7,19 @@ import (
 	"io"
 	"os"
 
+	"github.com/charmbracelet/charm/ui/common"
+	"github.com/muesli/reflow/indent"
 	"github.com/spf13/cobra"
 )
 
 var (
 	decryptCmd = &cobra.Command{
-		Use:    "decrypt",
-		Hidden: false,
-		Short:  "Decrypt stdin with your Charm account encryption key",
-		Args:   cobra.RangeArgs(0, 1),
+		Use:     "decrypt",
+		Hidden:  false,
+		Short:   "Decrypt stdin with your Charm account encryption key",
+		Long:    formatLong(fmt.Sprintf("%s stdin with your Charm account encryption key.", common.Keyword("Decrypt"))),
+		Example: indent.String("charm decrypt < encrypted_data.json\ncat encrypted_data.json | charm decrypt", indentBy),
+		Args:    cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var r io.Reader
 			var err error
