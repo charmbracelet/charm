@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/charm"
+	"github.com/charmbracelet/charm/ui/common"
 	"github.com/spf13/cobra"
 )
 
@@ -16,7 +17,8 @@ var (
 	backupKeysCmd = &cobra.Command{
 		Use:                   "backup-keys",
 		Hidden:                false,
-		Short:                 "Backup your Charm account keys.",
+		Short:                 "Backup your Charm account keys",
+		Long:                  formatLong(fmt.Sprintf("%s your Charm account keys.", common.Keyword("Backup"))),
 		Args:                  cobra.NoArgs,
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -29,7 +31,7 @@ var (
 			if err != nil {
 				return err
 			}
-			fmt.Printf("Done! Saved keys to `%s`\n", fileName)
+			printFormatted(fmt.Sprintf("Done! Saved keys to %s.", common.Code(fileName)))
 			return nil
 		},
 	}
