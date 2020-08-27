@@ -2,9 +2,12 @@ package main
 
 import (
 	"archive/tar"
+	"bufio"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/charmbracelet/charm"
 	"github.com/spf13/cobra"
@@ -22,11 +25,43 @@ var (
 			if err != nil {
 				return err
 			}
-			untar(args[0], filepath.Dir(dd))
+
+			empty, err := isEmpty(dd)
+			if err != nil {
+				return err
+			}
+			if !empty {
+				reader := bufio.NewReader(os.Stdin)
+				fmt.Printf("Looks like you might have some existing keys in %s, would you like to overwrite them?\n(yes/no)\n", dd)
+				ans, _ := reader.ReadString('\n')
+				if strings.ToLower(ans) != "yes\n" {
+					fmt.Println("Ok, we won't do anything. Bye!")
+					return nil
+				}
+			}
+			err = untar(args[0], filepath.Dir(dd))
+			if err != nil {
+				return err
+			}
+			fmt.Printf("Done! Keys imported to %s\n", dd)
 			return nil
 		},
 	}
 )
+
+func isEmpty(name string) (bool, error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	_, err = f.Readdirnames(1)
+	if err == io.EOF {
+		return true, nil
+	}
+	return false, err
+}
 
 func untar(tarball, target string) error {
 	reader, err := os.Open(tarball)
