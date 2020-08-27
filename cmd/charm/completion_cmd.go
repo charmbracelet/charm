@@ -47,7 +47,7 @@ $ charm completion fish | source`)
 
 var completionCmd = &cobra.Command{
 	Use:                   "completion [bash|zsh|fish|powershell]",
-	Short:                 "generate shell completion",
+	Short:                 "Generate shell completion",
 	Long:                  completionInstructions(),
 	DisableFlagsInUseLine: true,
 	ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},
