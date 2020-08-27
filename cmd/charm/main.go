@@ -110,6 +110,7 @@ func init() {
 		encryptCmd,
 		decryptCmd,
 		backupKeysCmd,
+		importKeysCmd,
 		keySyncCmd,
 		completionCmd,
 	)
