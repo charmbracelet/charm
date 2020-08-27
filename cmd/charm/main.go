@@ -46,7 +46,7 @@ var (
 	rootCmd = &cobra.Command{
 		Use:   "charm",
 		Short: "Do Charm stuff",
-		Long:  formatLong(fmt.Sprintf("Do %s stuff. Run without arguments for fancy mode or use the sub-commands like a pro.", common.Keyword("Charm"))),
+		Long:  formatLong(fmt.Sprintf("Do %s stuff. Run without arguments for a TUI or use the sub-commands like a pro.", common.Keyword("Charm"))),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if isTTY() {
 				cfg := getCharmConfig()
