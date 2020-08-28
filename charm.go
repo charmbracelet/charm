@@ -48,7 +48,6 @@ type Config struct {
 	JWTKey   string `env:"CHARM_JWT_KEY" default:""`
 	Debug    bool   `env:"CHARM_DEBUG" default:"false"`
 	Logfile  string `env:"CHARM_LOGFILE" default:""`
-	ForceKey bool
 }
 
 // Client is the Charm client.
