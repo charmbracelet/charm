@@ -326,7 +326,7 @@ func View(model tea.Model) string {
 	case linkSuccess:
 		s += common.Keyword("Linked!")
 		if m.alreadyLinked {
-			s += " This account is already linked, btw."
+			s += " This key is already linked, btw."
 		}
 		if m.standalone {
 			s += "\n"
