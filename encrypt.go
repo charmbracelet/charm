@@ -146,7 +146,7 @@ func (cc *Client) cryptCheck() error {
 		return nil
 	}
 
-	if len(cc.auth.EncryptKeys) != len(cc.plainTextEncryptKeys) {
+	if len(cc.auth.EncryptKeys) > len(cc.plainTextEncryptKeys) {
 		// if the encryptKeys haven't been decrypted yet, use the sasquatch ids to decrypt them
 		sids, err := cc.findIdentities()
 		if err != nil {
@@ -185,7 +185,6 @@ func (cc *Client) cryptCheck() error {
 func (cc *Client) keyForID(gid string) (*EncryptKey, error) {
 	cc.encryptKeyLock.Lock()
 	defer cc.encryptKeyLock.Unlock()
-
 	if gid == "" {
 		if len(cc.plainTextEncryptKeys) == 0 {
 			return nil, fmt.Errorf("No keys stored")
