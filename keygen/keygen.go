@@ -198,7 +198,7 @@ func (s *SSHKeyPair) PrepFilesystem() error {
 		return FilesystemErr{err}
 	}
 	if !info.IsDir() {
-		// It exist but it's not a directory
+		// It exists but it's not a directory
 		return FilesystemErr{fmt.Errorf("%s is not a directory", s.KeyDir)}
 	}
 	if info.Mode().Perm() != 0700 {
