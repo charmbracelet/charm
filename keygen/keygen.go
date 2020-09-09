@@ -266,13 +266,10 @@ func pubKeyWithMemo(pubKey []byte) []byte {
 	if err != nil {
 		return pubKey
 	}
-	h, err := os.Hostname()
+	hostname, err := os.Hostname()
 	if err != nil {
 		return pubKey
 	}
 
-	return append(
-		bytes.TrimRight(pubKey, "\n"),
-		[]byte(" "+u.Username+"@"+h+"\n")...,
-	)
+	return append(bytes.TrimRight(pubKey, "\n"), []byte(fmt.Sprintf(" %s@%s\n", u.Username, hostname))...)
 }
