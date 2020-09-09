@@ -191,7 +191,7 @@ func (s *SSHKeyPair) PrepFilesystem() error {
 	info, err := os.Stat(s.KeyDir)
 	if os.IsNotExist(err) {
 		// Directory doesn't exist: create it
-		return os.Mkdir(s.KeyDir, 0700)
+		return os.MkdirAll(s.KeyDir, 0700)
 	}
 	if err != nil {
 		// There was another error statting the directory; something is awry
@@ -216,7 +216,7 @@ func (s *SSHKeyPair) PrepFilesystem() error {
 		return SSHKeysAlreadyExistErr{s.privateKeyPath()}
 	}
 
-	// The directory looks good as-is. This should be a rare case.
+	// The directory looks good as-is
 	return nil
 }
 
