@@ -23,30 +23,30 @@ func (cc *Client) Auth() (*Auth, error) {
 		auth := &Auth{}
 		s, err := cc.sshSession()
 		if err != nil {
-			return nil, err
+			return nil, ErrAuthFailed{err}
 		}
 		defer s.Close()
 
 		b, err := s.Output("api-auth")
 		if err != nil {
-			return nil, err
+			return nil, ErrAuthFailed{err}
 		}
 		err = json.Unmarshal(b, auth)
 		if err != nil {
-			return nil, err
+			return nil, ErrAuthFailed{err}
 		}
 
 		token, err := jwt.ParseWithClaims(auth.JWT, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
 			return cc.jwtPublicKey, nil
 		})
 		if err != nil {
-			return nil, err
+			return nil, ErrAuthFailed{err}
 		}
 
 		auth.claims = token.Claims.(*jwt.StandardClaims)
 		cc.auth = auth
 		if err != nil {
-			return nil, err
+			return nil, ErrAuthFailed{err}
 		}
 	}
 	return cc.auth, nil

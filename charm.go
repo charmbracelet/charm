@@ -37,6 +37,15 @@ var ErrNameInvalid = errors.New("invalid name")
 // ErrCouldNotUnlinkKey is used when a key can't be deleted.
 var ErrCouldNotUnlinkKey = errors.New("could not unlink key")
 
+// ErrAuthFailed indicates an authentication failure. The underlying error is
+// wrapped.
+type ErrAuthFailed struct {
+	Err error
+}
+
+func (e ErrAuthFailed) Error() string { return e.Err.Error() }
+func (e ErrAuthFailed) Unwrap() error { return e.Err }
+
 // Config contains the Charm client configuration.
 type Config struct {
 	IDHost   string `env:"CHARM_ID_HOST" default:"id.charm.sh"`
