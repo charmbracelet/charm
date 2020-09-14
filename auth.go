@@ -15,6 +15,8 @@ type Auth struct {
 	claims      *jwt.StandardClaims
 }
 
+// Auth returns the Auth struct for a client session. It will renew and cache
+// the Charm ID JWT.
 func (cc *Client) Auth() (*Auth, error) {
 	cc.authLock.Lock()
 	defer cc.authLock.Unlock()
@@ -52,6 +54,8 @@ func (cc *Client) Auth() (*Auth, error) {
 	return cc.auth, nil
 }
 
+// InvalidateAuth clears the JWT auth cache, forcing subsequent Auth() to fetch
+// a new JWT from the server.
 func (cc *Client) InvalidateAuth() {
 	cc.authLock.Lock()
 	defer cc.authLock.Unlock()

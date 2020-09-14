@@ -12,9 +12,8 @@ import (
 	"github.com/charmbracelet/charm/ui/common"
 )
 
-var (
-	ErrMalformedKey = errors.New("malformed key; is it missing the algorithm type at the beginning?")
-)
+// ErrMalformedKey parsing error for bad ssh key.
+var ErrMalformedKey = errors.New("malformed key; is it missing the algorithm type at the beginning?")
 
 // Fingerprint is the fingerprint of an SSH key.
 type Fingerprint struct {

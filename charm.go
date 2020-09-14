@@ -43,7 +43,10 @@ type ErrAuthFailed struct {
 	Err error
 }
 
+// Error returns the boxed error string.
 func (e ErrAuthFailed) Error() string { return e.Err.Error() }
+
+// Unwrap returns the boxed error.
 func (e ErrAuthFailed) Unwrap() error { return e.Err }
 
 // Config contains the Charm client configuration.
@@ -189,7 +192,7 @@ func (cc *Client) AuthorizedKeys() (string, error) {
 	return string(keys), nil
 }
 
-// AuthorizedKeys fetches keys linked to a user's account, with metadata.
+// AuthorizedKeysWithMetadata fetches keys linked to a user's account, with metadata.
 func (cc *Client) AuthorizedKeysWithMetadata() (*Keys, error) {
 	s, err := cc.sshSession()
 	if err != nil {

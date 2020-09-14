@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// ErrorPageOutOfBounds is an error for an invalid page number.
 var ErrorPageOutOfBounds = errors.New("page must be a value of 1 or greater")
 
 // MarkdownsByCreatedAtDesc sorts markdown documents by date in descending
@@ -22,6 +23,9 @@ func (m MarkdownsByCreatedAtDesc) Len() int           { return len(m) }
 func (m MarkdownsByCreatedAtDesc) Swap(i, j int)      { m[i], m[j] = m[j], m[i] }
 func (m MarkdownsByCreatedAtDesc) Less(i, j int) bool { return m[i].CreatedAt.After(m[j].CreatedAt) }
 
+// Markdown is the struct that contains the markdown and note data. If
+// EncryptKeyID is not blank, the content should be assumed to be encrypted.
+// Once decrypted, that field will be blanked.
 type Markdown struct {
 	ID           int       `json:"id"`
 	EncryptKeyID string    `json:"encrypt_key_id"`
@@ -30,6 +34,7 @@ type Markdown struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
+// GetNews returns the Glow paginated news results.
 func (cc *Client) GetNews(page int) ([]*Markdown, error) {
 	if page < 1 {
 		return nil, ErrorPageOutOfBounds
@@ -42,6 +47,7 @@ func (cc *Client) GetNews(page int) ([]*Markdown, error) {
 	return news, nil
 }
 
+// GetNewsMarkdown returns the Markdown struct for the given news markdown ID.
 func (cc *Client) GetNewsMarkdown(markdownID int) (*Markdown, error) {
 	var md Markdown
 	err := cc.makeAPIRequest("GET", fmt.Sprintf("news/%d", markdownID), nil, &md)
@@ -51,6 +57,7 @@ func (cc *Client) GetNewsMarkdown(markdownID int) (*Markdown, error) {
 	return &md, nil
 }
 
+// GetStash returns the paginated user stash for the authenticated Charm user.
 func (cc *Client) GetStash(page int) ([]*Markdown, error) {
 	if page < 1 {
 		return nil, ErrorPageOutOfBounds
@@ -77,6 +84,7 @@ func (cc *Client) GetStash(page int) ([]*Markdown, error) {
 	return stash, nil
 }
 
+// GetStashMarkdown returns the Markdown struct for the given stash markdown ID.
 func (cc *Client) GetStashMarkdown(markdownID int) (*Markdown, error) {
 	var md Markdown
 	auth, err := cc.Auth()
@@ -96,6 +104,7 @@ func (cc *Client) GetStashMarkdown(markdownID int) (*Markdown, error) {
 	return mdDec, nil
 }
 
+// StashMarkdown encrypts and stashes a new markdown file with note.
 func (cc *Client) StashMarkdown(note string, body string) (*Markdown, error) {
 	auth, err := cc.Auth()
 	if err != nil {
@@ -118,6 +127,7 @@ func (cc *Client) StashMarkdown(note string, body string) (*Markdown, error) {
 	return newMd, nil
 }
 
+// DeleteMarkdown deletes the stash markdown for the given ID.
 func (cc *Client) DeleteMarkdown(markdownID int) error {
 	auth, err := cc.Auth()
 	if err != nil {
@@ -127,6 +137,7 @@ func (cc *Client) DeleteMarkdown(markdownID int) error {
 	return cc.makeAPIRequest("DELETE", fmt.Sprintf("%s/stash/%d", auth.CharmID, markdownID), nil, nil)
 }
 
+// SetMarkdownNote updates the note for a given stash markdown ID.
 func (cc *Client) SetMarkdownNote(markdownID int, note string) error {
 	auth, err := cc.Auth()
 	if err != nil {

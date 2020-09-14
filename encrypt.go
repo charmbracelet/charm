@@ -13,16 +13,23 @@ import (
 	"github.com/muesli/sasquatch"
 )
 
+// EncryptKey is the symmetric key used to encrypt data for a Charm user. An
+// encrypt key will be encoded for every public key associated with a user's
+// Charm account.
 type EncryptKey struct {
 	GlobalID  string `json:"global_id"`
 	Key       string `json:"key"`
 	PublicKey string `json:"public_key,omitempty"`
 }
 
+// Encrypt encrypts bytes with the default encrypt key, returning the encrypted
+// bytes, encrypt key ID and error.
 func (cc *Client) Encrypt(content []byte) ([]byte, string, error) {
 	return cc.EncryptWithKey("", content)
 }
 
+// EncryptWithKey encrypts bytes with a given encrypt key ID, returning the
+// encrypted bytes, encrypt key ID and error.
 func (cc *Client) EncryptWithKey(id string, content []byte) ([]byte, string, error) {
 	err := cc.cryptCheck()
 	if err != nil {
@@ -48,6 +55,7 @@ func (cc *Client) EncryptWithKey(id string, content []byte) ([]byte, string, err
 	return buf.Bytes(), k.GlobalID, nil
 }
 
+// Decrypt decrypts bytes with a given encrypt key ID.
 func (cc *Client) Decrypt(gid string, content []byte) ([]byte, error) {
 	err := cc.cryptCheck()
 	if err != nil {
@@ -154,7 +162,6 @@ func (cc *Client) cryptCheck() error {
 		}
 		ks := make([]*EncryptKey, 0)
 		for _, k := range cc.auth.EncryptKeys {
-
 			ds, err := base64.StdEncoding.DecodeString(k.Key)
 			if err != nil {
 				return err

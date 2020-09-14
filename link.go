@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// LinkStatus represents a state in the linking process.
 type LinkStatus int
 
 const (
@@ -22,6 +23,8 @@ const (
 	LinkStatusInvalidTokenRequest
 )
 
+// Link is the struct used to communicate state during the account linking
+// process.
 type Link struct {
 	Token         string     `json:"token"`
 	RequestPubKey string     `json:"request_pub_key"`
@@ -31,6 +34,8 @@ type Link struct {
 	Status        LinkStatus `json:"status"`
 }
 
+// LinkerMessage is used for communicating errors and data in the linking
+// process.
 type LinkerMessage struct {
 	Message string `json:"message"`
 }

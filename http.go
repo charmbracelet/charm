@@ -7,6 +7,7 @@ import (
 	"net/http"
 )
 
+// AuthedRequest sends an authorized request to the Charm and Glow HTTP servers.
 func (cc *Client) AuthedRequest(method string, host string, port int, path string, reqBody interface{}, respBody interface{}) error {
 	client := &http.Client{}
 	buf := &bytes.Buffer{}
