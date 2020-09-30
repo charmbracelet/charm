@@ -432,12 +432,12 @@ func backupView(m model) string {
 	if err != nil {
 		return errorView(err)
 	}
-	s := "Your Charm account uses with SSH keys specific to Charm. These keys are automatically cut the first time you authenticate. It’s " + te.String("very important").Bold().String() + " that you keep these keys safe as they’re the keys to your account.\n\n"
+	s := "Your Charm account uses SSH keys specific to Charm. These keys are automatically cut the first time you authenticate. It’s " + te.String("very important").Bold().String() + " that you keep these keys safe as they’re the keys to your account.\n\n"
 	s += "You can make a quick backup of your keys by running:\n\n"
 	s += "  " + common.Code("charm backup-keys") + "\n\n"
 	s += "Your keys can also be found at:\n\n"
 	s += "  " + common.Keyword(p) + "\n\n"
-	s += "For more info see " + common.Code("charm backup-keys -h") + ". And we’ll be adding more recovery features in the near future.\n\n"
+	s += "For more info see " + common.Code("charm backup-keys -h") + ". We’ll be adding more recovery features in the future.\n\n"
 	s += common.HelpView("esc: back", "q: quit") + "\n\n"
 	return common.Wrap(s)
 }
