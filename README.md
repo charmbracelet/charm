@@ -19,7 +19,7 @@ Manage your Charm account and access The Charm Cloud.
 macOS and Linux users can use Homebrew:
 
 ```bash
-brew install charmbracelet/homebrew-tap/charm
+brew tap charmbracelet/tap && brew install charmbracelet/tap/charm
 ```
 
 Or you can download a binary from the [releases][releases] page. macOS, Linux,
