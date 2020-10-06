@@ -88,6 +88,12 @@ The Charm library is a simple API to the Charm Cloud for doing things like:
 
 For more details and the full feature set check out [the Go docs][docs].
 
+## Charming Projects
+
+Check out these projects, which use the `charm` library:
+
+* [Glow][glow], a markdown reader for the CLI
+
 ## License
 
 [MIT](https://github.com/charmbracelet/charm/raw/master/LICENSE)
