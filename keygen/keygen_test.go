@@ -61,7 +61,7 @@ func TestSSHKeyGeneration(t *testing.T) {
 
 		// Private key
 		filePath := filepath.Join(k.KeyDir, k.Filename)
-		if !touchTestFile(t, filePath) {
+		if !createEmptyFile(t, filePath) {
 			return
 		}
 		if err := k.WriteKeys(); err == nil {
@@ -72,7 +72,7 @@ func TestSSHKeyGeneration(t *testing.T) {
 		}
 
 		// Public key
-		if !touchTestFile(t, filePath+".pub") {
+		if !createEmptyFile(t, filePath+".pub") {
 			return
 		}
 		if err := k.WriteKeys(); err == nil {
@@ -82,14 +82,19 @@ func TestSSHKeyGeneration(t *testing.T) {
 }
 
 // touchTestFile is a utility function we're using in testing.
-func touchTestFile(t *testing.T, path string) (ok bool) {
+func createEmptyFile(t *testing.T, path string) (ok bool) {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		t.Errorf("could not create directory %s: %v", dir, err)
 		return false
 	}
-	if _, err := os.Create(path); err != nil {
+	f, err := os.Create(path)
+	if err != nil {
 		t.Errorf("could not create file %s", path)
+		return false
+	}
+	if err := f.Close(); err != nil {
+		t.Errorf("could not close file: %v", err)
 		return false
 	}
 	if testing.Verbose() {
