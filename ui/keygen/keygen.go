@@ -47,7 +47,7 @@ func Init() (tea.Model, tea.Cmd) {
 	m.standalone = true
 
 	m.spinner = spinner.NewModel()
-	m.spinner.Frames = spinner.Dot
+	m.spinner.Frames = common.SpinnerFrames
 	m.spinner.ForegroundColor = common.SpinnerColor.String()
 
 	return m, tea.Batch(GenerateKeys, spinner.Tick(m.spinner))

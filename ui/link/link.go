@@ -59,7 +59,7 @@ type model struct {
 func initialize(cfg *charm.Config, code string) func() (tea.Model, tea.Cmd) {
 	sp := spinner.NewModel()
 	sp.ForegroundColor = "241"
-	sp.Frames = spinner.Dot
+	sp.Frames = common.SpinnerFrames
 
 	return func() (tea.Model, tea.Cmd) {
 		m := model{
