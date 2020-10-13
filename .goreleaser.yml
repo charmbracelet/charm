@@ -9,12 +9,13 @@ before:
 
 builds:
   - id: "charm"
-    binary: charm
+    binary: "charm"
+    dir: ./cmd/charm
     ldflags: -s -w -X main.Version={{ .Version }} -X main.CommitSHA={{ .Commit }}
     goos:
       - linux
       #- freebsd
-      #- windows
+      - windows
     goarch:
       - amd64
       - arm64
@@ -28,6 +29,7 @@ builds:
         - upx "{{ .Path }}"
   - id: "darwin"
     binary: "charm"
+    dir: ./cmd/charm
     ldflags: -s -w -X main.Version={{ .Version }} -X main.CommitSHA={{ .Commit }}
     goos:
       - darwin
