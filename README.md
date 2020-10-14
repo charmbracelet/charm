@@ -26,6 +26,12 @@ Or you can download a binary from the [releases][releases] page. macOS, Linux,
 FreeBSD binaries are available, as well as Debian and RPM packages. ARM builds
 are also available for Linux and FreeBSD.
 
+Or you can download a binary from the [releases][releases] page. macOS, Linux,
+Windows, FreeBSD, and OpenBSD binaries are available, as well as Debian, RPM,
+and Alpine packages. ARM builds are also available for Linux, FreeBSD, and
+OpenBSD.
+
+
 Or just use `go get`:
 
 ```bash
