@@ -40,7 +40,7 @@ var (
 			}
 
 			if !empty && !forceImportOverwrite {
-				return confirmImportTUI(args[0], dd).Start()
+				return newImportConfirmationTUI(args[0], dd).Start()
 			}
 
 			err = untar(args[0], filepath.Dir(dd))
@@ -105,105 +105,102 @@ func untar(tarball, target string) error {
 	return nil
 }
 
-func confirmImportTUI(tarPath, dataPath string) *tea.Program {
-	type state int
+// Import Confirmation TUI
 
-	const (
-		ready state = iota
-		confirmed
-		cancelling
-		success
-		fail
-	)
+func newImportConfirmationTUI(tarPath, dataPath string) *tea.Program {
+	return tea.NewProgram(confirmationTUI{
+		state:    ready,
+		tarPath:  tarPath,
+		dataPath: dataPath,
+	})
+}
 
-	var modelAssertionErr = errors.New("could not perform assertion on model")
+type confirmationState int
 
-	type model struct {
-		state state
-		yes   bool
-		err   error
-	}
+const (
+	ready confirmationState = iota
+	confirmed
+	cancelling
+	success
+	fail
+)
 
-	type successMsg struct{}
-	type errMsg error
+type confirmationSuccessMsg struct{}
+type confirmationErrMsg struct{ error }
 
-	untarCmd := func() tea.Msg {
+func untarCmd(tarPath, dataPath string) tea.Cmd {
+	return func() tea.Msg {
 		if err := untar(tarPath, dataPath); err != nil {
-			return errMsg(err)
+			return confirmationErrMsg{err}
 		}
-		return successMsg{}
+		return confirmationSuccessMsg{}
 	}
+}
 
-	init := func() (tea.Model, tea.Cmd) {
-		return model{state: ready}, nil
-	}
+type confirmationTUI struct {
+	state             confirmationState
+	yes               bool
+	err               error
+	tarPath, dataPath string
+}
 
-	update := func(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
-		m, ok := mdl.(model)
-		if !ok {
-			return model{err: modelAssertionErr}, tea.Quit
-		}
+func (m confirmationTUI) Init() tea.Cmd {
+	return nil
+}
 
-		switch msg := msg.(type) {
-		case tea.KeyMsg:
-			switch msg.String() {
-			case "ctrl+c":
-				m.state = cancelling
-				return m, tea.Quit
-			case "left", "h":
-				m.yes = !m.yes
-			case "right", "l":
-				m.yes = !m.yes
-			case "enter":
-				if m.yes {
-					m.state = confirmed
-					return m, untarCmd
-				}
-				m.state = cancelling
-				return m, tea.Quit
-			case "y":
-				m.yes = true
+func (m confirmationTUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c":
+			m.state = cancelling
+			return m, tea.Quit
+		case "left", "h":
+			m.yes = !m.yes
+		case "right", "l":
+			m.yes = !m.yes
+		case "enter":
+			if m.yes {
 				m.state = confirmed
-				return m, untarCmd
-			default:
-				if m.state == ready {
-					m.yes = false
-					m.state = cancelling
-					return m, tea.Quit
-				}
+				return m, untarCmd(m.tarPath, m.dataPath)
 			}
-		case successMsg:
-			m.state = success
+			m.state = cancelling
 			return m, tea.Quit
-		case errMsg:
-			m.state = fail
-			m.err = msg
-			return m, tea.Quit
+		case "y":
+			m.yes = true
+			m.state = confirmed
+			return m, untarCmd(m.tarPath, m.dataPath)
+		default:
+			if m.state == ready {
+				m.yes = false
+				m.state = cancelling
+				return m, tea.Quit
+			}
 		}
-		return m, nil
+	case confirmationSuccessMsg:
+		m.state = success
+		return m, tea.Quit
+	case confirmationErrMsg:
+		m.state = fail
+		m.err = msg
+		return m, tea.Quit
+	}
+	return m, nil
+}
+
+func (m confirmationTUI) View() string {
+	var s string
+	switch m.state {
+	case ready:
+		s = fmt.Sprintf("Looks like you might have some existing keys in %s\n\nWould you like to overwrite them?\n\n", common.Code(m.dataPath))
+		s += common.YesButtonView(m.yes) + " " + common.NoButtonView(!m.yes)
+	case success:
+		s += fmt.Sprintf("Done! Key imported to %s", common.Code(m.dataPath))
+	case fail:
+		s = m.err.Error()
+	case cancelling:
+		s = "Ok, we won’t do anything. Bye!"
 	}
 
-	view := func(mdl tea.Model) string {
-		m, ok := mdl.(model)
-		if !ok {
-			return modelAssertionErr.Error()
-		}
-
-		var s string
-		switch m.state {
-		case ready:
-			s = fmt.Sprintf("Looks like you might have some existing keys in %s\n\nWould you like to overwrite them?\n\n", common.Code(dataPath))
-			s += common.YesButtonView(m.yes) + " " + common.NoButtonView(!m.yes)
-		case success:
-			s += fmt.Sprintf("Done! Key imported to %s", common.Code(dataPath))
-		case fail:
-			s = m.err.Error()
-		case cancelling:
-			s = "Ok, we won’t do anything. Bye!"
-		}
-
-		return formatLong(s) + "\n\n"
-	}
-
-	return tea.NewProgram(init, update, view)
+	return formatLong(s) + "\n\n"
 }

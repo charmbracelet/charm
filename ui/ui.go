@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"errors"
 	"fmt"
 	"log"
 
@@ -28,7 +27,7 @@ func NewProgram(cfg *charm.Config) *tea.Program {
 		log.Println("-- Starting Charm ----------------")
 		log.Println("Bubble Tea now initializing...")
 	}
-	return tea.NewProgram(initialize(cfg), update, view)
+	return tea.NewProgram(initialModel(cfg))
 }
 
 // status is used to indicate a high level application state.
@@ -99,40 +98,33 @@ type model struct {
 	spinner  spinner.Model
 	keygen   keygen.Model
 	info     info.Model
-	link     linkgen.Model
+	linkgen  linkgen.Model
 	username username.Model
 	keys     keys.Model
 }
 
-func initialize(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
-	return func() (tea.Model, tea.Cmd) {
-		s := spinner.NewModel()
-		s.Frames = common.SpinnerFrames
-		s.ForegroundColor = "244"
+func initialModel(cfg *charm.Config) model {
+	s := spinner.NewModel()
+	s.Frames = common.SpinnerFrames
+	s.ForegroundColor = "244"
 
-		m := model{
-			cfg:        cfg,
-			status:     statusInit,
-			menuChoice: unsetChoice,
-			spinner:    s,
-			keygen:     keygen.NewModel(),
-		}
-
-		return m, tea.Batch(
-			charmclient.NewClient(m.cfg),
-			spinner.Tick(m.spinner),
-		)
+	return model{
+		cfg:        cfg,
+		status:     statusInit,
+		menuChoice: unsetChoice,
+		spinner:    s,
+		keygen:     keygen.NewModel(),
 	}
 }
 
-func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
-	m, ok := mdl.(model)
-	if !ok {
-		return model{
-			err: errors.New("could not perform assertion on model in update"),
-		}, nil
-	}
+func (m model) Init() tea.Cmd {
+	return tea.Batch(
+		charmclient.NewClient(m.cfg),
+		spinner.Tick(m.spinner),
+	)
+}
 
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var (
 		cmds []tea.Cmd
 		cmd  tea.Cmd
@@ -247,14 +239,13 @@ func updateChilden(msg tea.Msg, m model) (model, tea.Cmd) {
 	switch m.status {
 	// Keygen
 	case statusKeygen:
-		keygenModel, newCmd := keygen.Update(msg, tea.Model(m.keygen))
-		mdl, ok := keygenModel.(keygen.Model)
+		newModel, newCmd := m.keygen.Update(msg)
+		keygenModel, ok := newModel.(keygen.Model)
 		if !ok {
-			m.err = errors.New("could not perform model assertion on keygen model")
-			return m, nil
+			panic("could not perform assertion on keygen model")
 		}
+		m.keygen = keygenModel
 		cmd = newCmd
-		m.keygen = mdl
 
 	// User info
 	case statusFetching:
@@ -268,31 +259,32 @@ func updateChilden(msg tea.Msg, m model) (model, tea.Cmd) {
 
 	// Link generator
 	case statusLinking:
-		linkModel, cmd := linkgen.Update(msg, tea.Model(m.link))
-		mdl, ok := linkModel.(linkgen.Model)
+		newModel, newCmd := m.linkgen.Update(msg)
+		linkgenModel, ok := newModel.(linkgen.Model)
 		if !ok {
-			m.err = errors.New("could not perform model assertion on link model")
-			return m, cmd
+			panic("could not peform assertion on linkgen model")
 		}
-		m.link = mdl
-		if m.link.Exit {
-			m.link = linkgen.NewModel() // reset the state
+		m.linkgen = linkgenModel
+		cmd = newCmd
+
+		if m.linkgen.Exit {
+			m.linkgen = linkgen.NewModel(m.cfg) // reset the state
 			m.status = statusReady
-		} else if m.link.Quit {
+		} else if m.linkgen.Quit {
 			m.status = statusQuitting
 			return m, tea.Quit
 		}
 
 	// Key browser
 	case statusBrowsingKeys:
-		var newModel tea.Model
-		newModel, cmd = keys.Update(msg, m.keys)
-		newKeysModel, ok := newModel.(keys.Model)
+		newModel, newCmd := m.keys.Update(msg)
+		keysModel, ok := newModel.(keys.Model)
 		if !ok {
-			m.err = errors.New("could not perform model assertion on keys model")
-			return m, nil
+			panic("could not perform assertion on keys model")
 		}
-		m.keys = newKeysModel
+		m.keys = keysModel
+		cmd = newCmd
+
 		if m.keys.Exit {
 			m.keys = keys.NewModel(m.cfg)
 			m.keys.SetCharmClient(m.cc)
@@ -332,9 +324,9 @@ func updateChilden(msg tea.Msg, m model) (model, tea.Cmd) {
 	case linkChoice:
 		m.status = statusLinking
 		m.menuChoice = unsetChoice
-		m.link = linkgen.NewModel()
-		m.link.SetCharmClient(m.cc)
-		cmd = linkgen.InitLinkGen(m.link)
+		m.linkgen = linkgen.NewModel(m.cfg)
+		m.linkgen.SetCharmClient(m.cc)
+		cmd = linkgen.InitLinkGen(m.linkgen)
 
 	case keysChoice:
 		m.status = statusBrowsingKeys
@@ -358,13 +350,7 @@ func updateChilden(msg tea.Msg, m model) (model, tea.Cmd) {
 	return m, cmd
 }
 
-func view(mdl tea.Model) string {
-	m, ok := mdl.(model)
-	if !ok {
-		m.err = errors.New("could not perform assertion on model in view")
-		m.status = statusError
-	}
-
+func (m model) View() string {
 	s := charmLogoView()
 
 	switch m.status {
@@ -374,7 +360,7 @@ func view(mdl tea.Model) string {
 		if m.keygen.Status == keygen.StatusRunning {
 			s += spinner.View(m.spinner)
 		}
-		s += keygen.View(m.keygen)
+		s += m.keygen.View()
 	case statusKeygenComplete:
 		s += spinner.View(m.spinner) + " Reinitializing..."
 	case statusFetching:
@@ -387,9 +373,9 @@ func view(mdl tea.Model) string {
 		s += "\n\n" + menuView(m.menuIndex)
 		s += footerView(m)
 	case statusLinking:
-		s += linkgen.View(m.link)
+		s += m.linkgen.View()
 	case statusBrowsingKeys:
-		s += keys.View(m.keys)
+		s += m.keys.View()
 	case statusSettingUsername:
 		s += username.View(m.username)
 	case statusShowBackupInfo:
