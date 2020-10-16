@@ -41,13 +41,9 @@ type NameTakenMsg struct{}
 // NameInvalidMsg is sent when the requested username has failed validation.
 type NameInvalidMsg struct{}
 
-type errMsg struct {
-	err error
-}
+type errMsg struct{ err error }
 
-func (e errMsg) Error() string {
-	return e.err.Error()
-}
+func (e errMsg) Error() string { return e.err.Error() }
 
 // Model holds the state of the username UI.
 type Model struct {
@@ -122,8 +118,8 @@ func NewModel(cc *charm.Client) Model {
 }
 
 // Init is the Bubble Tea initialization function.
-func Init(cc *charm.Client) func() (tea.Model, tea.Cmd) {
-	return func() (tea.Model, tea.Cmd) {
+func Init(cc *charm.Client) func() (Model, tea.Cmd) {
+	return func() (Model, tea.Cmd) {
 		m := NewModel(cc)
 		return m, InitialCmd(m)
 	}

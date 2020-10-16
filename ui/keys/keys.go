@@ -1,7 +1,6 @@
 package keys
 
 import (
-	"errors"
 	"fmt"
 
 	pager "github.com/charmbracelet/bubbles/paginator"
@@ -41,7 +40,7 @@ const (
 
 // NewProgram creates a new Tea program.
 func NewProgram(cfg *charm.Config) *tea.Program {
-	return tea.NewProgram(Init(cfg), Update, View)
+	return tea.NewProgram(NewModel(cfg))
 }
 
 type keysLoadedMsg charm.Keys
@@ -122,27 +121,15 @@ func NewModel(cfg *charm.Config) Model {
 }
 
 // Init is the Tea initialization function.
-func Init(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
-	return func() (tea.Model, tea.Cmd) {
-		m := NewModel(cfg)
-		m.standalone = true
-		m.state = stateInitCharmClient
-		return m, tea.Batch(
-			charmclient.NewClient(cfg),
-			spinner.Tick(m.spinner),
-		)
-	}
+func (m Model) Init() tea.Cmd {
+	return tea.Batch(
+		charmclient.NewClient(m.cfg),
+		spinner.Tick(m.spinner),
+	)
 }
 
 // Update is the tea update function which handles incoming messages.
-func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
-	m, ok := model.(Model)
-	if !ok {
-		return Model{
-			err: errors.New("could not perform assertion on model in keys update"),
-		}, nil
-	}
-
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -267,13 +254,13 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 
 	// Update keygen
 	if m.state == stateKeygenRunning {
-		newKeygenModel, cmd := keygen.Update(msg, m.keygen)
-		mdl, ok := newKeygenModel.(keygen.Model)
+		newModel, cmd := m.keygen.Update(msg)
+		keygenModel, ok := newModel.(keygen.Model)
 		if !ok {
-			m.err = errors.New("could not perform assertion on keygen model in link update")
-			return m, tea.Quit
+			panic("could not perform assertion on keygen model")
 		}
-		m.keygen = mdl
+
+		m.keygen = keygenModel
 		return m, cmd
 	}
 
@@ -290,12 +277,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 }
 
 // View renders the current UI into a string.
-func View(model tea.Model) string {
-	m, ok := model.(Model)
-	if !ok {
-		m.err = errors.New("could not perform assertion on model")
-	}
-
+func (m Model) View() string {
 	if m.err != nil {
 		return m.err.Error()
 	}
@@ -309,7 +291,7 @@ func View(model tea.Model) string {
 		if m.keygen.Status != keygen.StatusSuccess {
 			s += spinner.View(m.spinner)
 		}
-		s += keygen.View(m.keygen)
+		s += m.keygen.View()
 	case stateLoading:
 		s = spinner.View(m.spinner) + " Loading...\n\n"
 	case stateQuitting:

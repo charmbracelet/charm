@@ -1,7 +1,6 @@
 package link
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/charmbracelet/bubbles/spinner"
@@ -15,7 +14,7 @@ import (
 
 // NewProgram returns a Tea program for the link participant.
 func NewProgram(cfg *charm.Config, code string) *tea.Program {
-	return tea.NewProgram(initialize(cfg, code), update, view)
+	return tea.NewProgram(newModel(cfg, code))
 }
 
 type status int
@@ -56,37 +55,30 @@ type model struct {
 	keygen        keygen.Model
 }
 
-func initialize(cfg *charm.Config, code string) func() (tea.Model, tea.Cmd) {
+func newModel(cfg *charm.Config, code string) model {
 	sp := spinner.NewModel()
 	sp.ForegroundColor = "241"
 	sp.Frames = common.SpinnerFrames
 
-	return func() (tea.Model, tea.Cmd) {
-		m := model{
-			cfg:           cfg,
-			lh:            newLinkHandler(),
-			code:          code,
-			status:        initCharmClient,
-			alreadyLinked: false,
-			err:           nil,
-			spinner:       sp,
-		}
-
-		return m, tea.Batch(
-			charmclient.NewClient(cfg),
-			spinner.Tick(sp),
-		)
+	return model{
+		cfg:           cfg,
+		lh:            newLinkHandler(),
+		code:          code,
+		status:        initCharmClient,
+		alreadyLinked: false,
+		err:           nil,
+		spinner:       sp,
 	}
 }
 
-func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
-	m, ok := mdl.(model)
-	if !ok {
-		return model{
-			err: errors.New("could not perform model assertion in update"),
-		}, nil
-	}
+func (m model) Init() tea.Cmd {
+	return tea.Batch(
+		charmclient.NewClient(m.cfg),
+		spinner.Tick(m.spinner),
+	)
+}
 
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -157,13 +149,13 @@ func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
 
 	default:
 		if m.status == keygenRunning {
-			newKeygenModel, cmd := keygen.Update(msg, m.keygen)
-			mdl, ok := newKeygenModel.(keygen.Model)
+			newModel, cmd := m.keygen.Update(msg)
+			keygenModel, ok := newModel.(keygen.Model)
 			if !ok {
-				m.err = errors.New("could not assert model to keygen.Model in link update")
-				return m, tea.Quit
+				panic("could not perform assertion on keygen model")
 			}
-			m.keygen = mdl
+
+			m.keygen = keygenModel
 			return m, cmd
 		}
 
@@ -171,12 +163,7 @@ func update(msg tea.Msg, mdl tea.Model) (tea.Model, tea.Cmd) {
 	}
 }
 
-func view(mdl tea.Model) string {
-	m, ok := mdl.(model)
-	if !ok {
-		m.err = errors.New("could not perform assertion on model in view")
-	}
-
+func (m model) View() string {
 	if m.err != nil {
 		return paddedView(m.err.Error())
 	}
@@ -188,9 +175,9 @@ func view(mdl tea.Model) string {
 		s += "Initializing..."
 	case keygenRunning:
 		if m.keygen.Status != keygen.StatusSuccess {
-			s += keygen.View(m.keygen)
+			s += m.keygen.View()
 		} else {
-			s = keygen.View(m.keygen)
+			s = m.keygen.View()
 		}
 	case linkInit:
 		s += "Linking..."

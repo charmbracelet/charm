@@ -1,7 +1,6 @@
 package linkgen
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/charmbracelet/bubbles/spinner"
@@ -40,7 +39,7 @@ type errMsg struct {
 // NewProgram is a simple wrapper for tea.NewProgram. For use in standalone
 // mode.
 func NewProgram(cfg *charm.Config) *tea.Program {
-	return tea.NewProgram(Init(cfg), Update, View)
+	return tea.NewProgram(NewModel(cfg))
 }
 
 // Model is the tea model for the link initiator program.
@@ -79,7 +78,7 @@ func (m Model) rejectRequest() (Model, tea.Cmd) {
 }
 
 // NewModel returns a new Model in its initial state.
-func NewModel() Model {
+func NewModel(cfg *charm.Config) Model {
 	lh := &linkHandler{
 		err:      make(chan error),
 		token:    make(chan string),
@@ -118,24 +117,12 @@ func (m *Model) SetCharmClient(cc *charm.Client) {
 
 // Init is the Bubble Tea program's initialization function. This is used in
 // standalone mode.
-func Init(cfg *charm.Config) func() (tea.Model, tea.Cmd) {
-	return func() (tea.Model, tea.Cmd) {
-		m := NewModel()
-		m.status = initCharmClient
-		m.standalone = true
-		m.cfg = cfg
-
-		return m, tea.Batch(charmclient.NewClient(cfg), spinner.Tick(m.spinner))
-	}
+func (m Model) Init() tea.Cmd {
+	return tea.Batch(charmclient.NewClient(m.cfg), spinner.Tick(m.spinner))
 }
 
 // Update is the Tea update loop.
-func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
-	m, ok := model.(Model)
-	if !ok {
-		m.err = errors.New("could not perform model assertion in update")
-	}
-
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -256,14 +243,13 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 	}
 
 	if m.status == keygenRunning {
-		newKeygenModel, cmd := keygen.Update(msg, m.keygen)
-		mdl, ok := newKeygenModel.(keygen.Model)
+		newModel, cmd := m.keygen.Update(msg)
+		keygenModel, ok := newModel.(keygen.Model)
 		if !ok {
-			// This shouldn't happen, but if it does, it's fatal
-			m.err = errors.New("could not assert model to keygen.Model in linkgen update")
-			return m, tea.Quit
+			panic("could not perform assertion on keygen model")
 		}
-		m.keygen = mdl
+
+		m.keygen = keygenModel
 		return m, cmd
 	}
 
@@ -271,13 +257,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 }
 
 // View renders the UI.
-func View(model tea.Model) string {
-	m, ok := model.(Model)
-	if !ok {
-		m.status = linkError
-		m.err = errors.New("could not perform model assertion in view")
-	}
-
+func (m Model) View() string {
 	var s string
 	preamble := common.Wrap(fmt.Sprintf(
 		"You can %s the SSH keys on another machine to your Charm account so both machines have access to your stuff. You can unlink keys at any time.\n\n",
@@ -293,7 +273,7 @@ func View(model tea.Model) string {
 		if m.keygen.Status != keygen.StatusSuccess {
 			s += spinner.View(m.spinner)
 		}
-		s += keygen.View(m.keygen)
+		s += m.keygen.View()
 	case linkInit:
 		s += preamble
 		s += spinner.View(m.spinner) + " Generating link..."

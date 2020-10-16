@@ -27,6 +27,9 @@ const (
 )
 
 type failedMsg struct{ err error }
+
+func (f failedMsg) Error() string { return f.err.Error() }
+
 type successMsg struct{}
 
 // DoneMsg is sent when the keygen has completely finished running.
@@ -41,18 +44,6 @@ type Model struct {
 	terminalWidth int
 }
 
-// Init is the Bubble Tea initialization function for the keygen.
-func Init() (tea.Model, tea.Cmd) {
-	m := NewModel()
-	m.standalone = true
-
-	m.spinner = spinner.NewModel()
-	m.spinner.Frames = common.SpinnerFrames
-	m.spinner.ForegroundColor = common.SpinnerColor.String()
-
-	return m, tea.Batch(GenerateKeys, spinner.Tick(m.spinner))
-}
-
 // NewModel returns a new keygen model in its initial state.
 func NewModel() Model {
 	return Model{
@@ -60,13 +51,17 @@ func NewModel() Model {
 	}
 }
 
-// Update is the Bubble Tea update loop for the keygen.
-func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
-	m, ok := model.(Model)
-	if !ok {
-		return model, nil
-	}
+// Init is the Bubble Tea initialization function for the keygen.
+func (m Model) Init() tea.Cmd {
+	m.standalone = true
+	m.spinner = spinner.NewModel()
+	m.spinner.Frames = common.SpinnerFrames
+	m.spinner.ForegroundColor = common.SpinnerColor.String()
+	return tea.Batch(GenerateKeys, spinner.Tick(m.spinner))
+}
 
+// Update is the Bubble Tea update loop for the keygen.
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -102,12 +97,7 @@ func Update(msg tea.Msg, model tea.Model) (tea.Model, tea.Cmd) {
 }
 
 // View renders the view from the keygen model.
-func View(model tea.Model) string {
-	m, ok := model.(Model)
-	if !ok {
-		return "could not perform assertion on model in view"
-	}
-
+func (m Model) View() string {
 	var s string
 
 	switch m.Status {
