@@ -16,21 +16,20 @@ Manage your Charm account and access The Charm Cloud.
 
 ## Installation
 
-macOS and Linux users can use Homebrew:
+Use your fave package manager:
 
 ```bash
+# macOS or Linux
 brew tap charmbracelet/tap && brew install charmbracelet/tap/charm
-```
 
-Or you can download a binary from the [releases][releases] page. macOS, Linux,
-FreeBSD binaries are available, as well as Debian and RPM packages. ARM builds
-are also available for Linux and FreeBSD.
+# Arch Linux (btw)
+yay -S charm-tool
+```
 
 Or you can download a binary from the [releases][releases] page. macOS, Linux,
 Windows, FreeBSD, and OpenBSD binaries are available, as well as Debian, RPM,
 and Alpine packages. ARM builds are also available for Linux, FreeBSD, and
 OpenBSD.
-
 
 Or just build and install it yourself:
 
