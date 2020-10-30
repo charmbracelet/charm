@@ -336,7 +336,7 @@ func updateChilden(msg tea.Msg, m model) (model, tea.Cmd) {
 	case setUsernameChoice:
 		m.status = statusSettingUsername
 		m.menuChoice = unsetChoice
-		cmd = username.InitialCmd(m.username)
+		cmd = username.InitialCmd
 
 	case backupChoice:
 		m.status = statusShowBackupInfo

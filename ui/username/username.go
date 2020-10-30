@@ -121,13 +121,13 @@ func NewModel(cc *charm.Client) Model {
 func Init(cc *charm.Client) func() (Model, tea.Cmd) {
 	return func() (Model, tea.Cmd) {
 		m := NewModel(cc)
-		return m, InitialCmd(m)
+		return m, InitialCmd
 	}
 }
 
 // InitialCmd returns the initial command.
-func InitialCmd(m Model) tea.Cmd {
-	return input.Blink(m.input)
+func InitialCmd() tea.Msg {
+	return input.Blink
 }
 
 // Update is the Bubble Tea update loop.

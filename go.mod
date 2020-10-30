@@ -4,8 +4,8 @@ go 1.13
 
 require (
 	github.com/calmh/randomart v1.1.0
-	github.com/charmbracelet/bubbles v0.6.2-0.20201016183608-a498b857d6c6
-	github.com/charmbracelet/bubbletea v0.12.0
+	github.com/charmbracelet/bubbles v0.7.2
+	github.com/charmbracelet/bubbletea v0.12.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/google/uuid v1.1.1
 	github.com/mattn/go-isatty v0.0.12
@@ -18,6 +18,6 @@ require (
 	github.com/muesli/termenv v0.7.4
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5 // indirect
-	golang.org/x/crypto v0.0.0-20201012173705-84dcc777aaee
-	golang.org/x/sys v0.0.0-20201016160150-f659759dc4ca
+	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
+	golang.org/x/sys v0.0.0-20201020230747-6e5568b54d1a
 )
