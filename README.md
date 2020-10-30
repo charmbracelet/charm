@@ -32,10 +32,12 @@ and Alpine packages. ARM builds are also available for Linux, FreeBSD, and
 OpenBSD.
 
 
-Or just use `go get`:
+Or just build and install it yourself:
 
 ```bash
-go get github.com/charmbracelet/charm/cmd/charm
+git clone https://github.com/charmbracelet/charm.git
+cd charm
+go install
 ```
 
 Bash/Zsh/Fish completion is also available. See `charm help completion`.
