@@ -24,6 +24,9 @@ brew tap charmbracelet/tap && brew install charmbracelet/tap/charm
 
 # Arch Linux (btw)
 yay -S charm-tool
+
+# Nix
+nix-env -iA nixpkgs.charm
 ```
 
 Or you can download a binary from the [releases][releases] page. macOS, Linux,
