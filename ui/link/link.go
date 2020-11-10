@@ -74,7 +74,7 @@ func newModel(cfg *charm.Config, code string) model {
 func (m model) Init() tea.Cmd {
 	return tea.Batch(
 		charmclient.NewClient(m.cfg),
-		spinner.Tick(m.spinner),
+		spinner.Tick,
 	)
 }
 
@@ -144,7 +144,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case spinner.TickMsg:
 		var cmd tea.Cmd
-		m.spinner, cmd = spinner.Update(msg, m.spinner)
+		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 
 	default:
@@ -168,7 +168,7 @@ func (m model) View() string {
 		return paddedView(m.err.Error())
 	}
 
-	s := spinner.View(m.spinner) + " "
+	s := m.spinner.View() + " "
 
 	switch m.status {
 	case initCharmClient:

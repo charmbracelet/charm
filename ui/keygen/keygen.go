@@ -57,7 +57,7 @@ func (m Model) Init() tea.Cmd {
 	m.spinner = spinner.NewModel()
 	m.spinner.Frames = common.SpinnerFrames
 	m.spinner.ForegroundColor = common.SpinnerColor.String()
-	return tea.Batch(GenerateKeys, spinner.Tick(m.spinner))
+	return tea.Batch(GenerateKeys, spinner.Tick)
 }
 
 // Update is the Bubble Tea update loop for the keygen.
@@ -87,7 +87,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case spinner.TickMsg:
 		if m.Status == StatusRunning {
-			newSpinnerModel, cmd := spinner.Update(msg, m.spinner)
+			newSpinnerModel, cmd := m.spinner.Update(msg)
 			m.spinner = newSpinnerModel
 			return m, cmd
 		}
@@ -103,7 +103,7 @@ func (m Model) View() string {
 	switch m.Status {
 	case StatusRunning:
 		if m.standalone {
-			s += spinner.View(m.spinner)
+			s += m.spinner.View()
 		}
 		s += " Generating keys..."
 	case StatusSuccess:
