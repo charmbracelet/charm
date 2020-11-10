@@ -40,7 +40,9 @@ const (
 
 // NewProgram creates a new Tea program.
 func NewProgram(cfg *charm.Config) *tea.Program {
-	return tea.NewProgram(NewModel(cfg))
+	m := NewModel(cfg)
+	m.standalone = true
+	return tea.NewProgram(m)
 }
 
 type keysLoadedMsg charm.Keys
@@ -77,7 +79,7 @@ func (m *Model) getSelectedIndex() int {
 func (m *Model) UpdatePaging(msg tea.Msg) {
 	// Handle paging
 	m.pager.SetTotalPages(len(m.keys))
-	m.pager, _ = pager.Update(msg, m.pager)
+	m.pager, _ = m.pager.Update(msg)
 
 	// If selected item is out of bounds, put it in bounds
 	numItems := m.pager.ItemsOnPage(len(m.keys))
@@ -124,7 +126,7 @@ func NewModel(cfg *charm.Config) Model {
 func (m Model) Init() tea.Cmd {
 	return tea.Batch(
 		charmclient.NewClient(m.cfg),
-		spinner.Tick(m.spinner),
+		spinner.Tick,
 	)
 }
 
@@ -166,7 +168,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.UpdatePaging(msg)
 			return m, nil
 
-			// Confirm Delete
+		// Confirm Delete
 		case "y":
 			switch m.state {
 			case stateDeletingKey:
@@ -176,7 +178,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 				if m.getSelectedIndex() == m.activeKeyIndex {
-					// The user is going to delete
+					// The user is going to delete her active key. Double confirm.
 					m.state = stateDeletingActiveKey
 					return m, nil
 				}
@@ -247,7 +249,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case spinner.TickMsg:
 		var cmd tea.Cmd
 		if m.state < stateNormal {
-			m.spinner, cmd = spinner.Update(msg, m.spinner)
+			m.spinner, cmd = m.spinner.Update(msg)
 		}
 		return m, cmd
 	}
@@ -286,14 +288,14 @@ func (m Model) View() string {
 
 	switch m.state {
 	case stateInitCharmClient:
-		s = spinner.View(m.spinner) + " Initializing...\n\n"
+		s = m.spinner.View() + " Initializing...\n\n"
 	case stateKeygenRunning:
 		if m.keygen.Status != keygen.StatusSuccess {
-			s += spinner.View(m.spinner)
+			s += m.spinner.View()
 		}
 		s += m.keygen.View()
 	case stateLoading:
-		s = spinner.View(m.spinner) + " Loading...\n\n"
+		s = m.spinner.View() + " Loading...\n\n"
 	case stateQuitting:
 		s = "Thanks for using Charm!\n"
 	default:
@@ -302,7 +304,7 @@ func (m Model) View() string {
 		// Keys
 		s += keysView(m)
 		if m.pager.TotalPages > 1 {
-			s += pager.View(m.pager)
+			s += m.pager.View()
 		}
 
 		// Footer
@@ -394,7 +396,7 @@ func LoadKeys(m Model) tea.Cmd {
 	}
 	return tea.Batch(
 		fetchKeys(m.cc),
-		spinner.Tick(m.spinner),
+		spinner.Tick,
 	)
 }
 

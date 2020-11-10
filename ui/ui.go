@@ -120,7 +120,7 @@ func initialModel(cfg *charm.Config) model {
 func (m model) Init() tea.Cmd {
 	return tea.Batch(
 		charmclient.NewClient(m.cfg),
-		spinner.Tick(m.spinner),
+		spinner.Tick,
 	)
 }
 
@@ -174,7 +174,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case spinner.TickMsg:
 		switch m.status {
 		case statusInit, statusKeygen, statusKeygenComplete, statusFetching:
-			m.spinner, cmd = spinner.Update(msg, m.spinner)
+			m.spinner, cmd = m.spinner.Update(msg)
 			return m, cmd
 		}
 
@@ -196,7 +196,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.status = statusKeygenComplete
 		return m, tea.Batch(
 			charmclient.NewClient(m.cfg),
-			spinner.Tick(m.spinner),
+			spinner.Tick,
 		)
 
 	case charmclient.NewClientMsg:
@@ -336,7 +336,7 @@ func updateChilden(msg tea.Msg, m model) (model, tea.Cmd) {
 	case setUsernameChoice:
 		m.status = statusSettingUsername
 		m.menuChoice = unsetChoice
-		cmd = username.InitialCmd
+		cmd = username.InitialCmd()
 
 	case backupChoice:
 		m.status = statusShowBackupInfo
@@ -355,17 +355,17 @@ func (m model) View() string {
 
 	switch m.status {
 	case statusInit:
-		s += spinner.View(m.spinner) + " Initializing..."
+		s += m.spinner.View() + " Initializing..."
 	case statusKeygen:
 		if m.keygen.Status == keygen.StatusRunning {
-			s += spinner.View(m.spinner)
+			s += m.spinner.View()
 		}
 		s += m.keygen.View()
 	case statusKeygenComplete:
-		s += spinner.View(m.spinner) + " Reinitializing..."
+		s += m.spinner.View() + " Reinitializing..."
 	case statusFetching:
 		if m.info.User == nil {
-			s += spinner.View(m.spinner)
+			s += m.spinner.View()
 		}
 		s += info.View(m.info)
 	case statusReady:

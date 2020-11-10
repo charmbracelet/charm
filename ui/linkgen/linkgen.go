@@ -118,7 +118,7 @@ func (m *Model) SetCharmClient(cc *charm.Client) {
 // Init is the Bubble Tea program's initialization function. This is used in
 // standalone mode.
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(charmclient.NewClient(m.cfg), spinner.Tick(m.spinner))
+	return tea.Batch(charmclient.NewClient(m.cfg), spinner.Tick)
 }
 
 // Update is the Tea update loop.
@@ -235,7 +235,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case spinner.TickMsg:
 		switch m.status {
 		case initCharmClient, keygenRunning, linkInit:
-			newSpinnerModel, cmd := spinner.Update(msg, m.spinner)
+			newSpinnerModel, cmd := m.spinner.Update(msg)
 			m.spinner = newSpinnerModel
 			return m, cmd
 		}
@@ -267,16 +267,16 @@ func (m Model) View() string {
 	switch m.status {
 	case initCharmClient:
 		s += preamble
-		s += spinner.View(m.spinner) + " Initializing..."
+		s += m.spinner.View() + " Initializing..."
 	case keygenRunning:
 		s += preamble
 		if m.keygen.Status != keygen.StatusSuccess {
-			s += spinner.View(m.spinner)
+			s += m.spinner.View()
 		}
 		s += m.keygen.View()
 	case linkInit:
 		s += preamble
-		s += spinner.View(m.spinner) + " Generating link..."
+		s += m.spinner.View() + " Generating link..."
 	case linkTokenCreated:
 		s += preamble
 		s += fmt.Sprintf(
@@ -343,7 +343,7 @@ func (m Model) View() string {
 // InitLinkGen runs the necessary commands for starting the link generation
 // process.
 func InitLinkGen(m Model) tea.Cmd {
-	return tea.Batch(append(HandleLinkRequest(m), spinner.Tick(m.spinner))...)
+	return tea.Batch(append(HandleLinkRequest(m), spinner.Tick)...)
 }
 
 // HandleLinkRequest returns a bunch of blocking commands that resolve on link

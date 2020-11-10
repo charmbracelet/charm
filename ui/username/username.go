@@ -121,12 +121,12 @@ func NewModel(cc *charm.Client) Model {
 func Init(cc *charm.Client) func() (Model, tea.Cmd) {
 	return func() (Model, tea.Cmd) {
 		m := NewModel(cc)
-		return m, InitialCmd
+		return m, InitialCmd()
 	}
 }
 
 // InitialCmd returns the initial command.
-func InitialCmd() tea.Msg {
+func InitialCmd() tea.Cmd {
 	return input.Blink
 }
 
@@ -179,7 +179,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 					return m, tea.Batch(
 						setName(m), // fire off the command, too
-						spinner.Tick(m.spinner),
+						spinner.Tick,
 					)
 				case cancelButton: // Exit this mini-app
 					m.Done = true
@@ -191,7 +191,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 			// in focus
 			if m.index == textInput {
 				var cmd tea.Cmd
-				m.input, cmd = input.Update(msg, m.input)
+				m.input, cmd = m.input.Update(msg)
 
 				return m, cmd
 			}
@@ -225,13 +225,13 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 	case spinner.TickMsg:
 		var cmd tea.Cmd
-		m.spinner, cmd = spinner.Update(msg, m.spinner)
+		m.spinner, cmd = m.spinner.Update(msg)
 
 		return m, cmd
 
 	default:
 		var cmd tea.Cmd
-		m.input, cmd = input.Update(msg, m.input) // Do we still need this?
+		m.input, cmd = m.input.Update(msg) // Do we still need this?
 
 		return m, cmd
 	}
@@ -240,7 +240,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 // View renders current view from the model.
 func View(m Model) string {
 	s := "Enter a new username\n\n"
-	s += input.View(m.input) + "\n\n"
+	s += m.input.View() + "\n\n"
 
 	if m.state == submitting {
 		s += spinnerView(m)
@@ -260,7 +260,7 @@ func nameSetView(m Model) string {
 }
 
 func spinnerView(m Model) string {
-	return spinner.View(m.spinner) + " Submitting..."
+	return m.spinner.View() + " Submitting..."
 }
 
 // Attempt to update the username on the server.
