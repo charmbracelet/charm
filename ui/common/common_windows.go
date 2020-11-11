@@ -4,4 +4,4 @@ package common
 
 import "github.com/charmbracelet/bubbles/spinner"
 
-var SpinnerFrames = spinner.Line
+var Spinner = spinner.Line
