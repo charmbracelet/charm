@@ -89,7 +89,7 @@ func NewModel(cfg *charm.Config) Model {
 	}
 
 	s := spinner.NewModel()
-	s.Frames = common.SpinnerFrames
+	s.Spinner = common.Spinner
 	s.ForegroundColor = "241"
 
 	return Model{

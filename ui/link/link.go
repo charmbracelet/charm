@@ -58,7 +58,7 @@ type model struct {
 func newModel(cfg *charm.Config, code string) model {
 	sp := spinner.NewModel()
 	sp.ForegroundColor = "241"
-	sp.Frames = common.SpinnerFrames
+	sp.Spinner = common.Spinner
 
 	return model{
 		cfg:           cfg,

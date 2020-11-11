@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/calmh/randomart v1.1.0
-	github.com/charmbracelet/bubbles v0.7.4
+	github.com/charmbracelet/bubbles v0.7.5
 	github.com/charmbracelet/bubbletea v0.12.2
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/google/uuid v1.1.1
