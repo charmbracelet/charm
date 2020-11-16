@@ -14,7 +14,7 @@ var (
 		Long:   formatLong(""),
 		Args:   cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cc := initCharmClient()
+			cc := initCharmClient(true)
 			u, err := cc.Bio()
 			if err != nil {
 				return err

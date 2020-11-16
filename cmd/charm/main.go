@@ -7,6 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm"
+	"github.com/charmbracelet/charm/keygen"
 	"github.com/charmbracelet/charm/ui"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/mattn/go-isatty"
@@ -74,10 +75,21 @@ func getCharmConfig() *charm.Config {
 	return cfg
 }
 
-func initCharmClient() *charm.Client {
+func initCharmClient(useKeygen bool) *charm.Client {
 	cfg := getCharmConfig()
 	cc, err := charm.NewClient(cfg)
 	if err == charm.ErrMissingSSHAuth {
+
+		if useKeygen {
+			// Generate keys
+			if _, err := keygen.NewSSHKeyPair([]byte("")); err != nil {
+				printFormatted("Uh oh. We tried to generate a new pair of keys for your " + common.Keyword("Charm Account") + " but we hit a snag:\n\n" + err.Error())
+				os.Exit(1)
+			}
+			// Now try again
+			return initCharmClient(false)
+		}
+
 		printFormatted("We were’t able to authenticate via SSH, which means there’s likely a problem with your key.\n\nYou can generate SSH keys by running " + common.Code("charm keygen") + ". You can also set the environment variable " + common.Code("CHARM_SSH_KEY_PATH") + " to point to a specific private key, or use " + common.Code("-i") + "specifify a location.")
 		os.Exit(1)
 	} else if err != nil {
