@@ -27,7 +27,7 @@ var (
 					defer f.Close()
 				}
 
-				return tea.NewProgram(keygen.NewModel()).Start()
+				return keygen.NewProgram(true).Start()
 			} else {
 				// TODO
 			}
