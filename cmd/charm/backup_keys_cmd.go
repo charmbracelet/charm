@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -24,6 +25,20 @@ var (
 		Args:                  cobra.NoArgs,
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			const filename = "charm-keys-backup.tar"
+
+			cwd, err := os.Getwd()
+			if err != nil {
+				return err
+			}
+
+			// Don't overwrite backup file
+			keyPath := path.Join(cwd, filename)
+			if fileOrDirectoryExists(keyPath) {
+				printFormatted(fmt.Sprintf("Not creating backup file: %s already exists.", common.Code(filename)))
+				os.Exit(1)
+			}
+
 			dd, err := charm.DataPath()
 			if err != nil {
 				return err
@@ -33,16 +48,22 @@ var (
 				return err
 			}
 
-			fileName := "charm-keys-backup.tar"
-			err = createTar(dd, fileName)
+			err = createTar(dd, filename)
 			if err != nil {
 				return err
 			}
-			printFormatted(fmt.Sprintf("Done! Saved keys to %s.", common.Code(fileName)))
+			printFormatted(fmt.Sprintf("Done! Saved keys to %s.", common.Code(filename)))
 			return nil
 		},
 	}
 )
+
+func fileOrDirectoryExists(path string) bool {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
 
 func validateDirectory(path string) error {
 	info, err := os.Stat(path)
