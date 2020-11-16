@@ -31,7 +31,7 @@ var (
 				return keys.NewProgram(cfg).Start()
 
 			} else {
-				cc := initCharmClient(true)
+				cc := initCharmClient(animatedKeygen)
 
 				// Print randomart with fingerprints
 				k, err := cc.AuthorizedKeysWithMetadata()

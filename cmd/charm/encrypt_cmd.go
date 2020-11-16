@@ -26,7 +26,7 @@ var (
 		Example: indent.String("echo \"my secret message\" | charm encrypt\ncharm encrypt < secret_photo.jpg > encrypted_photo.json", indentBy),
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cc := initCharmClient(true)
+			cc := initCharmClient(silentKeygen)
 			b, err := ioutil.ReadAll(os.Stdin)
 			if err != nil {
 				return err

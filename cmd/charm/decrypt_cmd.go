@@ -47,7 +47,7 @@ var (
 			if err != nil {
 				return err
 			}
-			cc := initCharmClient(true)
+			cc := initCharmClient(silentKeygen)
 			out, err := cc.Decrypt(cf.EncryptKey, d)
 			if err != nil {
 				return err

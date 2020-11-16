@@ -15,7 +15,7 @@ var (
 		Long:   formatLong(fmt.Sprintf("%s encrypt keys for all linked public keys", common.Keyword("Re-encrypt"))),
 		Args:   cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cc := initCharmClient(true)
+			cc := initCharmClient(animatedKeygen)
 			return cc.SyncEncryptKeys()
 		},
 	}

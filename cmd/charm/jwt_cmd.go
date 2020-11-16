@@ -14,7 +14,7 @@ var (
 		Long:  formatLong(common.Keyword("JSON Web Tokens") + " are a way to authenticate to different services that utilize your Charm account. Use " + common.Code("jwt") + " to get one for your account."),
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cc := initCharmClient(true)
+			cc := initCharmClient(animatedKeygen)
 			jwt, err := cc.JWT()
 			if err != nil {
 				return err
