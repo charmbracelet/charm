@@ -4,8 +4,10 @@ import (
 	"archive/tar"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/charmbracelet/charm"
@@ -22,11 +24,16 @@ var (
 		Args:                  cobra.NoArgs,
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fileName := "charm-keys-backup.tar"
 			dd, err := charm.DataPath()
 			if err != nil {
 				return err
 			}
+
+			if err := validateDirectory(dd); err != nil {
+				return err
+			}
+
+			fileName := "charm-keys-backup.tar"
 			err = createTar(dd, fileName)
 			if err != nil {
 				return err
@@ -36,6 +43,40 @@ var (
 		},
 	}
 )
+
+func validateDirectory(path string) error {
+	info, err := os.Stat(path)
+	if err == nil {
+		if !info.IsDir() {
+			return fmt.Errorf("%v is not a directory, but it should be", path)
+		}
+
+		files, err := ioutil.ReadDir(path)
+		if err != nil {
+			return err
+		}
+
+		foundKeys := 0
+		keyPattern := regexp.MustCompile(`charm_(rsa|ed25519)(\.pub)?`)
+
+		for _, f := range files {
+			if !f.IsDir() && keyPattern.MatchString(f.Name()) {
+				foundKeys++
+			}
+		}
+		if foundKeys < 2 {
+			return fmt.Errorf("we didn’t find any keys to backup in %s", path)
+		}
+
+		// Everything looks OK!
+		return nil
+
+	} else if os.IsNotExist(err) {
+		return fmt.Errorf("'%v' does not exist", path)
+	} else {
+		return err
+	}
+}
 
 func createTar(source string, target string) error {
 	tarfile, err := os.Create(target)
