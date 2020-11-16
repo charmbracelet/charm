@@ -18,7 +18,7 @@ var (
 		Args:    cobra.RangeArgs(0, 1),
 		Example: indent.String("charm name\ncharm name beatrix", indentBy),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cc := initCharmClient()
+			cc := initCharmClient(true)
 			switch len(args) {
 			case 0:
 				u, err := cc.Bio()

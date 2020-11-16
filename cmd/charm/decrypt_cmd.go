@@ -47,7 +47,7 @@ var (
 			if err != nil {
 				return err
 			}
-			cc := initCharmClient()
+			cc := initCharmClient(true)
 			out, err := cc.Decrypt(cf.EncryptKey, d)
 			if err != nil {
 				return err

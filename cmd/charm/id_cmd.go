@@ -14,7 +14,7 @@ var (
 		Long:  formatLong("Want to know your " + common.Keyword("Charm ID") + "? You’re in luck, kiddo."),
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cc := initCharmClient()
+			cc := initCharmClient(true)
 			id, err := cc.ID()
 			if err != nil {
 				return err
