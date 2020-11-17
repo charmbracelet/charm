@@ -2,7 +2,6 @@ package main
 
 import (
 	"archive/tar"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -25,10 +24,6 @@ var (
 		Args:                  cobra.ExactArgs(1),
 		DisableFlagsInUseLine: false,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if !isTTY() && !forceImportOverwrite {
-				return errors.New("not a TTY; for non-interactive mode use -f")
-			}
-
 			dd, err := charm.DataPath()
 			if err != nil {
 				return err
@@ -44,7 +39,10 @@ var (
 			}
 
 			if !empty && !forceImportOverwrite {
-				return newImportConfirmationTUI(args[0], dd).Start()
+				if isTTY() {
+					return newImportConfirmationTUI(args[0], dd).Start()
+				}
+				return fmt.Errorf("not overwriting the existing keys in %s; to force, use -f", dd)
 			}
 
 			err = untar(args[0], filepath.Dir(dd))
