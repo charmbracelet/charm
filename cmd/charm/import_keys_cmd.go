@@ -34,6 +34,10 @@ var (
 				return err
 			}
 
+			if err := os.MkdirAll(dd, 0700); err != nil {
+				return err
+			}
+
 			empty, err := isEmpty(dd)
 			if err != nil {
 				return err
