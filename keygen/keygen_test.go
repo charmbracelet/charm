@@ -12,14 +12,6 @@ func TestSSHKeyGeneration(t *testing.T) {
 	// Create temp directory for keys
 	dir := t.TempDir()
 
-	// Cleanup temp directory after testing
-	// NOTE: this is Go 1.14+ only
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Errorf("error cleaning up temp directory (%s): %v\n", dir, err)
-		}
-	}()
-
 	t.Run("test generate SSH keys", func(t *testing.T) {
 		err := k.GenerateEd25519Keys()
 		if err != nil {
