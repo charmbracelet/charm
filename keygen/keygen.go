@@ -38,7 +38,7 @@ func (e SSHKeysAlreadyExistErr) Error() string {
 	return fmt.Sprintf("ssh key %s already exists", e.path)
 }
 
-// FilesystemError is used to signal there was a problem creating keys at the
+// FilesystemErr is used to signal there was a problem creating keys at the
 // filesystem-level. For example, when we're unable to create a directory to
 // store new SSH keys in.
 type FilesystemErr struct {
