@@ -1,7 +1,6 @@
 package keygen
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -11,21 +10,10 @@ func TestSSHKeyGeneration(t *testing.T) {
 	var k = &SSHKeyPair{}
 
 	// Create temp directory for keys
-	dir, err := ioutil.TempDir("", "charm")
-	if err != nil {
-		t.Fatalf("error creating temp directory (%s): %v\n", dir, err)
-	}
-
-	// Cleanup temp directory after testing
-	// NOTE: this is Go 1.14+ only
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Errorf("error cleaning up temp directory (%s): %v\n", dir, err)
-		}
-	}()
+	dir := t.TempDir()
 
 	t.Run("test generate SSH keys", func(t *testing.T) {
-		err = k.GenerateEd25519Keys()
+		err := k.GenerateEd25519Keys()
 		if err != nil {
 			t.Errorf("error creating SSH key pair: %v", err)
 		}
