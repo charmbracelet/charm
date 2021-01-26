@@ -12,51 +12,49 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/charm"
-	"github.com/charmbracelet/charm/ui/common"
+	"github.com/charmbracelet/charm/client/ui/common"
 	"github.com/spf13/cobra"
 )
 
-var (
-	backupKeysCmd = &cobra.Command{
-		Use:                   "backup-keys",
-		Hidden:                false,
-		Short:                 "Backup your Charm account keys",
-		Long:                  formatLong(fmt.Sprintf("%s your Charm account keys.", common.Keyword("Backup"))),
-		Args:                  cobra.NoArgs,
-		DisableFlagsInUseLine: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			const filename = "charm-keys-backup.tar"
+var backupKeysCmd = &cobra.Command{
+	Use:                   "backup-keys",
+	Hidden:                false,
+	Short:                 "Backup your Charm account keys",
+	Long:                  formatLong(fmt.Sprintf("%s your Charm account keys.", common.Keyword("Backup"))),
+	Args:                  cobra.NoArgs,
+	DisableFlagsInUseLine: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		const filename = "charm-keys-backup.tar"
 
-			cwd, err := os.Getwd()
-			if err != nil {
-				return err
-			}
+		cwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
 
-			// Don't overwrite backup file
-			keyPath := path.Join(cwd, filename)
-			if fileOrDirectoryExists(keyPath) {
-				printFormatted(fmt.Sprintf("Not creating backup file: %s already exists.", common.Code(filename)))
-				os.Exit(1)
-			}
+		// Don't overwrite backup file
+		keyPath := path.Join(cwd, filename)
+		if fileOrDirectoryExists(keyPath) {
+			printFormatted(fmt.Sprintf("Not creating backup file: %s already exists.", common.Code(filename)))
+			os.Exit(1)
+		}
 
-			dd, err := charm.DataPath()
-			if err != nil {
-				return err
-			}
+		dd, err := charm.DataPath()
+		if err != nil {
+			return err
+		}
 
-			if err := validateDirectory(dd); err != nil {
-				return err
-			}
+		if err := validateDirectory(dd); err != nil {
+			return err
+		}
 
-			err = createTar(dd, filename)
-			if err != nil {
-				return err
-			}
-			printFormatted(fmt.Sprintf("Done! Saved keys to %s.", common.Code(filename)))
-			return nil
-		},
-	}
-)
+		err = createTar(dd, filename)
+		if err != nil {
+			return err
+		}
+		printFormatted(fmt.Sprintf("Done! Saved keys to %s.", common.Code(filename)))
+		return nil
+	},
+}
 
 func fileOrDirectoryExists(path string) bool {
 	if _, err := os.Stat(path); os.IsNotExist(err) {

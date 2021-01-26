@@ -14,7 +14,6 @@ import (
 	"os/user"
 	"path/filepath"
 
-	"github.com/charmbracelet/charm"
 	"github.com/mikesmitty/edkey"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/ssh"
@@ -26,34 +25,28 @@ const rsaDefaultBits = 4096
 // have after generating. This should be an extreme edge case.
 var ErrMissingSSHKeys = errors.New("missing one or more keys; did something happen to them after they were generated?")
 
-// SSHKeysAlreadyExistErr indicates that files already exist at the location at
-// which we're attempting to create SSH keys.
-type SSHKeysAlreadyExistErr struct {
-	path string
-}
-
-// Error returns the a human-readable error message for SSHKeysAlreadyExistErr.
-// It satisfies the error interface.
-func (e SSHKeysAlreadyExistErr) Error() string {
-	return fmt.Sprintf("ssh key %s already exists", e.path)
-}
-
 // FilesystemErr is used to signal there was a problem creating keys at the
 // filesystem-level. For example, when we're unable to create a directory to
 // store new SSH keys in.
 type FilesystemErr struct {
-	error
+	Err error
 }
 
 // Error returns a human-readable string for the erorr. It implements the error
 // interface.
 func (e FilesystemErr) Error() string {
-	return e.error.Error()
+	return e.Err.Error()
 }
 
 // Unwrap returne the underlying error.
 func (e FilesystemErr) Unwrap() error {
-	return e.error
+	return e.Err
+}
+
+// SSHKeysAlreadyExistErr indicates that files already exist at the location at
+// which we're attempting to create SSH keys.
+type SSHKeysAlreadyExistErr struct {
+	Path string
 }
 
 // SSHKeyPair holds a pair of SSH keys and associated methods.
@@ -74,9 +67,34 @@ func (s SSHKeyPair) publicKeyPath() string {
 
 // NewSSHKeyPair generates an SSHKeyPair, which contains a pair of SSH keys.
 // The keys are written to disk.
-func NewSSHKeyPair(passphrase []byte) (*SSHKeyPair, error) {
+func NewSSHKeyPair(path string, name string, passphrase []byte, keyType string) (*SSHKeyPair, error) {
+	var err error
 	s := &SSHKeyPair{}
-	if err := s.GenerateRSAKeys(rsaDefaultBits, passphrase); err != nil {
+	pubPath := fmt.Sprintf("%s/%s_%s.pub", path, name, keyType)
+	privPath := fmt.Sprintf("%s/%s_%s", path, name, keyType)
+	pubExists := fileExists(pubPath)
+	privExists := fileExists(privPath)
+	if pubExists && privExists {
+		pubData, err := ioutil.ReadFile(pubPath)
+		if err != nil {
+			return nil, err
+		}
+		s.PublicKey = pubData
+		privData, err := ioutil.ReadFile(privPath)
+		if err != nil {
+			return nil, err
+		}
+		pk, _ := pem.Decode(privData)
+		s.PrivateKeyPEM = pk.Bytes
+		return s, nil
+	}
+	switch keyType {
+	case "ed25519":
+		err = s.GenerateEd25519Keys(path, name)
+	default:
+		err = s.GenerateRSAKeys(path, name, rsaDefaultBits, passphrase)
+	}
+	if err != nil {
 		return nil, err
 	}
 	if err := s.WriteKeys(); err != nil {
@@ -86,7 +104,7 @@ func NewSSHKeyPair(passphrase []byte) (*SSHKeyPair, error) {
 }
 
 // GenerateEd25519Keys creates a pair of EdD25519 keys for SSH auth.
-func (s *SSHKeyPair) GenerateEd25519Keys() error {
+func (s *SSHKeyPair) GenerateEd25519Keys(path string, name string) error {
 	// Generate keys
 	pubKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
@@ -105,23 +123,18 @@ func (s *SSHKeyPair) GenerateEd25519Keys() error {
 		return err
 	}
 
-	dataPath, err := charm.DataPath()
-	if err != nil {
-		return err
-	}
-
 	// serialize for public key file on disk
 	serializedPublicKey := ssh.MarshalAuthorizedKey(publicKey)
 
 	s.PrivateKeyPEM = pemBlock
 	s.PublicKey = pubKeyWithMemo(serializedPublicKey)
-	s.KeyDir = dataPath
-	s.Filename = "charm_ed25519"
+	s.KeyDir = path
+	s.Filename = fmt.Sprintf("%s_ed25519", name)
 	return nil
 }
 
 // GenerateRSAKeys creates a pair for RSA keys for SSH auth.
-func (s *SSHKeyPair) GenerateRSAKeys(bitSize int, passphrase []byte) error {
+func (s *SSHKeyPair) GenerateRSAKeys(path string, name string, bitSize int, passphrase []byte) error {
 	// Generate private key
 	privateKey, err := rsa.GenerateKey(rand.Reader, bitSize)
 	if err != nil {
@@ -160,18 +173,13 @@ func (s *SSHKeyPair) GenerateRSAKeys(bitSize int, passphrase []byte) error {
 		return err
 	}
 
-	dataPath, err := charm.DataPath()
-	if err != nil {
-		return err
-	}
-
 	// serialize for public key file on disk
 	serializedPubKey := ssh.MarshalAuthorizedKey(publicRSAKey)
 
 	s.PrivateKeyPEM = pemBlock
 	s.PublicKey = pubKeyWithMemo(serializedPubKey)
-	s.KeyDir = dataPath
-	s.Filename = "charm_rsa"
+	s.KeyDir = path
+	s.Filename = fmt.Sprintf("%s_rsa", name)
 	return nil
 }
 
@@ -195,25 +203,25 @@ func (s *SSHKeyPair) PrepFilesystem() error {
 	}
 	if err != nil {
 		// There was another error statting the directory; something is awry
-		return FilesystemErr{err}
+		return FilesystemErr{Err: err}
 	}
 	if !info.IsDir() {
 		// It exists but it's not a directory
-		return FilesystemErr{fmt.Errorf("%s is not a directory", s.KeyDir)}
+		return FilesystemErr{Err: fmt.Errorf("%s is not a directory", s.KeyDir)}
 	}
 	if info.Mode().Perm() != 0700 {
 		// Permissions are wrong: fix 'em
 		if err := os.Chmod(s.KeyDir, 0700); err != nil {
-			return FilesystemErr{err}
+			return FilesystemErr{Err: err}
 		}
 	}
 
 	// Make sure the files we're going to write to don't already exist
 	if fileExists(s.privateKeyPath()) {
-		return SSHKeysAlreadyExistErr{s.privateKeyPath()}
+		return SSHKeysAlreadyExistErr{Path: s.privateKeyPath()}
 	}
 	if fileExists(s.publicKeyPath()) {
-		return SSHKeysAlreadyExistErr{s.privateKeyPath()}
+		return SSHKeysAlreadyExistErr{Path: s.publicKeyPath()}
 	}
 
 	// The directory looks good as-is
@@ -245,7 +253,7 @@ func writeKeyToFile(keyBytes []byte, path string) error {
 	if os.IsNotExist(err) {
 		return ioutil.WriteFile(path, keyBytes, 0600)
 	}
-	return FilesystemErr{fmt.Errorf("file %s already exists", path)}
+	return FilesystemErr{Err: fmt.Errorf("file %s already exists", path)}
 }
 
 func fileExists(path string) bool {
@@ -272,4 +280,10 @@ func pubKeyWithMemo(pubKey []byte) []byte {
 	}
 
 	return append(bytes.TrimRight(pubKey, "\n"), []byte(fmt.Sprintf(" %s@%s\n", u.Username, hostname))...)
+}
+
+// Error returns the a human-readable error message for SSHKeysAlreadyExistErr.
+// It satisfies the error interface.
+func (e SSHKeysAlreadyExistErr) Error() string {
+	return fmt.Sprintf("ssh key %s already exists", e.Path)
 }

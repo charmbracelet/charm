@@ -7,10 +7,11 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm"
+	"github.com/charmbracelet/charm/client"
+	"github.com/charmbracelet/charm/client/ui"
+	"github.com/charmbracelet/charm/client/ui/common"
+	keygenTUI "github.com/charmbracelet/charm/client/ui/keygen"
 	"github.com/charmbracelet/charm/keygen"
-	"github.com/charmbracelet/charm/ui"
-	"github.com/charmbracelet/charm/ui/common"
-	keygenTUI "github.com/charmbracelet/charm/ui/keygen"
 	"github.com/mattn/go-isatty"
 	"github.com/muesli/reflow/indent"
 	"github.com/muesli/reflow/wordwrap"
@@ -67,8 +68,8 @@ var (
 	}
 )
 
-func getCharmConfig() *charm.Config {
-	cfg, err := charm.ConfigFromEnv()
+func getCharmConfig() *client.Config {
+	cfg, err := client.ConfigFromEnv()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -84,13 +85,13 @@ const (
 	silentKeygen                        // generate keys silently
 )
 
-func initCharmClient(kg keygenSetting) *charm.Client {
+func initCharmClient(kg keygenSetting) *client.Client {
 	cfg := getCharmConfig()
-	cc, err := charm.NewClient(cfg)
+	cc, err := client.NewClient(cfg)
 	if err == charm.ErrMissingSSHAuth {
 
 		if kg != noKeygen {
-			var keygenError = "Uh oh. We tried to generate a new pair of keys for your " + common.Keyword("Charm Account") + " but we hit a snag:\n\n"
+			keygenError := "Uh oh. We tried to generate a new pair of keys for your " + common.Keyword("Charm Account") + " but we hit a snag:\n\n"
 
 			if isatty.IsTerminal(os.Stdout.Fd()) {
 				// Generate	keys, using Bubble Tea for feedback
@@ -101,7 +102,12 @@ func initCharmClient(kg keygenSetting) *charm.Client {
 				}
 			} else {
 				// Generate keys
-				_, err := keygen.NewSSHKeyPair([]byte(""))
+				dp, err := charm.DataPath()
+				if err != nil {
+					printFormatted(keygenError + err.Error())
+					os.Exit(1)
+				}
+				_, err = keygen.NewSSHKeyPair(dp, "charm", []byte(""), "rsa")
 				if err != nil {
 					printFormatted(keygenError + err.Error())
 					os.Exit(1)

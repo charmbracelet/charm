@@ -9,7 +9,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm"
-	"github.com/charmbracelet/charm/ui/common"
+	"github.com/charmbracelet/charm/client/ui/common"
 	"github.com/spf13/cobra"
 )
 
@@ -137,8 +137,10 @@ const (
 	fail
 )
 
-type confirmationSuccessMsg struct{}
-type confirmationErrMsg struct{ error }
+type (
+	confirmationSuccessMsg struct{}
+	confirmationErrMsg     struct{ error }
+)
 
 func untarCmd(tarPath, dataPath string) tea.Cmd {
 	return func() tea.Msg {

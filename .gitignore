@@ -1,3 +1,6 @@
 cmd/charm/charm
 cmd/charm/charm.exe
+cmd/server/server
+cmd/server/.ssh
+*.db
 dist

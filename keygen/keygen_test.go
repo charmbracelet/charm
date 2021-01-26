@@ -6,8 +6,26 @@ import (
 	"testing"
 )
 
+// FilesystemErr is used to signal there was a problem creating keys at the
+// filesystem-level. For example, when we're unable to create a directory to
+// store new SSH keys in.
+type FilesystemErr struct {
+	Err error
+}
+
+// Error returns a human-readable string for the erorr. It implements the error
+// interface.
+func (e FilesystemErr) Error() string {
+	return e.Err.Error()
+}
+
+// Unwrap returne the underlying error.
+func (e FilesystemErr) Unwrap() error {
+	return e.Err
+}
+
 func TestSSHKeyGeneration(t *testing.T) {
-	var k = &SSHKeyPair{}
+	k := &SSHKeyPair{}
 
 	// Create temp directory for keys
 	dir := t.TempDir()
