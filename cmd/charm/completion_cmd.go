@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/charmbracelet/charm/ui/common"
+	"github.com/charmbracelet/charm/client/ui/common"
 	"github.com/spf13/cobra"
 )
 
