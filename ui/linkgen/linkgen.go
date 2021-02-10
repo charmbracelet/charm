@@ -39,7 +39,9 @@ type errMsg struct {
 // NewProgram is a simple wrapper for tea.NewProgram. For use in standalone
 // mode.
 func NewProgram(cfg *charm.Config) *tea.Program {
-	return tea.NewProgram(NewModel(cfg))
+	m := NewModel(cfg)
+	m.standalone = true
+	return tea.NewProgram(m)
 }
 
 // Model is the tea model for the link initiator program.
@@ -95,6 +97,7 @@ func NewModel(cfg *charm.Config) Model {
 	return Model{
 		lh:            lh,
 		standalone:    false,
+		cfg:           cfg,
 		Quit:          false,
 		Exit:          false,
 		err:           nil,
