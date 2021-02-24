@@ -17,7 +17,8 @@ func (cc *Client) AuthedRequest(method string, path string, reqBody interface{},
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest(method, fmt.Sprintf("%s://%s:%d%s", cc.config.HTTPScheme, cc.config.Host, cc.config.HTTPPort, path), buf)
+	cfg := cc.Config
+	req, err := http.NewRequest(method, fmt.Sprintf("%s://%s:%d%s", cfg.HTTPScheme, cfg.Host, cfg.HTTPPort, path), buf)
 	if err != nil {
 		return err
 	}

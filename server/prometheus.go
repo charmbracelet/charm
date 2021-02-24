@@ -27,7 +27,7 @@ type PrometheusStats struct {
 	SetUserNameCalls    prometheus.Counter
 	Users               prometheus.Gauge
 	UserNames           prometheus.Gauge
-	db                  Storage
+	db                  DB
 	port                int
 }
 
@@ -45,7 +45,7 @@ func (ps *PrometheusStats) Start() {
 	log.Fatal(s.ListenAndServe())
 }
 
-func NewPrometheusStats(db Storage, port int) PrometheusStats {
+func NewPrometheusStats(db DB, port int) PrometheusStats {
 	return PrometheusStats{
 		APILinkGenCalls:     newCounter("charm_id_api_link_gen_total", "Total API link gen calls"),
 		APILinkRequestCalls: newCounter("charm_id_api_link_request_total", "Total API link request calls"),

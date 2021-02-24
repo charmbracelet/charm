@@ -26,28 +26,28 @@ func (cc *Client) Auth() (*Auth, error) {
 		auth := &Auth{}
 		s, err := cc.sshSession()
 		if err != nil {
-			return nil, charm.ErrAuthFailed{err}
+			return nil, charm.ErrAuthFailed{Err: err}
 		}
 		defer s.Close()
 
 		b, err := s.Output("api-auth")
 		if err != nil {
-			return nil, charm.ErrAuthFailed{err}
+			return nil, charm.ErrAuthFailed{Err: err}
 		}
 		err = json.Unmarshal(b, auth)
 		if err != nil {
-			return nil, charm.ErrAuthFailed{err}
+			return nil, charm.ErrAuthFailed{Err: err}
 		}
 
 		p := &jwt.Parser{}
 		token, _, err := p.ParseUnverified(auth.JWT, &jwt.StandardClaims{})
 		if err != nil {
-			return nil, charm.ErrAuthFailed{err}
+			return nil, charm.ErrAuthFailed{Err: err}
 		}
 		auth.claims = token.Claims.(*jwt.StandardClaims)
 		cc.auth = auth
 		if err != nil {
-			return nil, charm.ErrAuthFailed{err}
+			return nil, charm.ErrAuthFailed{Err: err}
 		}
 	}
 	return cc.auth, nil

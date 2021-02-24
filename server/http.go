@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/charm"
@@ -15,10 +16,11 @@ import (
 )
 
 type HTTPServer struct {
-	db    Storage
-	stats PrometheusStats
-	cfg   Config
-	mux   *goji.Mux
+	db     DB
+	fstore FileStore
+	stats  PrometheusStats
+	cfg    Config
+	mux    *goji.Mux
 }
 
 type JSONError struct {
@@ -55,7 +57,12 @@ func NewHTTPServer(cfg Config) *HTTPServer {
 	mux.HandleFunc(pat.Get("/v1/bio/:name"), s.handleGetUser)
 	mux.HandleFunc(pat.Post("/v1/bio"), s.handlePostUser)
 	mux.HandleFunc(pat.Post("/v1/encrypt-key"), s.handlePostEncryptKey)
-	s.db = cfg.Storage
+	mux.HandleFunc(pat.Get("/v1/datalog/:name/:seq"), s.handleGetDatalogSeq)
+	mux.HandleFunc(pat.Post("/v1/datalog/:name/:seq"), s.handlePostDatalogSeq)
+	mux.HandleFunc(pat.Get("/v1/seq/:name"), s.handleGetSeq)
+	mux.HandleFunc(pat.Post("/v1/seq/:name"), s.handlePostSeq)
+	s.db = cfg.DB
+	s.fstore = cfg.FileStore
 	return s
 }
 
@@ -76,7 +83,7 @@ func (s *HTTPServer) handleGetUserByID(w http.ResponseWriter, r *http.Request) {
 		s.renderCustomError(w, fmt.Sprintf("missing user for id '%s'", id), http.StatusNotFound)
 		return
 	} else if err != nil {
-		log.Printf("cannot read application request body: %s", err)
+		log.Printf("cannot read request body: %s", err)
 		s.renderError(w)
 		return
 	}
@@ -92,7 +99,7 @@ func (s *HTTPServer) handleGetUser(w http.ResponseWriter, r *http.Request) {
 		s.renderCustomError(w, fmt.Sprintf("missing user for name '%s'", name), http.StatusNotFound)
 		return
 	} else if err != nil {
-		log.Printf("cannot read application request body: %s", err)
+		log.Printf("cannot read request body: %s", err)
 		s.renderError(w)
 		return
 	}
@@ -104,14 +111,14 @@ func (s *HTTPServer) handleGetUser(w http.ResponseWriter, r *http.Request) {
 func (s *HTTPServer) handlePostUser(w http.ResponseWriter, r *http.Request) {
 	id, err := CharmIdFromRequest(r)
 	if err != nil {
-		log.Printf("cannot read application request body: %s", err)
+		log.Printf("cannot read request body: %s", err)
 		s.renderError(w)
 		return
 	}
 	u := &charm.User{}
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("cannot read application request body: %s", err)
+		log.Printf("cannot read request body: %s", err)
 		s.renderError(w)
 		return
 	}
@@ -136,7 +143,7 @@ func (s *HTTPServer) handlePostUser(w http.ResponseWriter, r *http.Request) {
 func (s *HTTPServer) handlePostEncryptKey(w http.ResponseWriter, r *http.Request) {
 	id, err := CharmIdFromRequest(r)
 	if err != nil {
-		log.Printf("cannot read application request body: %s", err)
+		log.Printf("cannot read request body: %s", err)
 		s.renderError(w)
 		return
 	}
@@ -149,7 +156,7 @@ func (s *HTTPServer) handlePostEncryptKey(w http.ResponseWriter, r *http.Request
 	ek := &charm.EncryptKey{}
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("cannot read application request body: %s", err)
+		log.Printf("cannot read request body: %s", err)
 		s.renderError(w)
 		return
 	}
@@ -166,6 +173,121 @@ func (s *HTTPServer) handlePostEncryptKey(w http.ResponseWriter, r *http.Request
 		return
 	}
 	// s.stats.SetUserNameCalls.Inc()
+}
+
+func (s *HTTPServer) handleGetSeq(w http.ResponseWriter, r *http.Request) {
+	name := pat.Param(r, "name")
+	id, err := CharmIdFromRequest(r)
+	if err != nil {
+		log.Printf("cannot read request body: %s", err)
+		s.renderError(w)
+		return
+	}
+	u, err := s.db.GetUserWithID(id)
+	if err != nil {
+		log.Printf("cannot fetch user: %s", err)
+		s.renderError(w)
+		return
+	}
+	seq, err := s.db.GetSeq(u, name)
+	if err != nil {
+		log.Printf("cannot get seq: %s", err)
+		s.renderError(w)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(&charm.SeqMsg{Seq: seq})
+}
+
+func (s *HTTPServer) handlePostSeq(w http.ResponseWriter, r *http.Request) {
+	name := pat.Param(r, "name")
+	id, err := CharmIdFromRequest(r)
+	if err != nil {
+		log.Printf("cannot read request body: %s", err)
+		s.renderError(w)
+		return
+	}
+	u, err := s.db.GetUserWithID(id)
+	if err != nil {
+		log.Printf("cannot fetch user: %s", err)
+		s.renderError(w)
+		return
+	}
+	seq, err := s.db.NextSeq(u, name)
+	if err != nil {
+		log.Printf("cannot get next seq: %s", err)
+		s.renderError(w)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(&charm.SeqMsg{Seq: seq})
+}
+
+func (s *HTTPServer) handlePostDatalogSeq(w http.ResponseWriter, r *http.Request) {
+	name := pat.Param(r, "name")
+	seq := pat.Param(r, "seq")
+	_, err := strconv.Atoi(seq)
+	if err != nil {
+		log.Printf("seq not a number: %s", err)
+		s.renderError(w)
+		return
+	}
+	id, err := CharmIdFromRequest(r)
+	if err != nil {
+		log.Printf("cannot read request body: %s", err)
+		s.renderError(w)
+		return
+	}
+	_, err = s.db.GetUserWithID(id)
+	if err != nil {
+		log.Printf("cannot fetch user: %s", err)
+		s.renderError(w)
+		return
+	}
+	f, _, err := r.FormFile("data")
+	if err != nil {
+		log.Printf("cannot parse form data: %s", err)
+		s.renderError(w)
+		return
+	}
+	defer f.Close()
+	fk := strings.Join([]string{name, seq}, "/")
+	err = s.cfg.FileStore.Put(id, fk, f)
+	if err != nil {
+		log.Printf("cannot store datalog file: %s", err)
+		s.renderError(w)
+		return
+	}
+}
+
+func (s *HTTPServer) handleGetDatalogSeq(w http.ResponseWriter, r *http.Request) {
+	name := pat.Param(r, "name")
+	seq := pat.Param(r, "seq")
+	_, err := strconv.Atoi(seq)
+	if err != nil {
+		log.Printf("seq not a number: %s", err)
+		s.renderError(w)
+		return
+	}
+	id, err := CharmIdFromRequest(r)
+	if err != nil {
+		log.Printf("cannot read request body: %s", err)
+		s.renderError(w)
+		return
+	}
+	_, err = s.db.GetUserWithID(id)
+	if err != nil {
+		log.Printf("cannot fetch user: %s", err)
+		s.renderError(w)
+		return
+	}
+	fk := strings.Join([]string{name, seq}, "/")
+	err = s.cfg.FileStore.Get(id, fk, w)
+	if err != nil {
+		log.Printf("cannot get datalog file: %s", err)
+		s.renderError(w)
+		return
+	}
 }
 
 func (s *HTTPServer) Start() {

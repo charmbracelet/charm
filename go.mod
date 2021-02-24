@@ -8,6 +8,7 @@ require (
 	github.com/calmh/randomart v1.1.0
 	github.com/charmbracelet/bubbles v0.7.5
 	github.com/charmbracelet/bubbletea v0.12.2
+	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.2+incompatible

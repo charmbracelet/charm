@@ -22,7 +22,7 @@ func (me *SSHServer) HandleAPIAuth(s Session) {
 		log.Println(err)
 		return
 	}
-	u, err := me.storage.UserForKey(key, true)
+	u, err := me.db.UserForKey(key, true)
 	if err != nil {
 		log.Println(err)
 		return
@@ -34,7 +34,7 @@ func (me *SSHServer) HandleAPIAuth(s Session) {
 		return
 	}
 
-	eks, err := me.storage.EncryptKeysForPublicKey(u.PublicKey)
+	eks, err := me.db.EncryptKeysForPublicKey(u.PublicKey)
 	if err != nil {
 		log.Printf("Error fetching encrypt keys: %s\n", err)
 		return
@@ -55,14 +55,14 @@ func (me *SSHServer) HandleAPIKeys(s Session) {
 		_ = me.SendAPIMessage(s, "Missing key")
 		return
 	}
-	u, err := me.storage.UserForKey(key, true)
+	u, err := me.db.UserForKey(key, true)
 	if err != nil {
 		log.Println(err)
 		_ = me.SendAPIMessage(s, fmt.Sprintf("API keys error: %s", err))
 		return
 	}
 	log.Printf("API keys for user %s\n", u.CharmID)
-	keys, err := me.storage.KeysForUser(u)
+	keys, err := me.db.KeysForUser(u)
 	if err != nil {
 		log.Println(err)
 		_ = me.SendAPIMessage(s, "There was a problem fetching your keys")
@@ -94,7 +94,7 @@ func (me *SSHServer) HandleID(s Session) {
 		log.Println(err)
 		return
 	}
-	u, err := me.storage.UserForKey(key, true)
+	u, err := me.db.UserForKey(key, true)
 	if err != nil {
 		log.Println(err)
 		return
@@ -110,7 +110,7 @@ func (me *SSHServer) HandleJWT(s Session) {
 		log.Println(err)
 		return
 	}
-	u, err := me.storage.UserForKey(key, true)
+	u, err := me.db.UserForKey(key, true)
 	if err != nil {
 		log.Println(err)
 		return
