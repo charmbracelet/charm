@@ -6,24 +6,6 @@ import (
 	"testing"
 )
 
-// FilesystemErr is used to signal there was a problem creating keys at the
-// filesystem-level. For example, when we're unable to create a directory to
-// store new SSH keys in.
-type FilesystemErr struct {
-	Err error
-}
-
-// Error returns a human-readable string for the erorr. It implements the error
-// interface.
-func (e FilesystemErr) Error() string {
-	return e.Err.Error()
-}
-
-// Unwrap returne the underlying error.
-func (e FilesystemErr) Unwrap() error {
-	return e.Err
-}
-
 func TestSSHKeyGeneration(t *testing.T) {
 	k := &SSHKeyPair{}
 
@@ -31,7 +13,7 @@ func TestSSHKeyGeneration(t *testing.T) {
 	dir := t.TempDir()
 
 	t.Run("test generate SSH keys", func(t *testing.T) {
-		err := k.GenerateEd25519Keys()
+		err := k.GenerateEd25519Keys(dir, "test")
 		if err != nil {
 			t.Errorf("error creating SSH key pair: %v", err)
 		}

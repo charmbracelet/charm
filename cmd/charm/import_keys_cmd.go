@@ -55,6 +55,10 @@ var (
 	}
 )
 
+func init() {
+	importKeysCmd.Flags().BoolVarP(&forceImportOverwrite, "force-overwrite", "f", false, "overwrite if keys exist; don’t prompt for input")
+}
+
 func isEmpty(name string) (bool, error) {
 	f, err := os.Open(name)
 	if err != nil {

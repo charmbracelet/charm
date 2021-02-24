@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/charmbracelet/charm/server/sqlite"
 	"github.com/meowgorithm/babyenv"
@@ -13,9 +14,11 @@ type Config struct {
 	HTTPPort   int    `env:"CHARM_HTTP_PORT" default:"35354"`
 	StatsPort  int    `env:"CHARM_STATS_PORT" default:"35355"`
 	HealthPort string `env:"CHARM_HEALTH_PORT" default:"35356"`
+	DataDir    string `env:"CHARM_DATA_DIR" default:"./data"`
 	PublicKey  []byte
 	PrivateKey []byte
-	Storage    Storage
+	DB         DB
+	FileStore  FileStore
 	Stats      PrometheusStats
 }
 
@@ -30,15 +33,30 @@ type Server struct {
 
 func DefaultConfig() Config {
 	var cfg Config
-	if err := babyenv.Parse(&cfg); err != nil {
-		panic(fmt.Sprintf("could not read environment: %s", err))
+	err := babyenv.Parse(&cfg)
+	if err != nil {
+		log.Fatalf("could not read environment: %s", err)
 	}
-	db := sqlite.NewDB("./")
-	return cfg.WithStorage(db).WithStats(NewPrometheusStats(db, cfg.StatsPort))
+	dp := fmt.Sprintf("%s/db", cfg.DataDir)
+	err = EnsureDir(dp)
+	if err != nil {
+		log.Fatalf("could not init sqlite path: %s", err)
+	}
+	db := sqlite.NewDB(dp)
+	fs, err := NewLocalFileStore(fmt.Sprintf("%s/files", cfg.DataDir))
+	if err != nil {
+		log.Fatalf("could not init file path: %s", err)
+	}
+	return cfg.WithDB(db).WithFileStore(fs).WithStats(NewPrometheusStats(db, cfg.StatsPort))
 }
 
-func (cfg Config) WithStorage(s Storage) Config {
-	cfg.Storage = s
+func (cfg Config) WithDB(db DB) Config {
+	cfg.DB = db
+	return cfg
+}
+
+func (cfg Config) WithFileStore(fs FileStore) Config {
+	cfg.FileStore = fs
 	return cfg
 }
 

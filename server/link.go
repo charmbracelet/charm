@@ -172,7 +172,7 @@ func (me *SSHServer) LinkGen(lt LinkTransport) error {
 			if u.CharmID == "" {
 				// Create account for the link generator public key if it doesn't exist
 				log.Printf("Creating account for token: %s", tok)
-				u, err = me.storage.UserForKey(u.PublicKey.Key, true)
+				u, err = me.db.UserForKey(u.PublicKey.Key, true)
 				if err != nil {
 					log.Printf("Create account error: %s", err)
 					l.Status = charm.LinkStatusError
@@ -182,7 +182,7 @@ func (me *SSHServer) LinkGen(lt LinkTransport) error {
 			}
 			log.Printf("Found account %s\n", u.CharmID)
 			// Look up account for the link requester public key
-			lu, err := me.storage.UserForKey(l.RequestPubKey, false)
+			lu, err := me.db.UserForKey(l.RequestPubKey, false)
 			if err != nil && err != charm.ErrMissingUser {
 				log.Printf("Storage key lookup error: %s", err)
 				l.Status = charm.LinkStatusError
@@ -192,7 +192,7 @@ func (me *SSHServer) LinkGen(lt LinkTransport) error {
 			if err == charm.ErrMissingUser {
 				// Add the link requester's key to the link generator's account if one does not exist
 				log.Printf("Link account key to account %s", u.CharmID)
-				err = me.storage.LinkUserKey(u, l.RequestPubKey)
+				err = me.db.LinkUserKey(u, l.RequestPubKey)
 				if err != nil {
 					l.Status = charm.LinkStatusError
 					me.sendLink(lt, linkRequest, l)
@@ -207,7 +207,7 @@ func (me *SSHServer) LinkGen(lt LinkTransport) error {
 			} else {
 				// Link requester's key is linked to another acccount, merge
 				log.Printf("Key is already linked to different account %s", lu.CharmID)
-				err = me.storage.MergeUsers(u.ID, lu.ID)
+				err = me.db.MergeUsers(u.ID, lu.ID)
 				if err != nil {
 					l.Status = charm.LinkStatusError
 					me.sendLink(lt, linkRequest, l)
@@ -282,7 +282,7 @@ func (me *SSHServer) HandleLinkGenAPI(s Session) {
 		_ = me.SendAPIMessage(s, fmt.Sprintf("Missing public key %s", err))
 		return
 	}
-	u, err := me.storage.UserForKey(key, true)
+	u, err := me.db.UserForKey(key, true)
 	if err != nil {
 		_ = me.SendAPIMessage(s, fmt.Sprintf("Storage key lookup error: %s", err))
 		return
@@ -340,7 +340,7 @@ func (me *SSHServer) HandleAPIUnlink(s Session) {
 		_ = me.SendAPIMessage(s, "Missing key")
 		return
 	}
-	u, err := me.storage.UserForKey(key, true)
+	u, err := me.db.UserForKey(key, true)
 	if err != nil {
 		log.Printf("Error fetching user: %s", err)
 		_ = me.SendAPIMessage(s, fmt.Sprintf("Error fetching user: %s", err))
@@ -360,7 +360,7 @@ func (me *SSHServer) HandleAPIUnlink(s Session) {
 		_ = me.SendAPIMessage(s, "missing key")
 		return
 	}
-	err = me.storage.UnlinkUserKey(u, ur.Key)
+	err = me.db.UnlinkUserKey(u, ur.Key)
 	if err != nil {
 		log.Printf("Error unlinking account: %s", err)
 		_ = me.SendAPIMessage(s, fmt.Sprintf("Error unlinking account: %s", err))

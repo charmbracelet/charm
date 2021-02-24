@@ -33,7 +33,7 @@ type Config struct {
 
 // Client is the Charm client.
 type Client struct {
-	config               *Config
+	Config               *Config
 	auth                 *Auth
 	authLock             *sync.Mutex
 	sshConfig            *ssh.ClientConfig
@@ -61,7 +61,7 @@ func ConfigFromEnv() (*Config, error) {
 // NewClient creates a new Charm client.
 func NewClient(cfg *Config) (*Client, error) {
 	cc := &Client{
-		config:         cfg,
+		Config:         cfg,
 		auth:           &Auth{},
 		authLock:       &sync.Mutex{},
 		encryptKeyLock: &sync.Mutex{},
@@ -223,7 +223,8 @@ func ValidateName(name string) bool {
 }
 
 func (cc *Client) sshSession() (*ssh.Session, error) {
-	c, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cc.config.Host, cc.config.SSHPort), cc.sshConfig)
+	cfg := cc.Config
+	c, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", cfg.Host, cfg.SSHPort), cc.sshConfig)
 	if err != nil {
 		return nil, err
 	}

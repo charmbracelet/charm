@@ -14,6 +14,71 @@ import (
 	"github.com/muesli/sasquatch"
 )
 
+type EncryptedWriter struct {
+	w io.WriteCloser
+}
+
+type DecryptedReader struct {
+	r io.Reader
+}
+
+func (cc *Client) NewDecryptedReader(keyID string, r io.Reader) (DecryptedReader, error) {
+	dr := DecryptedReader{}
+	err := cc.cryptCheck()
+	if err != nil {
+		return dr, err
+	}
+	k, err := cc.keyForID(keyID)
+	if err != nil {
+		return dr, err
+	}
+
+	id, err := sasquatch.NewScryptIdentity(k.Key)
+	if err != nil {
+		return dr, err
+	}
+	sdr, err := sasquatch.Decrypt(r, id)
+	if err != nil {
+		return dr, err
+	}
+	dr.r = sdr
+	return dr, nil
+}
+
+func (dr DecryptedReader) Read(p []byte) (int, error) {
+	return dr.r.Read(p)
+}
+
+func (cc *Client) NewEncryptedWriter(keyID string, w io.Writer) (EncryptedWriter, error) {
+	ew := EncryptedWriter{}
+	err := cc.cryptCheck()
+	if err != nil {
+		return ew, err
+	}
+	k, err := cc.keyForID(keyID)
+	if err != nil {
+		return ew, err
+	}
+	rec, err := sasquatch.NewScryptRecipient(k.Key)
+	if err != nil {
+		return ew, err
+	}
+	sew, err := sasquatch.Encrypt(w, rec)
+	if err != nil {
+		return ew, err
+	}
+	ew.w = sew
+	return ew, nil
+}
+
+func (ew EncryptedWriter) Write(p []byte) (int, error) {
+	return ew.w.Write(p)
+}
+
+func (ew EncryptedWriter) Close() error {
+	return ew.w.Close()
+}
+
 // Encrypt encrypts bytes with the default encrypt key, returning the encrypted
 // bytes, encrypt key ID and error.
 func (cc *Client) Encrypt(content []byte) ([]byte, string, error) {
@@ -69,6 +134,15 @@ func (cc *Client) Decrypt(gid string, content []byte) ([]byte, error) {
 	}
 
 	return ioutil.ReadAll(r)
+}
+
+func (cc *Client) GenerateEncryptKeys() error {
+	err := cc.cryptCheck()
+	if err != nil {
+		return err
+	}
+	cc.InvalidateAuth()
+	return err
 }
 
 func (cc *Client) encryptKeys() ([]*charm.EncryptKey, error) {

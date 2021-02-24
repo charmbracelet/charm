@@ -1,9 +1,7 @@
 package client
 
 import (
-	"bytes"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -38,7 +36,7 @@ func (cc *Client) GetNews(page int) ([]*Markdown, error) {
 		return nil, charm.ErrPageOutOfBounds
 	}
 	var news []*Markdown
-	err := cc.makeAPIRequest("GET", fmt.Sprintf("news?page=%d", page), nil, &news)
+	err := cc.AuthedRequest("GET", fmt.Sprintf("news?page=%d", page), nil, &news)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +46,7 @@ func (cc *Client) GetNews(page int) ([]*Markdown, error) {
 // GetNewsMarkdown returns the Markdown struct for the given news markdown ID.
 func (cc *Client) GetNewsMarkdown(markdownID int) (*Markdown, error) {
 	var md Markdown
-	err := cc.makeAPIRequest("GET", fmt.Sprintf("news/%d", markdownID), nil, &md)
+	err := cc.AuthedRequest("GET", fmt.Sprintf("news/%d", markdownID), nil, &md)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +65,7 @@ func (cc *Client) GetStash(page int) ([]*Markdown, error) {
 		return nil, err
 	}
 
-	err = cc.makeAPIRequest("GET", fmt.Sprintf("%s/stash?page=%d", auth.CharmID, page), nil, &stash)
+	err = cc.AuthedRequest("GET", fmt.Sprintf("%s/stash?page=%d", auth.CharmID, page), nil, &stash)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +88,7 @@ func (cc *Client) GetStashMarkdown(markdownID int) (*Markdown, error) {
 		return nil, err
 	}
 
-	err = cc.makeAPIRequest("GET", fmt.Sprintf("%s/stash/%d", auth.CharmID, markdownID), nil, &md)
+	err = cc.AuthedRequest("GET", fmt.Sprintf("%s/stash/%d", auth.CharmID, markdownID), nil, &md)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +112,7 @@ func (cc *Client) StashMarkdown(note string, body string) (*Markdown, error) {
 		return nil, err
 	}
 	var mde Markdown
-	err = cc.makeAPIRequest("POST", fmt.Sprintf("%s/stash", auth.CharmID), md, &mde)
+	err = cc.AuthedRequest("POST", fmt.Sprintf("%s/stash", auth.CharmID), md, &mde)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +130,7 @@ func (cc *Client) DeleteMarkdown(markdownID int) error {
 		return err
 	}
 
-	return cc.makeAPIRequest("DELETE", fmt.Sprintf("%s/stash/%d", auth.CharmID, markdownID), nil, nil)
+	return cc.AuthedRequest("DELETE", fmt.Sprintf("%s/stash/%d", auth.CharmID, markdownID), nil, nil)
 }
 
 // SetMarkdownNote updates the note for a given stash markdown ID.
@@ -152,7 +150,7 @@ func (cc *Client) SetMarkdownNote(markdownID int, note string) error {
 		return err
 	}
 
-	return cc.makeAPIRequest("PUT", fmt.Sprintf("%s/stash/%d", auth.CharmID, markdownID), md, nil)
+	return cc.AuthedRequest("PUT", fmt.Sprintf("%s/stash/%d", auth.CharmID, markdownID), md, nil)
 }
 
 func (cc *Client) authorizeRequest(req *http.Request) error {
@@ -218,45 +216,4 @@ func (cc *Client) decryptMarkdown(mde *Markdown) (*Markdown, error) {
 		md.Body = string(decBody)
 	}
 	return md, nil
-}
-
-func (cc *Client) makeAPIRequest(method string, apiPath string, body interface{}, result interface{}) error {
-	var buf *bytes.Buffer
-	var err error
-	var req *http.Request
-	client := &http.Client{}
-	url := fmt.Sprintf("%s:%d/v1/%s", cc.config.Host, cc.config.HTTPPort, apiPath)
-	if body != nil {
-		buf = &bytes.Buffer{}
-		err = json.NewEncoder(buf).Encode(body)
-		if err != nil {
-			return err
-		}
-		req, err = http.NewRequest(method, url, buf)
-	} else {
-		req, err = http.NewRequest(method, url, nil)
-	}
-	if err != nil {
-		return err
-	}
-	if cc.authorizeRequest(req) != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("http server error %d", resp.StatusCode)
-	}
-	if result != nil {
-		defer resp.Body.Close()
-		dec := json.NewDecoder(resp.Body)
-		err = dec.Decode(result)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }

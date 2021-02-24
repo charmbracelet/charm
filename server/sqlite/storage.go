@@ -268,6 +268,38 @@ func (me *DB) KeysForUser(user *charm.User) ([]*charm.PublicKey, error) {
 	return keys, nil
 }
 
+func (me *DB) GetSeq(u *charm.User, name string) (uint64, error) {
+	var seq uint64
+	var err error
+	err = me.wrapTransaction(func(tx *sql.Tx) error {
+		seq, err = me.selectNamedSeq(tx, u.ID, name)
+		if err == sql.ErrNoRows {
+			seq, err = me.incNamedSeq(tx, u.ID, name)
+		}
+		return err
+	})
+	if err != nil {
+		return 0, err
+	}
+	return seq, nil
+}
+
+func (me *DB) NextSeq(u *charm.User, name string) (uint64, error) {
+	var seq uint64
+	var err error
+	err = me.wrapTransaction(func(tx *sql.Tx) error {
+		seq, err = me.incNamedSeq(tx, u.ID, name)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+	return seq, nil
+}
+
 func (me *DB) MergeUsers(userID1 int, userID2 int) error {
 	return me.wrapTransaction(func(tx *sql.Tx) error {
 		// TODO: Where to put glow stuff
@@ -295,17 +327,11 @@ func (me *DB) CreateDB() error {
 		if err != nil {
 			return err
 		}
+		err = me.createNamedSeqTable(tx)
+		if err != nil {
+			return err
+		}
 		return me.createEncryptKeyTable(tx)
-		// TODO: Where to put glow stuff
-		// err = me.createMarkdownTable(tx)
-		// if err != nil {
-		// 	return err
-		// }
-		// err = me.createNewsTable(tx)
-		// if err != nil {
-		// 	return err
-		// }
-		// return me.createStashTable(tx)
 	})
 }
 
@@ -341,6 +367,24 @@ func (me *DB) insertPublicKey(tx *sql.Tx, userID int, key string) error {
 func (me *DB) insertEncryptKey(tx *sql.Tx, key string, globalID string, publicKeyID int) error {
 	_, err := tx.Exec(sqlInsertEncryptKey, key, globalID, publicKeyID)
 	return err
+}
+
+func (me *DB) selectNamedSeq(tx *sql.Tx, userID int, name string) (uint64, error) {
+	var seq uint64
+	r := tx.QueryRow(sqlSelectNamedSeq, userID, name)
+	err := r.Scan(&seq)
+	if err != nil {
+		return 0, err
+	}
+	return seq, nil
+}
+
+func (me *DB) incNamedSeq(tx *sql.Tx, userID int, name string) (uint64, error) {
+	_, err := tx.Exec(sqlIncNamedSeq, userID, name)
+	if err != nil {
+		return 0, err
+	}
+	return me.selectNamedSeq(tx, userID, name)
 }
 
 func (me *DB) updateUser(tx *sql.Tx, charmID string, name string) error {
@@ -407,6 +451,11 @@ func (me *DB) createPublicKeyTable(tx *sql.Tx) error {
 
 func (me *DB) createEncryptKeyTable(tx *sql.Tx) error {
 	_, err := tx.Exec(sqlCreateEncryptKeyTable)
+	return err
+}
+
+func (me *DB) createNamedSeqTable(tx *sql.Tx) error {
+	_, err := tx.Exec(sqlCreateNamedSeqTable)
 	return err
 }
 

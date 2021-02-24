@@ -27,7 +27,7 @@ type Router struct {
 
 type SSHServer struct {
 	config        Config
-	storage       Storage
+	db            DB
 	tokenBucket   *toktok.Bucket
 	linkRequests  map[Token]chan *Link
 	jwtPrivateKey *rsa.PrivateKey
@@ -56,15 +56,15 @@ func NewSSHServer(cfg Config) *SSHServer {
 	s.Server.SetOption(glider.HostKeyPEM(cfg.PrivateKey))
 	pk, err := x509.ParsePKCS1PrivateKey(cfg.PrivateKey)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	s.jwtPrivateKey = pk
 	b, err := toktok.NewBucket(6)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	s.tokenBucket = &b
-	s.storage = cfg.Storage
+	s.db = cfg.DB
 	s.linkRequests = make(map[Token]chan *Link)
 	s.AddHandler("api-auth", s.HandleAPIAuth)
 	s.AddHandler("api-keys", s.HandleAPIKeys)

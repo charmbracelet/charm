@@ -3,6 +3,7 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/charmbracelet/charm"
 )
@@ -120,7 +121,7 @@ func (cc *Client) Link(lh charm.LinkHandler, code string) error {
 }
 
 // SyncEncryptKeys re-encodes all of the encrypt keys associated for this
-// public key with all other linked publick keys.
+// public key with all other linked public keys.
 func (cc *Client) SyncEncryptKeys() error {
 	cc.InvalidateAuth()
 	eks, err := cc.encryptKeys()
@@ -139,7 +140,19 @@ func (cc *Client) SyncEncryptKeys() error {
 			}
 		}
 	}
-	return nil
+	return cc.deleteUserData()
+}
+
+// TODO find a better place for this, or do something more sophisticated than
+// just wiping it out.
+func (cc *Client) deleteUserData() error {
+	dd, err := charm.DataPath()
+	if err != nil {
+		return err
+	}
+	// TODO add any other directories that need wiping
+	kvd := fmt.Sprintf("%s/kv", dd)
+	return os.RemoveAll(kvd)
 }
 
 func checkLinkStatus(lh charm.LinkHandler, l *charm.Link) bool {
