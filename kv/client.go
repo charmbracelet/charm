@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"mime/multipart"
-	"net/http"
+	"strconv"
 	"strings"
 
-	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/client"
+	charm "github.com/charmbracelet/charm/proto"
 )
 
 func encryptKeyFromCharmClient(cc *client.Client) ([]byte, error) {
@@ -50,7 +49,7 @@ func (kv *KV) encryptAndBackupSeq(from uint64, at uint64) error {
 		return err
 	}
 	ew.Close()
-	return kv.storeDatalog(kv.seqStorageKey(at), buf)
+	return kv.storeDatalog(kv.seqStorageKey(at), buf.Bytes())
 }
 
 func (kv *KV) decryptAndRestoreSeq(seq uint64) error {
@@ -90,60 +89,35 @@ func (kv *KV) nextSeq(name string) (uint64, error) {
 	return sm.Seq, nil
 }
 
-func (kv *KV) storeDatalog(key string, r io.Reader) error {
-	buf := bytes.NewBuffer(nil)
-	w := multipart.NewWriter(buf)
-	fw, err := w.CreateFormFile("data", key)
+func (kv *KV) storeDatalog(key string, data []byte) error {
+	err := kv.fs.WriteFile(key, data, 0)
 	if err != nil {
 		return err
-	}
-	_, err = io.Copy(fw, r)
-	if err != nil {
-		return err
-	}
-	w.Close()
-	cfg := kv.cc.Config
-	path := fmt.Sprintf("%s://%s:%d/v1/datalog/%s", cfg.HTTPScheme, cfg.Host, cfg.HTTPPort, key)
-	req, err := http.NewRequest("POST", path, buf)
-	if err != nil {
-		return err
-	}
-	jwt, err := kv.cc.JWT()
-	if err != nil {
-		return err
-	}
-	req.Header.Add("Authorization", fmt.Sprintf("bearer %s", jwt))
-	req.Header.Set("Content-Type", w.FormDataContentType())
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("server error: %d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
 	}
 	return nil
 }
 
 func (kv *KV) getDatalog(key string) (io.ReadCloser, error) {
-	cfg := kv.cc.Config
-	path := fmt.Sprintf("%s://%s:%d/v1/datalog/%s", cfg.HTTPScheme, cfg.Host, cfg.HTTPPort, key)
-	req, err := http.NewRequest("GET", path, nil)
+	return kv.fs.Open(key)
+}
+
+func (kv *KV) syncFrom(mv uint64) error {
+	seqDir, err := kv.fs.ReadDir(kv.name)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	jwt, err := kv.cc.JWT()
-	if err != nil {
-		return nil, err
+	for _, de := range seqDir {
+		ii, err := strconv.Atoi(de.Name())
+		if err != nil {
+			return err
+		}
+		i := uint64(ii)
+		if i > mv {
+			err = kv.decryptAndRestoreSeq(i)
+			if err != nil {
+				return err
+			}
+		}
 	}
-	req.Header.Add("Authorization", fmt.Sprintf("bearer %s", jwt))
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("server error: %d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
-	}
-	return resp.Body, nil
+	return nil
 }

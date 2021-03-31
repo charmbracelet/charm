@@ -1,5 +1,6 @@
-cmd/charm/charm
-cmd/charm/charm.exe
-cmd/charm/data
+charm
+charm.exe
+data
 *.db
+*.log
 dist

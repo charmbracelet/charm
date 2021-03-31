@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/charmbracelet/charm"
+	charm "github.com/charmbracelet/charm/proto"
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 )

@@ -9,7 +9,7 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/charmbracelet/charm"
+	charm "github.com/charmbracelet/charm/proto"
 	"github.com/google/uuid"
 	"github.com/muesli/sasquatch"
 )

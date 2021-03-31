@@ -3,7 +3,7 @@ package client
 import (
 	"encoding/json"
 
-	"github.com/charmbracelet/charm"
+	charm "github.com/charmbracelet/charm/proto"
 	"github.com/dgrijalva/jwt-go"
 )
 

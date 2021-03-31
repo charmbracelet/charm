@@ -12,7 +12,7 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/charmbracelet/charm"
+	charm "github.com/charmbracelet/charm/proto"
 	"github.com/meowgorithm/babyenv"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/ssh"
@@ -269,7 +269,7 @@ func agentAuthMethod() (ssh.AuthMethod, error) {
 // findCharmKeys looks in a user's XDG charm-dir for possible auth keys.
 // If no keys are found we return an empty slice.
 func findAuthKeys() (pathsToKeys []string, err error) {
-	keyPath, err := charm.DataPath()
+	keyPath, err := DataPath()
 	if err != nil {
 		return nil, err
 	}

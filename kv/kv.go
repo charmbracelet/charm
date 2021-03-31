@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/charmbracelet/charm/client"
+	"github.com/charmbracelet/charm/fs"
 	badger "github.com/dgraph-io/badger/v3"
 )
 
@@ -17,6 +18,7 @@ type KV struct {
 	DB   *badger.DB
 	name string
 	cc   *client.Client
+	fs   *fs.FS
 }
 
 func Open(cc *client.Client, name string, opt badger.Options) (*KV, error) {
@@ -24,7 +26,11 @@ func Open(cc *client.Client, name string, opt badger.Options) (*KV, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &KV{DB: db, name: name, cc: cc}, nil
+	fs, err := fs.NewFSWithClient(cc)
+	if err != nil {
+		return nil, err
+	}
+	return &KV{DB: db, name: name, cc: cc, fs: fs}, nil
 }
 
 func OpenWithDefaults(name string, path string) (*KV, error) {
@@ -85,31 +91,18 @@ func (kv *KV) View(fn func(txn *badger.Txn) error) error {
 }
 
 func (kv *KV) Sync() error {
-	mv := kv.DB.MaxVersion()
-	seq, err := kv.getSeq(kv.name)
-	if err != nil {
-		return err
-	}
-	for i := uint64(mv); i <= seq; i++ {
-		err := kv.decryptAndRestoreSeq(i)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return kv.syncFrom(kv.DB.MaxVersion())
 }
 
 func (kv *KV) Commit(txn *badger.Txn, callback func(error)) error {
 	mv := kv.DB.MaxVersion()
-	seq, err := kv.nextSeq(kv.name)
+	err := kv.syncFrom(mv)
 	if err != nil {
 		return err
 	}
-	for i := uint64(mv); i < seq; i++ {
-		err := kv.decryptAndRestoreSeq(i)
-		if err != nil {
-			return err
-		}
+	seq, err := kv.nextSeq(kv.name)
+	if err != nil {
+		return err
 	}
 	err = txn.CommitAt(seq, callback)
 	if err != nil {
