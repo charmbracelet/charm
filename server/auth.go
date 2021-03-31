@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/charmbracelet/charm"
+	charm "github.com/charmbracelet/charm/proto"
 	"github.com/dgrijalva/jwt-go"
 )
 

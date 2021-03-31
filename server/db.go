@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/charmbracelet/charm"
+	charm "github.com/charmbracelet/charm/proto"
 )
 
 type DB interface {

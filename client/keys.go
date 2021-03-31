@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/calmh/randomart"
-	"github.com/charmbracelet/charm"
-	"github.com/charmbracelet/charm/client/ui/common"
+	charm "github.com/charmbracelet/charm/proto"
+	"github.com/charmbracelet/charm/ui/common"
 )
 
 // Fingerprint is the fingerprint of an SSH key.

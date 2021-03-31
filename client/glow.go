@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/charmbracelet/charm"
+	charm "github.com/charmbracelet/charm/proto"
 )
 
 // MarkdownsByCreatedAtDesc sorts markdown documents by date in descending
