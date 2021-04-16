@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"archive/tar"
@@ -16,11 +16,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var backupKeysCmd = &cobra.Command{
+// BackupKeysCmd is the cobra.Command to back up a user's account SSH keys.
+var BackupKeysCmd = &cobra.Command{
 	Use:                   "backup-keys",
 	Hidden:                false,
 	Short:                 "Backup your Charm account keys",
-	Long:                  formatLong(fmt.Sprintf("%s your Charm account keys.", common.Keyword("Backup"))),
+	Long:                  common.FormatLong(fmt.Sprintf("%s your Charm account keys.", common.Keyword("Backup"))),
 	Args:                  cobra.NoArgs,
 	DisableFlagsInUseLine: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -34,7 +35,7 @@ var backupKeysCmd = &cobra.Command{
 		// Don't overwrite backup file
 		keyPath := path.Join(cwd, filename)
 		if fileOrDirectoryExists(keyPath) {
-			printFormatted(fmt.Sprintf("Not creating backup file: %s already exists.", common.Code(filename)))
+			fmt.Printf("Not creating backup file: %s already exists.\n\n", common.Code(filename))
 			os.Exit(1)
 		}
 
@@ -51,7 +52,7 @@ var backupKeysCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		printFormatted(fmt.Sprintf("Done! Saved keys to %s.", common.Code(filename)))
+		fmt.Printf("Done! Saved keys to %s.\n\n", common.Code(filename))
 		return nil
 	},
 }

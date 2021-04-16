@@ -15,17 +15,19 @@ import (
 
 const indentAmount = 2
 
-type status int
+// Status represents a keygen state
+type Status int
 
 // General states
 const (
-	StatusRunning status = iota
+	StatusRunning Status = iota
 	StatusError
 	StatusSuccess
 	StatusDone
 	StatusQuitting
 )
 
+// NewProgram creates a new keygen TUI program
 func NewProgram(fancy bool) *tea.Program {
 	m := NewModel()
 	m.standalone = true
@@ -36,18 +38,21 @@ func NewProgram(fancy bool) *tea.Program {
 	return tea.NewProgram(m)
 }
 
-type failedMsg struct{ err error }
+// FailedMsg is a Bubble Tea message for keygen failure
+type FailedMsg struct{ err error }
 
-func (f failedMsg) Error() string { return f.err.Error() }
+// Error returns the underlying error
+func (f FailedMsg) Error() string { return f.err.Error() }
 
-type successMsg struct{}
+// SuccessMsg is a Bubble Tea message for keygen success
+type SuccessMsg struct{}
 
 // DoneMsg is sent when the keygen has completely finished running.
 type DoneMsg struct{}
 
 // Model is the Bubble Tea model which stores the state of the keygen.
 type Model struct {
-	Status        status
+	Status        Status
 	err           error
 	standalone    bool
 	fancy         bool
@@ -79,11 +84,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.terminalWidth = msg.Width
 		return m, nil
-	case failedMsg:
+	case FailedMsg:
 		m.err = msg.err
 		m.Status = StatusError
 		return m, tea.Quit
-	case successMsg:
+	case SuccessMsg:
 		m.Status = StatusSuccess
 		return m, pause
 	case DoneMsg:
@@ -139,13 +144,13 @@ func (m Model) View() string {
 func GenerateKeys() tea.Msg {
 	dp, err := client.DataPath()
 	if err != nil {
-		return failedMsg{err}
+		return FailedMsg{err}
 	}
 	_, err = keygen.NewSSHKeyPair(dp, "charm", nil, "rsa")
 	if err != nil {
-		return failedMsg{err}
+		return FailedMsg{err}
 	}
-	return successMsg{}
+	return SuccessMsg{}
 }
 
 // pause runs the final pause before we wrap things up.

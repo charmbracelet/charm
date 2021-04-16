@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -11,12 +11,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var nameCmd = &cobra.Command{
+// NameCmd is the cobra.Command to print or set a username.
+var NameCmd = &cobra.Command{
 	Use:     "name [username]",
 	Short:   "Username stuff",
-	Long:    formatLong("Print or set your " + common.Keyword("username") + ". If the name is already taken, just run it again with a different, cooler name. Basic latin letters and numbers only, 50 characters max."),
+	Long:    common.FormatLong("Print or set your " + common.Keyword("username") + ". If the name is already taken, just run it again with a different, cooler name. Basic latin letters and numbers only, 50 characters max."),
 	Args:    cobra.RangeArgs(0, 1),
-	Example: indent.String("charm name\ncharm name beatrix", indentBy),
+	Example: indent.String("charm name\ncharm name beatrix", 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cc := initCharmClient(animatedKeygen)
 		switch len(args) {
@@ -32,7 +33,7 @@ var nameCmd = &cobra.Command{
 			n := args[0]
 			if !client.ValidateName(n) {
 				msg := fmt.Sprintf("%s is invalid.\n\nUsernames must be basic latin letters, numerals, and no more than 50 characters. And no emojis, kid.\n", common.Code(n))
-				fmt.Println(formatLong(msg))
+				fmt.Println(common.FormatLong(msg))
 				os.Exit(1)
 			}
 			u, err := cc.SetName(n)

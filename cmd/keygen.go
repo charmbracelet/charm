@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
@@ -11,15 +11,15 @@ var (
 	simpleOutput bool
 	randomart    bool
 
-	keygenCmd = &cobra.Command{
+	// KeygenCmd is the cobra.Command to generate a new SSH keypair and user account.
+	KeygenCmd = &cobra.Command{
 		Use:    "keygen",
 		Hidden: true,
 		Short:  "Generate SSH keys",
-		Long:   formatLong("Charm accounts are powered by " + common.Keyword("SSH keys") + ". This command will create them for you."),
+		Long:   common.FormatLong("Charm accounts are powered by " + common.Keyword("SSH keys") + ". This command will create them for you."),
 		Args:   cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if isTTY() && !simpleOutput {
-
+			if common.IsTTY() && !simpleOutput {
 				// Log to file if specified in the environment
 				cfg := getCharmConfig()
 				if cfg.Logfile != "" {
@@ -29,18 +29,9 @@ var (
 					}
 					defer f.Close()
 				}
-
 				return keygen.NewProgram(true).Start()
-			} else {
-				// TODO
 			}
-
 			return nil
 		},
 	}
 )
-
-func init() {
-	keysCmd.Flags().BoolVarP(&simpleOutput, "simple", "s", false, "simple, non-interactive output (good for scripts)")
-	keysCmd.Flags().BoolVarP(&randomart, "randomart", "r", false, "print SSH 5.1 randomart for each key (the Drunken Bishop algorithm)")
-}

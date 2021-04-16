@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
 
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/google/uuid"
@@ -148,7 +149,8 @@ func (me *DB) UserForKey(key string, create bool) (*charm.User, error) {
 	return u, nil
 }
 
-func (me *DB) AddEncryptKeyForPublicKey(u *charm.User, pk string, gid string, ek string) error {
+// TODO update postgres schema for encrypt keys
+func (me *DB) AddEncryptKeyForPublicKey(u *charm.User, pk string, gid string, ek string, ca *time.Time) error {
 	log.Printf("Adding encrypted key for user %s\n", u.CharmID)
 	return me.wrapTransaction(func(tx *sql.Tx) error {
 		u2, err := me.UserForKey(pk, false)
@@ -161,7 +163,7 @@ func (me *DB) AddEncryptKeyForPublicKey(u *charm.User, pk string, gid string, ek
 
 		r := me.selectEncryptKey(tx, u2.PublicKey.ID, gid)
 		ekr := &charm.EncryptKey{}
-		err = r.Scan(&ekr.GlobalID, &ekr.Key)
+		err = r.Scan(&ekr.ID, &ekr.Key)
 		if err != sql.ErrNoRows {
 			return err
 		}
@@ -183,7 +185,7 @@ func (me *DB) EncryptKeysForPublicKey(pk *charm.PublicKey) ([]*charm.EncryptKey,
 		}
 		for rs.Next() {
 			k := &charm.EncryptKey{}
-			err := rs.Scan(&k.GlobalID, &k.Key)
+			err := rs.Scan(&k.ID, &k.Key)
 			if err != nil {
 				return err
 			}

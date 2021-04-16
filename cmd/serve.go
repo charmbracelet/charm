@@ -1,10 +1,11 @@
-package main
+package cmd
 
 import (
 	"fmt"
 
 	"github.com/charmbracelet/charm/keygen"
 	"github.com/charmbracelet/charm/server"
+	"github.com/charmbracelet/charm/ui/common"
 	"github.com/spf13/cobra"
 )
 
@@ -13,11 +14,12 @@ var (
 	serverSSHPort  int
 	serverDataDir  string
 
-	serveCmd = &cobra.Command{
+	//ServeCmd is the cobra.Command to self-host the Charm Cloud.
+	ServeCmd = &cobra.Command{
 		Use:    "serve",
 		Hidden: false,
 		Short:  "Start a self-hosted Charm Cloud server.",
-		Long:   formatLong(fmt.Sprintf("Start the SSH and HTTP servers needed to power a SQLite backed Charm Cloud.")),
+		Long:   common.FormatLong(fmt.Sprintf("Start the SSH and HTTP servers needed to power a SQLite backed Charm Cloud.")),
 		Args:   cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := server.DefaultConfig()
@@ -36,7 +38,10 @@ var (
 				return err
 			}
 			cfg = cfg.WithKeys(kp.PublicKey, kp.PrivateKeyPEM)
-			s := server.NewServer(cfg)
+			s, err := server.NewServer(cfg)
+			if err != nil {
+				return err
+			}
 			s.Start()
 			return nil
 		},
@@ -44,7 +49,7 @@ var (
 )
 
 func init() {
-	serveCmd.Flags().IntVar(&serverHTTPPort, "http-port", 0, "HTTP port to listen on.")
-	serveCmd.Flags().IntVar(&serverSSHPort, "ssh-port", 0, "SSH port to listen on.")
-	serveCmd.Flags().StringVar(&serverDataDir, "data-dir", "", "Directory to store SQLite db, SSH keys and file data.")
+	ServeCmd.Flags().IntVar(&serverHTTPPort, "http-port", 0, "HTTP port to listen on.")
+	ServeCmd.Flags().IntVar(&serverSSHPort, "ssh-port", 0, "SSH port to listen on.")
+	ServeCmd.Flags().StringVar(&serverDataDir, "data-dir", "", "Directory to store SQLite db, SSH keys and file data.")
 }

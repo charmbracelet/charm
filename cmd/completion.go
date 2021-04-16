@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"os"
@@ -8,7 +8,7 @@ import (
 )
 
 func completionInstructions() string {
-	return formatLong(`Charm supports ` + common.Keyword("shell completion") + ` for bash, zsh, fish and powershell.
+	return common.FormatLong(`Charm supports ` + common.Keyword("shell completion") + ` for bash, zsh, fish and powershell.
 
 ` + common.Keyword("Bash") + `
 
@@ -45,7 +45,8 @@ Or to just load in the current session:
 $ charm completion fish | source`)
 }
 
-var completionCmd = &cobra.Command{
+// CompletionCmd is the cobra.Command to generate shell completion.
+var CompletionCmd = &cobra.Command{
 	Use:                   "completion [bash|zsh|fish|powershell]",
 	Short:                 "Generate shell completion",
 	Long:                  completionInstructions(),

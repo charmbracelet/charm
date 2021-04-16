@@ -49,12 +49,12 @@ func (cc *Client) LinkGen(lh charm.LinkHandler) error {
 	}
 
 	// send approval response
-	var lm charm.LinkerMessage
+	var lm charm.Message
 	enc := json.NewEncoder(in)
 	if lh.Request(&lr) {
-		lm = charm.LinkerMessage{Message: "yes"}
+		lm = charm.Message{Message: "yes"}
 	} else {
-		lm = charm.LinkerMessage{Message: "no"}
+		lm = charm.Message{Message: "no"}
 	}
 	err = enc.Encode(lm)
 	if err != nil {
@@ -69,10 +69,12 @@ func (cc *Client) LinkGen(lh charm.LinkHandler) error {
 	if err != nil {
 		return err
 	}
-	if !checkLinkStatus(lh, &lr) {
-		return nil
+	err = cc.SyncEncryptKeys()
+	if err != nil {
+		return err
 	}
-	return cc.SyncEncryptKeys()
+	checkLinkStatus(lh, &lr)
+	return nil
 }
 
 // Link joins in on a linking session initiated by LinkGen.
@@ -134,7 +136,7 @@ func (cc *Client) SyncEncryptKeys() error {
 	}
 	for _, k := range cks.Keys {
 		for _, ek := range eks {
-			err := cc.addEncryptKey(k.Key, ek.GlobalID, ek.Key)
+			err := cc.addEncryptKey(k.Key, ek.ID, ek.Key, ek.CreatedAt)
 			if err != nil {
 				return err
 			}

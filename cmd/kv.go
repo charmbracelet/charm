@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -7,15 +7,23 @@ import (
 
 	"github.com/charmbracelet/charm/client"
 	"github.com/charmbracelet/charm/kv"
+	"github.com/charmbracelet/charm/ui/common"
+	"github.com/dgraph-io/badger/v3"
 	"github.com/spf13/cobra"
 )
 
 var (
-	kvCmd = &cobra.Command{
+	reverseIterate   bool
+	keysIterate      bool
+	valuesIterate    bool
+	delimiterIterate string
+
+	// KVCmd is the cobra.Command for a user to use the Charm key value store.
+	KVCmd = &cobra.Command{
 		Use:    "kv",
 		Hidden: false,
 		Short:  "Use the Charm key value store.",
-		Long:   formatLong(fmt.Sprintf("Commands to set, get and delete data from your Charm Cloud backed key value store.")),
+		Long:   common.FormatLong(fmt.Sprintf("Commands to set, get and delete data from your Charm Cloud backed key value store.")),
 		Args:   cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return nil
@@ -46,12 +54,12 @@ var (
 		RunE:   kvDelete,
 	}
 
-	kvKeysCmd = &cobra.Command{
-		Use:    "keys [@DB]",
+	kvListCmd = &cobra.Command{
+		Use:    "list [@DB]",
 		Hidden: false,
-		Short:  "List all keys with an optional @ db.",
+		Short:  "List all key value pairs with an optional @ db.",
 		Args:   cobra.MaximumNArgs(1),
-		RunE:   kvKeys,
+		RunE:   kvList,
 	}
 
 	kvSyncCmd = &cobra.Command{
@@ -115,8 +123,14 @@ func kvDelete(cmd *cobra.Command, args []string) error {
 	return db.Delete(k)
 }
 
-func kvKeys(cmd *cobra.Command, args []string) error {
+func kvList(cmd *cobra.Command, args []string) error {
 	var k string
+	var pf string
+	if keysIterate || valuesIterate {
+		pf = "%s\n"
+	} else {
+		pf = fmt.Sprintf("%%s%s%%s\n", delimiterIterate)
+	}
 	if len(args) == 1 {
 		k = args[0]
 	}
@@ -129,14 +143,36 @@ func kvKeys(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	db.Sync()
-	ks, err := db.Keys()
-	if err != nil {
-		panic(err)
-	}
-	for _, k := range ks {
-		fmt.Println(string(k))
-	}
-	return nil
+	return db.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchSize = 10
+		opts.Reverse = reverseIterate
+		if keysIterate {
+			opts.PrefetchValues = false
+		}
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			k := item.Key()
+			if keysIterate {
+				fmt.Printf(pf, k)
+				continue
+			}
+			err := item.Value(func(v []byte) error {
+				if valuesIterate {
+					fmt.Printf(pf, v)
+				} else {
+					fmt.Printf(pf, k, v)
+				}
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 func kvSync(cmd *cobra.Command, args []string) error {
@@ -197,14 +233,19 @@ func openKV(name string) (*kv.KV, error) {
 	if name == "" {
 		name = "charm.sh.kv.user.default"
 	}
-	return kv.OpenWithDefaults(name, fmt.Sprintf("%s/kv", dd))
+	return kv.OpenWithDefaults(name, fmt.Sprintf("%s/kv/", dd))
 }
 
 func init() {
-	kvCmd.AddCommand(kvGetCmd)
-	kvCmd.AddCommand(kvSetCmd)
-	kvCmd.AddCommand(kvDeleteCmd)
-	kvCmd.AddCommand(kvKeysCmd)
-	kvCmd.AddCommand(kvSyncCmd)
-	kvCmd.AddCommand(kvResetCmd)
+	kvListCmd.Flags().BoolVarP(&reverseIterate, "reverse", "r", false, "list in reverse lexicographic order")
+	kvListCmd.Flags().BoolVarP(&keysIterate, "keys-only", "k", false, "only print keys and don't fetch values from the db")
+	kvListCmd.Flags().BoolVarP(&valuesIterate, "values-only", "v", false, "only print values")
+	kvListCmd.Flags().StringVarP(&delimiterIterate, "delimiter", "d", "\t", "delimiter to separate keys and values")
+
+	KVCmd.AddCommand(kvGetCmd)
+	KVCmd.AddCommand(kvSetCmd)
+	KVCmd.AddCommand(kvDeleteCmd)
+	KVCmd.AddCommand(kvListCmd)
+	KVCmd.AddCommand(kvSyncCmd)
+	KVCmd.AddCommand(kvResetCmd)
 }

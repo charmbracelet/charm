@@ -36,8 +36,8 @@ const (
 	sqlSelectUserPublicKeys       = `SELECT id, public_key, created_at FROM public_key WHERE user_id = ?`
 	sqlSelectNumberUserPublicKeys = `SELECT count(*) FROM public_key WHERE user_id = ?`
 	sqlSelectPublicKey            = `SELECT id, user_id, public_key FROM public_key WHERE public_key = ?`
-	sqlSelectEncryptKey           = `SELECT global_id, encrypted_key FROM encrypt_key WHERE public_key_id = ? AND global_id = ?`
-	sqlSelectEncryptKeys          = `SELECT global_id, encrypted_key FROM encrypt_key WHERE public_key_id = ? ORDER BY created_at ASC`
+	sqlSelectEncryptKey           = `SELECT global_id, encrypted_key, created_at FROM encrypt_key WHERE public_key_id = ? AND global_id = ?`
+	sqlSelectEncryptKeys          = `SELECT global_id, encrypted_key, created_at FROM encrypt_key WHERE public_key_id = ? ORDER BY created_at ASC`
 	sqlSelectNamedSeq             = `SELECT seq FROM named_seq WHERE user_id = ? AND name = ?`
 
 	sqlInsertUser         = `INSERT INTO charm_user (charm_id) VALUES (?)`
@@ -55,7 +55,8 @@ const (
                     name = excluded.name,
                     seq = seq + 1`
 
-	sqlInsertEncryptKey = `INSERT INTO encrypt_key (encrypted_key, global_id, public_key_id) VALUES (?, ?, ?)`
+	sqlInsertEncryptKey         = `INSERT INTO encrypt_key (encrypted_key, global_id, public_key_id) VALUES (?, ?, ?)`
+	sqlInsertEncryptKeyWithDate = `INSERT INTO encrypt_key (encrypted_key, global_id, public_key_id, created_at) VALUES (?, ?, ?, ?)`
 
 	sqlUpdateUser            = `UPDATE charm_user SET name = ? WHERE charm_id = ?`
 	sqlUpdateMergePublicKeys = `UPDATE public_key SET user_id = ? WHERE user_id = ?`

@@ -9,14 +9,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-type Auth struct {
-	JWT         string              `json:"jwt"`
-	ID          string              `json:"charm_id"`
-	PublicKey   string              `json:"public_key,omitempty"`
-	EncryptKeys []*charm.EncryptKey `json:"encrypt_keys,omitempty"`
-}
-
-func (me *SSHServer) HandleAPIAuth(s Session) {
+func (me *SSHServer) handleAPIAuth(s Session) {
 	key, err := s.KeyText()
 	if err != nil {
 		log.Println(err)
@@ -39,33 +32,34 @@ func (me *SSHServer) HandleAPIAuth(s Session) {
 		log.Printf("Error fetching encrypt keys: %s\n", err)
 		return
 	}
-	_ = me.SendJSON(s, Auth{
+	_ = me.sendJSON(s, charm.Auth{
 		JWT:         j,
 		ID:          u.CharmID,
+		HTTPScheme:  me.config.HTTPScheme,
 		PublicKey:   u.PublicKey.Key,
 		EncryptKeys: eks,
 	})
 	// me.config.Stats.APIAuthCalls.Inc()
 }
 
-func (me *SSHServer) HandleAPIKeys(s Session) {
+func (me *SSHServer) handleAPIKeys(s Session) {
 	key, err := s.KeyText()
 	if err != nil {
 		log.Println(err)
-		_ = me.SendAPIMessage(s, "Missing key")
+		_ = me.sendAPIMessage(s, "Missing key")
 		return
 	}
 	u, err := me.db.UserForKey(key, true)
 	if err != nil {
 		log.Println(err)
-		_ = me.SendAPIMessage(s, fmt.Sprintf("API keys error: %s", err))
+		_ = me.sendAPIMessage(s, fmt.Sprintf("API keys error: %s", err))
 		return
 	}
 	log.Printf("API keys for user %s\n", u.CharmID)
 	keys, err := me.db.KeysForUser(u)
 	if err != nil {
 		log.Println(err)
-		_ = me.SendAPIMessage(s, "There was a problem fetching your keys")
+		_ = me.sendAPIMessage(s, "There was a problem fetching your keys")
 		return
 	}
 
@@ -78,7 +72,7 @@ func (me *SSHServer) HandleAPIKeys(s Session) {
 		}
 	}
 
-	_ = me.SendJSON(s, struct {
+	_ = me.sendJSON(s, struct {
 		ActiveKey int                `json:"active_key"`
 		Keys      []*charm.PublicKey `json:"keys"`
 	}{
@@ -88,7 +82,7 @@ func (me *SSHServer) HandleAPIKeys(s Session) {
 	// me.config.Stats.APIKeysCalls.Inc()
 }
 
-func (me *SSHServer) HandleID(s Session) {
+func (me *SSHServer) handleID(s Session) {
 	key, err := s.KeyText()
 	if err != nil {
 		log.Println(err)
@@ -104,7 +98,7 @@ func (me *SSHServer) HandleID(s Session) {
 	// me.config.Stats.IDCalls.Inc()
 }
 
-func (me *SSHServer) HandleJWT(s Session) {
+func (me *SSHServer) handleJWT(s Session) {
 	key, err := s.KeyText()
 	if err != nil {
 		log.Println(err)

@@ -2,96 +2,96 @@ package server
 
 import (
 	"crypto/rsa"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
 
+	charm "github.com/charmbracelet/charm/proto"
+	"github.com/charmbracelet/charm/server/db"
 	glider "github.com/gliderlabs/ssh"
 	"github.com/muesli/toktok"
 	"golang.org/x/crypto/ssh"
 )
 
-const serverError = "There was an error. Please try again later."
-
+// Session represents a Charm User's SSH session.
 type Session struct {
 	glider.Session
 }
 
+// SessionHandler defines a function that handles a session for a given SSH
+// command.
 type SessionHandler func(s Session)
 
-type Router struct {
+// SSHServer serves the SSH protocol and handles requests to authenticate and
+// link Charm user accounts.
+type SSHServer struct {
+	config        Config
+	db            db.DB
+	tokenBucket   *toktok.Bucket
+	linkRequests  map[charm.Token]chan *charm.Link
+	jwtPrivateKey *rsa.PrivateKey
+	router        *router
+	server        *glider.Server
+	port          int
+}
+
+type router struct {
 	routes map[string]SessionHandler
 }
 
-type SSHServer struct {
-	config        Config
-	db            DB
-	tokenBucket   *toktok.Bucket
-	linkRequests  map[Token]chan *Link
-	jwtPrivateKey *rsa.PrivateKey
-	router        *Router
-	Server        *glider.Server
-	Port          int
-}
-
-type Info struct {
-	Session Session
-	Host    string
-	Port    int
-}
-
-func NewSSHServer(cfg Config) *SSHServer {
+// NewSSHServer creates a new SSHServer from the provided Config.
+func NewSSHServer(cfg Config) (*SSHServer, error) {
 	s := &SSHServer{config: cfg}
-	s.router = &Router{
+	s.router = &router{
 		routes: make(map[string]SessionHandler),
 	}
-	s.Server = &glider.Server{
+	s.server = &glider.Server{
 		Version:          "OpenSSH_7.6p1",
 		Addr:             fmt.Sprintf(":%d", cfg.SSHPort),
 		Handler:          s.sessionHandler,
 		PublicKeyHandler: s.authHandler,
 	}
-	s.Server.SetOption(glider.HostKeyPEM(cfg.PrivateKey))
-	pk, err := x509.ParsePKCS1PrivateKey(cfg.PrivateKey)
+	s.server.SetOption(glider.HostKeyPEM(cfg.PrivateKey))
+	pk, err := ssh.ParseRawPrivateKey(cfg.PrivateKey)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	s.jwtPrivateKey = pk
+	s.jwtPrivateKey = pk.(*rsa.PrivateKey)
 	b, err := toktok.NewBucket(6)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	s.tokenBucket = &b
 	s.db = cfg.DB
-	s.linkRequests = make(map[Token]chan *Link)
-	s.AddHandler("api-auth", s.HandleAPIAuth)
-	s.AddHandler("api-keys", s.HandleAPIKeys)
-	s.AddHandler("api-link", s.HandleAPILink)
-	s.AddHandler("api-unlink", s.HandleAPIUnlink)
-	s.AddHandler("id", s.HandleID)
-	s.AddHandler("jwt", s.HandleJWT)
-	return s
+	s.linkRequests = make(map[charm.Token]chan *charm.Link)
+	s.addHandler("api-auth", s.handleAPIAuth)
+	s.addHandler("api-keys", s.handleAPIKeys)
+	s.addHandler("api-link", s.handleAPILink)
+	s.addHandler("api-unlink", s.handleAPIUnlink)
+	s.addHandler("id", s.handleID)
+	s.addHandler("jwt", s.handleJWT)
+	return s, nil
 }
 
+// Start serves the SSH protocol on the configured port.
 func (me *SSHServer) Start() {
 	if len(me.router.routes) == 0 {
 		log.Fatalf("no routes specified")
 	}
-	log.Printf("Starting SSH server on %s", me.Server.Addr)
-	log.Fatal(me.Server.ListenAndServe())
+	log.Printf("Starting SSH server on %s", me.server.Addr)
+	log.Fatal(me.server.ListenAndServe())
 }
 
-func (me *SSHServer) SendAPIMessage(s Session, msg string) error {
-	return me.SendJSON(s, LinkerMessage{msg})
+func (me *SSHServer) sendAPIMessage(s Session, msg string) error {
+	return me.sendJSON(s, charm.Message{Message: msg})
 }
 
-func (me *SSHServer) SendJSON(s Session, o interface{}) error {
+func (me *SSHServer) sendJSON(s Session, o interface{}) error {
 	return json.NewEncoder(s).Encode(o)
 }
 
-func (me *SSHServer) AddHandler(route string, h SessionHandler) {
+func (me *SSHServer) addHandler(route string, h SessionHandler) {
 	me.router.routes[route] = h
 }
 
@@ -124,18 +124,19 @@ func (me *SSHServer) serverConfigCallback(ctx glider.Context) *ssh.ServerConfig 
 	}
 }
 
-func (r *Router) Route(route string, s Session) {
-	h, ok := r.routes[route]
-	if !ok {
-		return
-	}
-	h(s)
-}
-
+// KeyText is the base64 encoded public key for the *Session.
 func (s *Session) KeyText() (string, error) {
 	if s.Session.PublicKey() == nil {
 		return "", fmt.Errorf("Session doesn't have public key")
 	}
 	kb := base64.StdEncoding.EncodeToString(s.Session.PublicKey().Marshal())
 	return fmt.Sprintf("%s %s", s.Session.PublicKey().Type(), kb), nil
+}
+
+func (r *router) Route(route string, s Session) {
+	h, ok := r.routes[route]
+	if !ok {
+		return
+	}
+	h(s)
 }

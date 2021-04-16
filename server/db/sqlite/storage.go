@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"time"
 
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/google/uuid"
@@ -154,8 +155,8 @@ func (me *DB) UserForKey(key string, create bool) (*charm.User, error) {
 	return u, nil
 }
 
-func (me *DB) AddEncryptKeyForPublicKey(u *charm.User, pk string, gid string, ek string) error {
-	log.Printf("Adding encrypted key for user %s\n", u.CharmID)
+func (me *DB) AddEncryptKeyForPublicKey(u *charm.User, pk string, gid string, ek string, ca *time.Time) error {
+	log.Printf("Adding encrypted key %s %s for user %s\n", gid, ca, u.CharmID)
 	return me.wrapTransaction(func(tx *sql.Tx) error {
 		u2, err := me.UserForKey(pk, false)
 		if err != nil {
@@ -167,12 +168,12 @@ func (me *DB) AddEncryptKeyForPublicKey(u *charm.User, pk string, gid string, ek
 
 		r := me.selectEncryptKey(tx, u2.PublicKey.ID, gid)
 		ekr := &charm.EncryptKey{}
-		err = r.Scan(&ekr.GlobalID, &ekr.Key)
+		err = r.Scan(&ekr.ID, &ekr.Key, &ekr.CreatedAt)
 		if err != sql.ErrNoRows {
 			return err
 		}
 		if err == sql.ErrNoRows {
-			return me.insertEncryptKey(tx, ek, gid, u2.PublicKey.ID)
+			return me.insertEncryptKey(tx, ek, gid, u2.PublicKey.ID, ca)
 		}
 		log.Printf("Encrypt key %s already exists for public key, skipping", gid)
 		return nil
@@ -188,7 +189,7 @@ func (me *DB) EncryptKeysForPublicKey(pk *charm.PublicKey) ([]*charm.EncryptKey,
 		}
 		for rs.Next() {
 			k := &charm.EncryptKey{}
-			err := rs.Scan(&k.GlobalID, &k.Key)
+			err := rs.Scan(&k.ID, &k.Key, &k.CreatedAt)
 			if err != nil {
 				return err
 			}
@@ -364,8 +365,13 @@ func (me *DB) insertPublicKey(tx *sql.Tx, userID int, key string) error {
 	return err
 }
 
-func (me *DB) insertEncryptKey(tx *sql.Tx, key string, globalID string, publicKeyID int) error {
-	_, err := tx.Exec(sqlInsertEncryptKey, key, globalID, publicKeyID)
+func (me *DB) insertEncryptKey(tx *sql.Tx, key string, globalID string, publicKeyID int, createdAt *time.Time) error {
+	var err error
+	if createdAt == nil {
+		_, err = tx.Exec(sqlInsertEncryptKey, key, globalID, publicKeyID)
+	} else {
+		_, err = tx.Exec(sqlInsertEncryptKeyWithDate, key, globalID, publicKeyID, createdAt)
+	}
 	return err
 }
 

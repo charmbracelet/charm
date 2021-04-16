@@ -1,3 +1,6 @@
+// Package client manages authorization, identity and keys for a Charm Cloud
+// user. It also offers low-level HTTP and SSH APIs for accessing the Charm
+// Cloud server.
 package client
 
 import (
@@ -13,6 +16,7 @@ import (
 	"sync"
 
 	charm "github.com/charmbracelet/charm/proto"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/meowgorithm/babyenv"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/ssh"
@@ -23,20 +27,21 @@ var nameValidator = regexp.MustCompile("^[a-zA-Z0-9]{1,50}$")
 
 // Config contains the Charm client configuration.
 type Config struct {
-	Host       string `env:"CHARM_HOST" default:"id.charm.sh"`
-	SSHPort    int    `env:"CHARM_SSH_PORT" default:"35353"`
-	HTTPPort   int    `env:"CHARM_HTTP_PORT" default:"35354"`
-	HTTPScheme string `env:"CHARM_HTTP_SCHEME" default:"https"`
-	Debug      bool   `env:"CHARM_DEBUG" default:"false"`
-	Logfile    string `env:"CHARM_LOGFILE" default:""`
+	Host     string `env:"CHARM_HOST" default:"id.charm.sh"`
+	SSHPort  int    `env:"CHARM_SSH_PORT" default:"35353"`
+	HTTPPort int    `env:"CHARM_HTTP_PORT" default:"35354"`
+	Debug    bool   `env:"CHARM_DEBUG" default:"false"`
+	Logfile  string `env:"CHARM_LOGFILE" default:""`
 }
 
 // Client is the Charm client.
 type Client struct {
 	Config               *Config
-	auth                 *Auth
+	auth                 *charm.Auth
+	claims               *jwt.StandardClaims
 	authLock             *sync.Mutex
 	sshConfig            *ssh.ClientConfig
+	httpScheme           string
 	plainTextEncryptKeys []*charm.EncryptKey
 	authKeyPaths         []string
 	encryptKeyLock       *sync.Mutex
@@ -62,11 +67,11 @@ func ConfigFromEnv() (*Config, error) {
 func NewClient(cfg *Config) (*Client, error) {
 	cc := &Client{
 		Config:         cfg,
-		auth:           &Auth{},
+		auth:           &charm.Auth{},
 		authLock:       &sync.Mutex{},
 		encryptKeyLock: &sync.Mutex{},
 	}
-	sshKeys, err := findAuthKeys()
+	sshKeys, err := FindAuthKeys()
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +198,7 @@ func (cc *Client) SetName(name string) (*charm.User, error) {
 	}
 	u := &charm.User{}
 	u.Name = name
-	err := cc.AuthedRequest("POST", "/v1/bio", u, u)
+	err := cc.AuthedJSONRequest("POST", "/v1/bio", u, u)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +212,7 @@ func (cc *Client) Bio() (*charm.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = cc.AuthedRequest("GET", fmt.Sprintf("/v1/id/%s", id), u, u)
+	err = cc.AuthedJSONRequest("GET", fmt.Sprintf("/v1/id/%s", id), u, u)
 	if err != nil {
 		return nil, err
 	}
@@ -266,9 +271,9 @@ func agentAuthMethod() (ssh.AuthMethod, error) {
 	return ssh.PublicKeysCallback(agentClient.Signers), nil
 }
 
-// findCharmKeys looks in a user's XDG charm-dir for possible auth keys.
+// FindAuthKeys looks in a user's XDG charm-dir for possible auth keys.
 // If no keys are found we return an empty slice.
-func findAuthKeys() (pathsToKeys []string, err error) {
+func FindAuthKeys() (pathsToKeys []string, err error) {
 	keyPath, err := DataPath()
 	if err != nil {
 		return nil, err

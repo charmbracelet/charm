@@ -1,6 +1,10 @@
 package common
 
 import (
+	"os"
+
+	"github.com/mattn/go-isatty"
+	"github.com/muesli/reflow/indent"
 	"github.com/muesli/reflow/wordwrap"
 	te "github.com/muesli/termenv"
 )
@@ -92,4 +96,14 @@ func Code(s string) string {
 // Subtle applies formatting to strings intended to be "subtle".
 func Subtle(s string) string {
 	return te.String(s).Foreground(NewColorPair("#5C5C5C", "#9B9B9B").Color()).String()
+}
+
+// Format long descriptions with indentation
+func FormatLong(s string) string {
+	return indent.String(wordwrap.String("\n"+s, wrapAt-2), 2)
+}
+
+// Returns true if standard out is a terminal
+func IsTTY() bool {
+	return isatty.IsTerminal(os.Stdout.Fd())
 }

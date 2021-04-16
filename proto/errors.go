@@ -20,8 +20,11 @@ var ErrNameInvalid = errors.New("invalid name")
 // ErrCouldNotUnlinkKey is used when a key can't be deleted.
 var ErrCouldNotUnlinkKey = errors.New("could not unlink key")
 
+// ErrMissingUser is used when no user record is found.
 var ErrMissingUser = errors.New("no user found")
 
+// ErrUserExists is used when attempting to create a user with an existing
+// global id.
 var ErrUserExists = errors.New("user already exists for that key")
 
 // ErrPageOutOfBounds is an error for an invalid page number.
