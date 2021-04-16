@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"archive/tar"
@@ -13,14 +13,28 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type (
+	confirmationState      int
+	confirmationSuccessMsg struct{}
+	confirmationErrMsg     struct{ error }
+)
+
+const (
+	ready confirmationState = iota
+	confirmed
+	cancelling
+	success
+	fail
+)
+
 var (
 	forceImportOverwrite bool
-
-	importKeysCmd = &cobra.Command{
+	// ImportKeysCmd is the cobra.Command to import a user's ssh key backup as creaed by `backup-keys`.
+	ImportKeysCmd = &cobra.Command{
 		Use:                   "import-keys BACKUP.tar",
 		Hidden:                false,
 		Short:                 "Import previously backed up Charm account keys.",
-		Long:                  formatLong(fmt.Sprintf("%s previously backed up Charm account keys.", common.Keyword("Backup"))),
+		Long:                  common.FormatLong(fmt.Sprintf("%s previously backed up Charm account keys.", common.Keyword("Backup"))),
 		Args:                  cobra.ExactArgs(1),
 		DisableFlagsInUseLine: false,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -39,7 +53,7 @@ var (
 			}
 
 			if !empty && !forceImportOverwrite {
-				if isTTY() {
+				if common.IsTTY() {
 					return newImportConfirmationTUI(args[0], dd).Start()
 				}
 				return fmt.Errorf("not overwriting the existing keys in %s; to force, use -f", dd)
@@ -53,97 +67,6 @@ var (
 			return nil
 		},
 	}
-)
-
-func init() {
-	importKeysCmd.Flags().BoolVarP(&forceImportOverwrite, "force-overwrite", "f", false, "overwrite if keys exist; don’t prompt for input")
-}
-
-func isEmpty(name string) (bool, error) {
-	f, err := os.Open(name)
-	if err != nil {
-		return false, err
-	}
-	defer f.Close()
-
-	_, err = f.Readdirnames(1)
-	if err == io.EOF {
-		return true, nil
-	}
-	return false, err
-}
-
-func untar(tarball, targetDir string) error {
-	reader, err := os.Open(tarball)
-	if err != nil {
-		return err
-	}
-	defer reader.Close()
-	tarReader := tar.NewReader(reader)
-
-	for {
-		header, err := tarReader.Next()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return err
-		}
-
-		// Files are stored in a 'charm' subdirectory in the tar. Strip off the
-		// directory info so we can just place the files at the top level of
-		// the given target directory.
-		filename := filepath.Base(header.Name)
-
-		// Don't create an empty "charm" directory
-		if filename == "charm" {
-			continue
-		}
-
-		path := filepath.Join(targetDir, filename)
-		info := header.FileInfo()
-		if info.IsDir() {
-			if err = os.MkdirAll(path, info.Mode()); err != nil {
-				return err
-			}
-			continue
-		}
-
-		file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
-		if err != nil {
-			return err
-		}
-		defer file.Close()
-		_, err = io.Copy(file, tarReader)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// Import Confirmation TUI
-
-func newImportConfirmationTUI(tarPath, dataPath string) *tea.Program {
-	return tea.NewProgram(confirmationTUI{
-		state:    ready,
-		tarPath:  tarPath,
-		dataPath: dataPath,
-	})
-}
-
-type confirmationState int
-
-const (
-	ready confirmationState = iota
-	confirmed
-	cancelling
-	success
-	fail
-)
-
-type (
-	confirmationSuccessMsg struct{}
-	confirmationErrMsg     struct{ error }
 )
 
 func untarCmd(tarPath, dataPath string) tea.Cmd {
@@ -220,5 +143,81 @@ func (m confirmationTUI) View() string {
 		s = "Ok, we won’t do anything. Bye!"
 	}
 
-	return formatLong(s) + "\n\n"
+	return common.FormatLong(s) + "\n\n"
+}
+
+func isEmpty(name string) (bool, error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	_, err = f.Readdirnames(1)
+	if err == io.EOF {
+		return true, nil
+	}
+	return false, err
+}
+
+func untar(tarball, targetDir string) error {
+	reader, err := os.Open(tarball)
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+	tarReader := tar.NewReader(reader)
+
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return err
+		}
+
+		// Files are stored in a 'charm' subdirectory in the tar. Strip off the
+		// directory info so we can just place the files at the top level of
+		// the given target directory.
+		filename := filepath.Base(header.Name)
+
+		// Don't create an empty "charm" directory
+		if filename == "charm" {
+			continue
+		}
+
+		path := filepath.Join(targetDir, filename)
+		info := header.FileInfo()
+		if info.IsDir() {
+			if err = os.MkdirAll(path, info.Mode()); err != nil {
+				return err
+			}
+			continue
+		}
+
+		file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+		_, err = io.Copy(file, tarReader)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Import Confirmation TUI
+
+func newImportConfirmationTUI(tarPath, dataPath string) *tea.Program {
+	return tea.NewProgram(confirmationTUI{
+		state:    ready,
+		tarPath:  tarPath,
+		dataPath: dataPath,
+	})
+}
+
+func init() {
+	ImportKeysCmd.Flags().BoolVarP(&forceImportOverwrite, "force-overwrite", "f", false, "overwrite if keys exist; don’t prompt for input")
 }

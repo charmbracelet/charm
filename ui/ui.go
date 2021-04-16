@@ -1,3 +1,4 @@
+// Package ui implements Bubble Tea TUIs for Charm use-cases.
 package ui
 
 import (

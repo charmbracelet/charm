@@ -1,3 +1,4 @@
+// Package kv provides a Charm Cloud backed BadgerDB.
 package kv
 
 import (
@@ -14,6 +15,13 @@ import (
 	badger "github.com/dgraph-io/badger/v3"
 )
 
+// KV provides a Charm Cloud backed BadgerDB key-value store.
+//
+// KV supports regular Badger transactions, and backs up the data to the Charm
+// Cloud. It will allow for syncing across machines linked with a Charm
+// account. All data is encrypted by Badger on the local disk using a Charm
+// user's encryption keys. Diffs are also encrypted locally before being synced
+// to the Charm Cloud.
 type KV struct {
 	DB   *badger.DB
 	name string
@@ -21,6 +29,8 @@ type KV struct {
 	fs   *fs.FS
 }
 
+// Open a Charm Cloud managed Badger DB instance with badger.Options and
+// *client.Client.
 func Open(cc *client.Client, name string, opt badger.Options) (*KV, error) {
 	db, err := openDB(cc, name, opt)
 	if err != nil {
@@ -33,6 +43,8 @@ func Open(cc *client.Client, name string, opt badger.Options) (*KV, error) {
 	return &KV{DB: db, name: name, cc: cc, fs: fs}, nil
 }
 
+// OpenWithDefaults opens a Charm Cloud managed Badger DB instance with the
+// default settings pulled from environment variables.
 func OpenWithDefaults(name string, path string) (*KV, error) {
 	cfg, err := client.ConfigFromEnv()
 	if err != nil {
@@ -47,6 +59,8 @@ func OpenWithDefaults(name string, path string) (*KV, error) {
 	return Open(cc, name, opts)
 }
 
+// OptionsWithEncryption returns badger.Options with all required encryption
+// settings enabled for a given encryption key.
 func OptionsWithEncryption(opt badger.Options, encKey []byte, cacheSize int64) (badger.Options, error) {
 	if cacheSize <= 0 {
 		return opt, fmt.Errorf("You must set an index cache size to use encrypted workloads in Badger v3")
@@ -54,6 +68,8 @@ func OptionsWithEncryption(opt badger.Options, encKey []byte, cacheSize int64) (
 	return opt.WithEncryptionKey(encKey).WithIndexCacheSize(cacheSize), nil
 }
 
+// NewTransaction creates a new *badger.Txn with a Charm Cloud managed
+// timestamp.
 func (kv *KV) NewTransaction(update bool) (*badger.Txn, error) {
 	var ts uint64
 	var err error
@@ -68,32 +84,22 @@ func (kv *KV) NewTransaction(update bool) (*badger.Txn, error) {
 	return kv.DB.NewTransactionAt(ts, update), nil
 }
 
-// func (kv *KV) NewWriteBatch() (*badger.WriteBatch, error) {
-// 	seq, err := kv.cc.NextSeq(kv.name)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return kv.DB.NewWriteBatchAt(seq), nil
-// }
-
+// NewStream returns a new *badger.Stream from the underlying Badger DB.
 func (kv *KV) NewStream() *badger.Stream {
 	return kv.DB.NewStreamAt(math.MaxUint64)
 }
 
-// TODO Update
-// TODO Load
-func (kv *KV) Load() error {
-	return fmt.Errorf("not implemented")
-}
-
+// View wraps the View() method for the underlying Badger DB.
 func (kv *KV) View(fn func(txn *badger.Txn) error) error {
 	return kv.DB.View(fn)
 }
 
+// Sync synchronizes the local Badger DB with any updates from the Charm Cloud.
 func (kv *KV) Sync() error {
 	return kv.syncFrom(kv.DB.MaxVersion())
 }
 
+// Commit commits a *badger.Txn and syncs the diff to the Charm Cloud.
 func (kv *KV) Commit(txn *badger.Txn, callback func(error)) error {
 	mv := kv.DB.MaxVersion()
 	err := kv.syncFrom(mv)
@@ -108,13 +114,16 @@ func (kv *KV) Commit(txn *badger.Txn, callback func(error)) error {
 	if err != nil {
 		return err
 	}
-	return kv.encryptAndBackupSeq(mv, seq)
+	return kv.backupSeq(mv, seq)
 }
 
+// Close closes the underlying Badger DB.
 func (kv *KV) Close() error {
 	return kv.DB.Close()
 }
 
+// Set is a convenience method for setting a key and value. It creates and
+// commits a new transaction for the update.
 func (kv *KV) Set(key []byte, value []byte) error {
 	txn, err := kv.NewTransaction(true)
 	if err != nil {
@@ -131,6 +140,8 @@ func (kv *KV) Set(key []byte, value []byte) error {
 	})
 }
 
+// SetReader is a convenience method to set the value for a key to the data
+// read from the provided io.Reader.
 func (kv *KV) SetReader(key []byte, value io.Reader) error {
 	v, err := ioutil.ReadAll(value)
 	if err != nil {
@@ -139,6 +150,7 @@ func (kv *KV) SetReader(key []byte, value io.Reader) error {
 	return kv.Set(key, v)
 }
 
+// Get is a convenience method for getting a value from the key value store.
 func (kv *KV) Get(key []byte) ([]byte, error) {
 	var v []byte
 	err := kv.View(func(txn *badger.Txn) error {
@@ -155,6 +167,7 @@ func (kv *KV) Get(key []byte) ([]byte, error) {
 	return v, nil
 }
 
+// Delete is a convenience method for deleting a value from the key value store.
 func (kv *KV) Delete(key []byte) error {
 	txn, err := kv.NewTransaction(true)
 	if err != nil {
@@ -171,10 +184,13 @@ func (kv *KV) Delete(key []byte) error {
 	})
 }
 
+// Keys returns a list of all keys for this key value store.
 func (kv *KV) Keys() ([][]byte, error) {
 	var ks [][]byte
 	err := kv.View(func(txn *badger.Txn) error {
-		it := txn.NewIterator(badger.DefaultIteratorOptions)
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchValues = false
+		it := txn.NewIterator(opts)
 		defer it.Close()
 		for it.Rewind(); it.Valid(); it.Next() {
 			ks = append(ks, it.Item().Key())
@@ -187,6 +203,8 @@ func (kv *KV) Keys() ([][]byte, error) {
 	return ks, nil
 }
 
+// Reset deletes the local copy of the Badger DB and rebuilds with a fresh sync
+// from the Charm Cloud
 func (kv *KV) Reset() error {
 	opts := kv.DB.Opts()
 	err := kv.DB.Close()

@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm/client"
+	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/ui/charmclient"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/charm/ui/keygen"
@@ -86,7 +87,7 @@ func (m Model) rejectRequest() (Model, tea.Cmd) {
 func NewModel(cfg *client.Config) Model {
 	lh := &linkHandler{
 		err:      make(chan error),
-		token:    make(chan string),
+		token:    make(chan charm.Token),
 		request:  make(chan linkRequest),
 		response: make(chan bool),
 		success:  make(chan bool),

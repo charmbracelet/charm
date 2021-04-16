@@ -1,3 +1,4 @@
+// Package keygen handles the creation of new SSH key pairs.
 package keygen
 
 import (
@@ -84,8 +85,7 @@ func NewSSHKeyPair(path string, name string, passphrase []byte, keyType string) 
 		if err != nil {
 			return nil, err
 		}
-		pk, _ := pem.Decode(privData)
-		s.PrivateKeyPEM = pk.Bytes
+		s.PrivateKeyPEM = privData
 		return s, nil
 	}
 	switch keyType {

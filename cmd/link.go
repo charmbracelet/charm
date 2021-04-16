@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
@@ -9,11 +9,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var linkCmd = &cobra.Command{
+// LinkCmd is the cobar.Command to manage user account linking.
+var LinkCmd = &cobra.Command{
 	Use:     "link [code]",
 	Short:   "Link multiple machines to your Charm account",
-	Long:    formatLong("It’s easy to " + common.Keyword("link") + " multiple machines or keys to your Charm account. Just run " + common.Code("charm link") + " on a machine connected to the account to want to link to start the process."),
-	Example: indent.String("charm link\ncharm link XXXXXX", indentBy),
+	Long:    common.FormatLong("It’s easy to " + common.Keyword("link") + " multiple machines or keys to your Charm account. Just run " + common.Code("charm link") + " on a machine connected to the account to want to link to start the process."),
+	Example: indent.String("charm link\ncharm link XXXXXX", 2),
 	Args:    cobra.RangeArgs(0, 1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Log to file if specified in the environment

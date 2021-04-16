@@ -1,17 +1,19 @@
-package main
+package cmd
 
 import (
 	"fmt"
 
+	"github.com/charmbracelet/charm/ui/common"
 	"github.com/spf13/cobra"
 )
 
 var (
-	bioCmd = &cobra.Command{
+	// BioCmd is the cobra.Command to return a user's bio JSON result.
+	BioCmd = &cobra.Command{
 		Use:    "bio",
 		Hidden: true,
 		Short:  "",
-		Long:   formatLong(""),
+		Long:   common.FormatLong(""),
 		Args:   cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cc := initCharmClient(animatedKeygen)

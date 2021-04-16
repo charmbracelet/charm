@@ -2,32 +2,36 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 
 	charm "github.com/charmbracelet/charm/proto"
+	"github.com/charmbracelet/charm/server/db"
+	"github.com/charmbracelet/charm/server/storage"
+	lfs "github.com/charmbracelet/charm/server/storage/local"
 	"github.com/meowgorithm/babylogger"
 	"goji.io"
 	"goji.io/pat"
 	"goji.io/pattern"
 )
 
+// HTTPServer is the HTTP server for the Charm Cloud backend.
 type HTTPServer struct {
-	db     DB
-	fstore FileStore
+	db     db.DB
+	fstore storage.FileStore
 	stats  PrometheusStats
 	cfg    Config
 	mux    *goji.Mux
 }
 
-type JSONError struct {
-	Message string `json:"message"`
-}
-
-func NewHTTPServer(cfg Config) *HTTPServer {
+// NewHTTPServer returns a new *HTTPServer with the specified Config.
+func NewHTTPServer(cfg Config) (*HTTPServer, error) {
 	// No auth health check endpoint
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "We live!")
@@ -35,7 +39,7 @@ func NewHTTPServer(cfg Config) *HTTPServer {
 	go func() {
 		err := http.ListenAndServe(fmt.Sprintf(":%s", cfg.HealthPort), nil)
 		if err != nil {
-			log.Fatalf("http server exited with error: %s", err)
+			log.Fatalf("http health endpoint server exited with error: %s", err)
 		}
 	}()
 
@@ -48,7 +52,7 @@ func NewHTTPServer(cfg Config) *HTTPServer {
 	var jwtMiddleware func(http.Handler) http.Handler
 	jwtMiddleware, err := JWTMiddleware(cfg.PublicKey)
 	if err != nil {
-		log.Fatalf("could not create jwt middleware: %s", err)
+		return nil, err
 	}
 	mux.Use(babylogger.Middleware)
 	mux.Use(jwtMiddleware)
@@ -64,9 +68,10 @@ func NewHTTPServer(cfg Config) *HTTPServer {
 	mux.HandleFunc(pat.Post("/v1/seq/:name"), s.handlePostSeq)
 	s.db = cfg.DB
 	s.fstore = cfg.FileStore
-	return s
+	return s, nil
 }
 
+// Start starts the HTTP server on the port specified in the Config.
 func (s *HTTPServer) Start() {
 	listenAddr := fmt.Sprintf(":%d", s.cfg.HTTPPort)
 	log.Printf("HTTP server listening on: %s", listenAddr)
@@ -80,7 +85,7 @@ func (s *HTTPServer) renderError(w http.ResponseWriter) {
 func (s *HTTPServer) renderCustomError(w http.ResponseWriter, msg string, status int) {
 	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(JSONError{msg})
+	_ = json.NewEncoder(w).Encode(charm.Message{Message: msg})
 }
 
 // TODO do we need this since you can only get the authed user?
@@ -100,7 +105,7 @@ func (s *HTTPServer) handleGetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *HTTPServer) handlePostUser(w http.ResponseWriter, r *http.Request) {
-	id, err := charmIdFromRequest(r)
+	id, err := charmIDFromRequest(r)
 	if err != nil {
 		log.Printf("cannot read request body: %s", err)
 		s.renderError(w)
@@ -146,7 +151,7 @@ func (s *HTTPServer) handlePostEncryptKey(w http.ResponseWriter, r *http.Request
 		s.renderError(w)
 		return
 	}
-	err = s.db.AddEncryptKeyForPublicKey(u, ek.PublicKey, ek.GlobalID, ek.Key)
+	err = s.db.AddEncryptKeyForPublicKey(u, ek.PublicKey, ek.ID, ek.Key, ek.CreatedAt)
 	if err != nil {
 		log.Printf("cannot add encrypt key: %s", err)
 		s.renderError(w)
@@ -184,6 +189,13 @@ func (s *HTTPServer) handlePostSeq(w http.ResponseWriter, r *http.Request) {
 func (s *HTTPServer) handlePostFile(w http.ResponseWriter, r *http.Request) {
 	u := s.charmUserFromRequest(w, r)
 	path := pattern.Path(r.Context())
+	ms := r.URL.Query().Get("mode")
+	m, err := strconv.ParseUint(ms, 10, 32)
+	if err != nil {
+		log.Printf("file mode not a number: %s", err)
+		s.renderError(w)
+		return
+	}
 	f, _, err := r.FormFile("data")
 	if err != nil {
 		log.Printf("cannot parse form data: %s", err)
@@ -191,7 +203,7 @@ func (s *HTTPServer) handlePostFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer f.Close()
-	err = s.cfg.FileStore.Put(u.CharmID, path, f)
+	err = s.cfg.FileStore.Put(u.CharmID, path, f, fs.FileMode(m))
 	if err != nil {
 		log.Printf("cannot post file: %s", err)
 		s.renderError(w)
@@ -203,7 +215,7 @@ func (s *HTTPServer) handleGetFile(w http.ResponseWriter, r *http.Request) {
 	u := s.charmUserFromRequest(w, r)
 	path := pattern.Path(r.Context())
 	f, err := s.cfg.FileStore.Get(u.CharmID, path)
-	if err == ErrFileNotFound {
+	if errors.Is(err, fs.ErrNotExist) {
 		s.renderCustomError(w, "file not found", http.StatusNotFound)
 		return
 	}
@@ -213,12 +225,20 @@ func (s *HTTPServer) handleGetFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer f.Close()
+	fi, err := f.Stat()
+	if err != nil {
+		log.Printf("cannot get file info: %s", err)
+		s.renderError(w)
+		return
+	}
+
 	switch f.(type) {
-	case *dirBuffer:
+	case *lfs.DirFile:
 		w.Header().Set("Content-Type", "application/json")
 	default:
 		w.Header().Set("Content-Type", "application/octet-stream")
 	}
+	w.Header().Set("X-File-Mode", fmt.Sprintf("%d", fi.Mode()))
 	_, err = io.Copy(w, f)
 	if err != nil {
 		log.Printf("cannot copy file: %s", err)

@@ -1,27 +1,34 @@
+// Package server provides a Charm Cloud server with HTTP and SSH protocols.
 package server
 
 import (
 	"fmt"
 	"log"
 
-	"github.com/charmbracelet/charm/server/sqlite"
+	"github.com/charmbracelet/charm/server/db"
+	"github.com/charmbracelet/charm/server/db/sqlite"
+	"github.com/charmbracelet/charm/server/storage"
+	lfs "github.com/charmbracelet/charm/server/storage/local"
 	"github.com/meowgorithm/babyenv"
 )
 
+// Config is the configuration for the Charm server.
 type Config struct {
-	Host       string `env:"CHARM_HOST" default:"localhost"`
-	SSHPort    int    `env:"CHARM_SSH_PORT" default:"35353"`
-	HTTPPort   int    `env:"CHARM_HTTP_PORT" default:"35354"`
-	StatsPort  int    `env:"CHARM_STATS_PORT" default:"35355"`
-	HealthPort string `env:"CHARM_HEALTH_PORT" default:"35356"`
-	DataDir    string `env:"CHARM_DATA_DIR" default:"./data"`
+	Host       string `env:"CHARM_SERVER_HOST" default:"localhost"`
+	SSHPort    int    `env:"CHARM_SERVER_SSH_PORT" default:"35353"`
+	HTTPPort   int    `env:"CHARM_SERVER_HTTP_PORT" default:"35354"`
+	HTTPScheme string `env:"CHARM_SERVER_HTTP_SCHEME" default:"http"`
+	StatsPort  int    `env:"CHARM_SERVER_STATS_PORT" default:"35355"`
+	HealthPort string `env:"CHARM_SERVER_HEALTH_PORT" default:"35356"`
+	DataDir    string `env:"CHARM_SERVER_DATA_DIR" default:"./data"`
 	PublicKey  []byte
 	PrivateKey []byte
-	DB         DB
-	FileStore  FileStore
+	DB         db.DB
+	FileStore  storage.FileStore
 	Stats      PrometheusStats
 }
 
+// Server contains the SSH and HTTP servers required to host the Charm Cloud.
 type Server struct {
 	Config        Config
 	ssh           *SSHServer
@@ -31,6 +38,8 @@ type Server struct {
 	privateKeyPEM []byte
 }
 
+// DefaultConfig returns a Config with the values populated with the defaults
+// or specified environment variables.
 func DefaultConfig() Config {
 	var cfg Config
 	err := babyenv.Parse(&cfg)
@@ -38,48 +47,63 @@ func DefaultConfig() Config {
 		log.Fatalf("could not read environment: %s", err)
 	}
 	dp := fmt.Sprintf("%s/db", cfg.DataDir)
-	err = EnsureDir(dp)
+	err = storage.EnsureDir(dp, 0700)
 	if err != nil {
 		log.Fatalf("could not init sqlite path: %s", err)
 	}
 	db := sqlite.NewDB(dp)
-	fs, err := NewLocalFileStore(fmt.Sprintf("%s/files", cfg.DataDir))
+	fs, err := lfs.NewLocalFileStore(fmt.Sprintf("%s/files", cfg.DataDir))
 	if err != nil {
 		log.Fatalf("could not init file path: %s", err)
 	}
 	return cfg.WithDB(db).WithFileStore(fs).WithStats(NewPrometheusStats(db, cfg.StatsPort))
 }
 
-func (cfg Config) WithDB(db DB) Config {
+// WithDB returns a Config with the provided DB interface implementation.
+func (cfg Config) WithDB(db db.DB) Config {
 	cfg.DB = db
 	return cfg
 }
 
-func (cfg Config) WithFileStore(fs FileStore) Config {
+// WithFileStore returns a Config with the provided FileStore implementation.
+func (cfg Config) WithFileStore(fs storage.FileStore) Config {
 	cfg.FileStore = fs
 	return cfg
 }
 
+// WithStats returns a Config with the provided PrometheusStats implementation.
 func (cfg Config) WithStats(ps PrometheusStats) Config {
 	// TODO: make stats an interface
 	cfg.Stats = ps
 	return cfg
 }
 
+// WithKeys returns a Config with the provided public and private keys for the
+// SSH server and JWT signing.
 func (cfg Config) WithKeys(publicKey []byte, privateKey []byte) Config {
 	cfg.PublicKey = publicKey
 	cfg.PrivateKey = privateKey
 	return cfg
 }
 
-func NewServer(cfg Config) *Server {
+// NewServer returns a *Server with the specified Config.
+func NewServer(cfg Config) (*Server, error) {
 	s := &Server{Config: cfg}
-	s.ssh = NewSSHServer(cfg)
-	s.http = NewHTTPServer(cfg)
+	ss, err := NewSSHServer(cfg)
+	if err != nil {
+		return nil, err
+	}
+	s.ssh = ss
+	hs, err := NewHTTPServer(cfg)
+	if err != nil {
+		return nil, err
+	}
+	s.http = hs
 	s.stats = cfg.Stats
-	return s
+	return s, nil
 }
 
+// Start starts the HTTP, SSH and stats HTTP servers for the Charm Cloud.
 func (srv *Server) Start() {
 	go func() {
 		srv.stats.Start()

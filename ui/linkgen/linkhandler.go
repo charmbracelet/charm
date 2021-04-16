@@ -15,7 +15,7 @@ type linkRequest struct {
 // linkHandler implements the charm.LinkHandler interface.
 type linkHandler struct {
 	err      chan error
-	token    chan string
+	token    chan charm.Token
 	request  chan linkRequest
 	response chan bool
 	success  chan bool

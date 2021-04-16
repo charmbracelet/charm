@@ -13,8 +13,12 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-const ctxUserKey = "charmUser"
+type contextKey string
 
+var ctxUserKey contextKey = "charmUser"
+
+// JWTMiddleware creates a new middleware function that will validate JWT
+// tokesn based on the supplied public key.
 func JWTMiddleware(publicKey []byte) (func(http.Handler) http.Handler, error) {
 	parsed, _, _, _, err := ssh.ParseAuthorizedKey(publicKey)
 	if err != nil {
@@ -32,10 +36,12 @@ func JWTMiddleware(publicKey []byte) (func(http.Handler) http.Handler, error) {
 	}).Handler, nil
 }
 
+// CharmUserMiddleware looks up and authenticates a Charm user based on the
+// provided JWT in the request.
 func CharmUserMiddleware(s *HTTPServer) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			id, err := charmIdFromRequest(r)
+			id, err := charmIDFromRequest(r)
 			if err != nil {
 				log.Printf("cannot get charm id from request: %s", err)
 				s.renderError(w)
@@ -56,7 +62,7 @@ func CharmUserMiddleware(s *HTTPServer) func(http.Handler) http.Handler {
 	}
 }
 
-func charmIdFromRequest(r *http.Request) (string, error) {
+func charmIDFromRequest(r *http.Request) (string, error) {
 	user := r.Context().Value("user")
 	if user == "" {
 		return "", fmt.Errorf("missing user key in context")

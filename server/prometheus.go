@@ -6,11 +6,14 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/charmbracelet/charm/server/db"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+// PrometheusStats contains all of the calls to track metrics. TODO make this
+// an interface.
 type PrometheusStats struct {
 	APILinkGenCalls     prometheus.Counter
 	APILinkRequestCalls prometheus.Counter
@@ -27,10 +30,11 @@ type PrometheusStats struct {
 	SetUserNameCalls    prometheus.Counter
 	Users               prometheus.Gauge
 	UserNames           prometheus.Gauge
-	db                  DB
+	db                  db.DB
 	port                int
 }
 
+// Start starts the PrometheusStats HTTP server.
 func (ps *PrometheusStats) Start() {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
@@ -45,7 +49,9 @@ func (ps *PrometheusStats) Start() {
 	log.Fatal(s.ListenAndServe())
 }
 
-func NewPrometheusStats(db DB, port int) PrometheusStats {
+// NewPrometheusStats returns a new PrometheusStats HTTP server configured to
+// the supplied port.
+func NewPrometheusStats(db db.DB, port int) PrometheusStats {
 	return PrometheusStats{
 		APILinkGenCalls:     newCounter("charm_id_api_link_gen_total", "Total API link gen calls"),
 		APILinkRequestCalls: newCounter("charm_id_api_link_request_total", "Total API link request calls"),
