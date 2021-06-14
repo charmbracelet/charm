@@ -6,8 +6,9 @@ require (
 	github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239 // indirect
 	github.com/auth0/go-jwt-middleware v1.0.0
 	github.com/calmh/randomart v1.1.0
-	github.com/charmbracelet/bubbles v0.7.5
-	github.com/charmbracelet/bubbletea v0.12.2
+	github.com/charmbracelet/bubbles v0.8.0
+	github.com/charmbracelet/bubbletea v0.14.0
+	github.com/charmbracelet/lipgloss v0.2.1
 	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568 // indirect
@@ -30,9 +31,9 @@ require (
 	github.com/mikesmitty/edkey v0.0.0-20170222072505-3356ea4e686a
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/muesli/go-app-paths v0.2.1
-	github.com/muesli/reflow v0.1.0
+	github.com/muesli/reflow v0.2.1-0.20210115123740-9e1d0d53df68
 	github.com/muesli/sasquatch v0.0.0-20200811221207-66979d92330a
-	github.com/muesli/termenv v0.7.4
+	github.com/muesli/termenv v0.8.1
 	github.com/muesli/toktok v0.0.0-20201007181047-c74187025f3f
 	github.com/prometheus/client_golang v0.9.3
 	github.com/spf13/cobra v1.0.0
@@ -40,6 +41,6 @@ require (
 	github.com/stretchr/testify v1.6.1 // indirect
 	goji.io v2.0.2+incompatible
 	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
-	golang.org/x/sys v0.0.0-20210503173754-0981d6026fa6
+	golang.org/x/sys v0.0.0-20210503173754-0981d6026fa6 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 )

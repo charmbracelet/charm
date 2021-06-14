@@ -106,10 +106,6 @@ func NewModel(cfg *client.Config) Model {
 		Foreground(common.NewColorPair("#4F4F4F", "#CACACA").Color()).
 		String()
 
-	s := spinner.NewModel()
-	s.Spinner = common.Spinner
-	s.ForegroundColor = "241"
-
 	return Model{
 		cfg:            cfg,
 		pager:          p,
@@ -118,7 +114,7 @@ func NewModel(cfg *client.Config) Model {
 		activeKeyIndex: -1,
 		keys:           []client.Key{},
 		index:          0,
-		spinner:        s,
+		spinner:        common.NewSpinner(),
 		Exit:           false,
 		Quit:           false,
 	}

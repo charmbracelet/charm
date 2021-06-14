@@ -16,11 +16,27 @@ import (
 	"github.com/charmbracelet/charm/ui/keys"
 	"github.com/charmbracelet/charm/ui/linkgen"
 	"github.com/charmbracelet/charm/ui/username"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/reflow/indent"
 	te "github.com/muesli/termenv"
 )
 
 const indentAmount = 2
+
+var (
+	logo = lipgloss.NewStyle().
+		Foreground(common.Cream).
+		Background(lipgloss.Color("#5A56E0")).
+		Padding(0, 1).
+		Render("Charm")
+
+	selectionMarker = lipgloss.NewStyle().
+			Foreground(common.Fuschia).
+			Render("> ")
+
+	selectedMenuItemStyle = lipgloss.NewStyle().
+				Foreground(common.Fuschia)
+)
 
 // NewProgram returns a new Bubble Tea program. Use this to start up the
 // Charm TUI.
@@ -106,15 +122,11 @@ type model struct {
 }
 
 func initialModel(cfg *client.Config) model {
-	s := spinner.NewModel()
-	s.Spinner = common.Spinner
-	s.ForegroundColor = "244"
-
 	return model{
 		cfg:        cfg,
 		status:     statusInit,
 		menuChoice: unsetChoice,
-		spinner:    s,
+		spinner:    common.NewSpinner(),
 		keygen:     keygen.NewModel(),
 	}
 }
@@ -392,19 +404,18 @@ func (m model) View() string {
 }
 
 func charmLogoView() string {
-	title := te.String(" Charm ").Foreground(common.Cream.Color()).Background(common.Color("#5A56E0")).String()
-	return "\n" + title + "\n\n"
+	return fmt.Sprintf("\n%s\n\n", logo)
 }
 
 func menuView(currentIndex int) string {
 	var s string
 	for i := 0; i < len(menuChoices); i++ {
 		e := "  "
+		menuItem := menuChoices[menuChoice(i)]
 		if i == currentIndex {
-			e = te.String("> ").Foreground(common.Fuschia.Color()).String()
-			e += te.String(menuChoices[menuChoice(i)]).Foreground(common.Fuschia.Color()).String()
+			e = selectionMarker + selectedMenuItemStyle.Render(menuItem)
 		} else {
-			e += menuChoices[menuChoice(i)]
+			e += menuItem
 		}
 		if i < len(menuChoices)-1 {
 			e += "\n"

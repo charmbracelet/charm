@@ -94,10 +94,6 @@ func NewModel(cfg *client.Config) Model {
 		timeout:  make(chan struct{}),
 	}
 
-	s := spinner.NewModel()
-	s.Spinner = common.Spinner
-	s.ForegroundColor = "241"
-
 	return Model{
 		lh:            lh,
 		standalone:    false,
@@ -110,7 +106,7 @@ func NewModel(cfg *client.Config) Model {
 		token:         "",
 		linkRequest:   linkRequest{},
 		buttonIndex:   0,
-		spinner:       s,
+		spinner:       common.NewSpinner(),
 	}
 }
 

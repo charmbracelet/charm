@@ -3,6 +3,8 @@ package common
 import (
 	"os"
 
+	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-isatty"
 	"github.com/muesli/reflow/indent"
 	"github.com/muesli/reflow/wordwrap"
@@ -25,15 +27,38 @@ var (
 var (
 	Indigo       ColorPair = NewColorPair("#7571F9", "#5A56E0")
 	SubtleIndigo           = NewColorPair("#514DC1", "#7D79F6")
-	Cream                  = NewColorPair("#FFFDF5", "#FFFDF5")
+	Cream                  = lipgloss.AdaptiveColor{Light: "#FFFDF5", Dark: "#FFFDF5"}
 	YellowGreen            = NewColorPair("#ECFD65", "#04B575")
-	Fuschia                = NewColorPair("#EE6FF8", "#EE6FF8")
+	Fuschia                = lipgloss.AdaptiveColor{Light: "#EE6FF8", Dark: "#EE6FF8"}
 	Green                  = NewColorPair("#04B575", "#04B575")
 	Red                    = NewColorPair("#ED567A", "#FF4672")
 	FaintRed               = NewColorPair("#C74665", "#FF6F91")
-	SpinnerColor           = NewColorPair("#747373", "#8E8E8E")
 	NoColor                = NewColorPair("", "")
 )
+
+var (
+	CursorStyle = lipgloss.NewStyle().
+			Foreground(Fuschia)
+
+	spinnerStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.AdaptiveColor{Light: "#8E8E8E", Dark: "#747373"})
+
+	blurredButtonStyle = lipgloss.NewStyle().
+				Foreground(Cream).
+				Background(lipgloss.AdaptiveColor{Light: "#BDB0BE", Dark: "#827983"}).
+				Padding(0, 2)
+
+	focusedButtonStyle = blurredButtonStyle.Copy().
+				Background(Fuschia)
+)
+
+// NewSpinner returns a spinner model.
+func NewSpinner() spinner.Model {
+	s := spinner.NewModel()
+	s.Spinner = spinner.Dot
+	s.Style = spinnerStyle
+	return s
+}
 
 // Functions for styling strings.
 var (
