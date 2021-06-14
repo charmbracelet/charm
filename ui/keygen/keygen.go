@@ -33,8 +33,7 @@ func NewProgram(fancy bool) *tea.Program {
 	m.standalone = true
 	m.fancy = fancy
 	m.spinner = spinner.NewModel()
-	m.spinner.Spinner = common.Spinner
-	m.spinner.ForegroundColor = common.SpinnerColor.String()
+	m.spinner = common.NewSpinner()
 	return tea.NewProgram(m)
 }
 

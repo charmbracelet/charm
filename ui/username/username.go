@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/charm/client"
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/ui/common"
+	"github.com/charmbracelet/lipgloss"
 	te "github.com/muesli/termenv"
 )
 
@@ -30,7 +31,9 @@ const (
 
 const prompt = "> "
 
-var focusedPrompt = te.String(prompt).Foreground(common.Fuschia.Color()).String()
+var focusedPrompt = lipgloss.NewStyle().
+	Foreground(common.Fuschia).
+	Render(prompt)
 
 // NameSetMsg is sent when a new name has been set successfully. It contains
 // the new name.
@@ -95,15 +98,13 @@ func (m *Model) indexBackward() {
 // NewModel returns a new username model in its initial state.
 func NewModel(cc *client.Client) Model {
 	inputModel := input.NewModel()
-	inputModel.CursorColor = common.Fuschia.String()
+	inputModel.CursorStyle = common.CursorStyle
 	inputModel.Placeholder = "divagurl2000"
 	inputModel.Prompt = focusedPrompt
 	inputModel.CharLimit = 50
 	inputModel.Focus()
 
-	spinnerModel := spinner.NewModel()
-	spinnerModel.Spinner = common.Spinner
-	spinnerModel.ForegroundColor = common.SpinnerColor.String()
+	spinnerModel := common.NewSpinner()
 
 	return Model{
 		Done:    false,

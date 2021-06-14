@@ -6,8 +6,11 @@ import (
 
 	"github.com/charmbracelet/charm/client"
 	"github.com/charmbracelet/charm/ui/common"
+	"github.com/charmbracelet/lipgloss"
 	te "github.com/muesli/termenv"
 )
+
+var labelStyle = lipgloss.NewStyle().Foreground(common.Fuschia)
 
 // wrap fingerprint to support additional states.
 type fingerprint struct {
@@ -63,8 +66,8 @@ func newStyledKey(key client.Key, active bool) styledKey {
 // Selected state
 func (k *styledKey) selected() {
 	k.gutter = common.VerticalLine(common.StateSelected)
-	k.keyLabel = te.String("Key:").Foreground(common.Fuschia.Color()).String()
-	k.dateLabel = te.String("Added:").Foreground(common.Fuschia.Color()).String()
+	k.keyLabel = labelStyle.Render("Key:")
+	k.dateLabel = labelStyle.Render("Added:")
 }
 
 // Deleting state

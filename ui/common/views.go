@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/lipgloss"
 	te "github.com/muesli/termenv"
 )
 
@@ -93,47 +94,40 @@ func helpDivider() string {
 
 // ButtonView renders something that resembles a button.
 func ButtonView(text string, focused bool) string {
-	return buttonStyling(text, false, focused)
+	return styledButton(text, false, focused)
 }
 
 // YesButtonView return a button reading "Yes".
 func YesButtonView(focused bool) string {
-	return buttonStyling("  ", false, focused) +
-		buttonStyling("Y", true, focused) +
-		buttonStyling("es  ", false, focused)
+	str := lipgloss.NewStyle().Underline(true).Render("Y") + "es"
+	return styledButton(str, false, focused)
 }
 
 // NoButtonView returns a button reading "No.".
 func NoButtonView(focused bool) string {
-	return buttonStyling("  ", false, focused) +
-		buttonStyling("N", true, focused) +
-		buttonStyling("o  ", false, focused)
+	str := lipgloss.NewStyle().Underline(true).Render("N") + "o"
+	return styledButton(str, false, focused)
 }
 
 // OKButtonView returns a button reading "OK".
 func OKButtonView(focused bool, defaultButton bool) string {
-	return buttonStyling("  ", false, focused) +
-		buttonStyling("OK", defaultButton, focused) +
-		buttonStyling("  ", false, focused)
+	return styledButton("OK", defaultButton, focused)
 }
 
 // CancelButtonView returns a button reading "Cancel.".
 func CancelButtonView(focused bool, defaultButton bool) string {
-	return buttonStyling("  ", false, focused) +
-		buttonStyling("Cancel", defaultButton, focused) +
-		buttonStyling("  ", false, focused)
+	return styledButton("Cancel", defaultButton, focused)
 }
 
-func buttonStyling(str string, underline, focused bool) string {
-	var s te.Style = te.String(str).Foreground(Cream.Color())
+func styledButton(str string, underlined, focused bool) string {
+	var st lipgloss.Style
 	if focused {
-		s = s.Background(Fuschia.Color())
+		st = focusedButtonStyle.Copy()
 	} else {
-		s = s.Background(ColorPair{"#827983", "#BDB0BE"}.Color())
+		st = blurredButtonStyle.Copy()
 	}
-	if underline {
-		s = s.Underline()
+	if underlined {
+		st = st.Underline(true)
 	}
-
-	return s.String()
+	return st.Render(str)
 }

@@ -58,10 +58,6 @@ type model struct {
 }
 
 func newModel(cfg *client.Config, code string) model {
-	sp := spinner.NewModel()
-	sp.ForegroundColor = "241"
-	sp.Spinner = common.Spinner
-
 	return model{
 		cfg:           cfg,
 		lh:            newLinkHandler(),
@@ -69,7 +65,7 @@ func newModel(cfg *client.Config, code string) model {
 		status:        initCharmClient,
 		alreadyLinked: false,
 		err:           nil,
-		spinner:       sp,
+		spinner:       common.NewSpinner(),
 	}
 }
 
