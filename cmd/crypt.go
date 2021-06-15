@@ -9,7 +9,6 @@ import (
 	"os"
 
 	"github.com/charmbracelet/charm/crypt"
-	"github.com/charmbracelet/charm/ui/common"
 	"github.com/spf13/cobra"
 )
 
@@ -19,7 +18,7 @@ var (
 		Use:    "crypt",
 		Hidden: false,
 		Short:  "Use Charm encryption.",
-		Long:   common.FormatLong(fmt.Sprintf("Commands to encrypt and decrypt data with your Charm Cloud encryption keys.")),
+		Long:   styles.Paragraph.Render("Commands to encrypt and decrypt data with your Charm Cloud encryption keys."),
 		Args:   cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return nil

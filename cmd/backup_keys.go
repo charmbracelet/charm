@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/charm/client"
-	"github.com/charmbracelet/charm/ui/common"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +20,7 @@ var BackupKeysCmd = &cobra.Command{
 	Use:                   "backup-keys",
 	Hidden:                false,
 	Short:                 "Backup your Charm account keys",
-	Long:                  common.FormatLong(fmt.Sprintf("%s your Charm account keys.", common.Keyword("Backup"))),
+	Long:                  paragraph(fmt.Sprintf("%s your Charm account keys.", keyword("Backup"))),
 	Args:                  cobra.NoArgs,
 	DisableFlagsInUseLine: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -35,7 +34,7 @@ var BackupKeysCmd = &cobra.Command{
 		// Don't overwrite backup file
 		keyPath := path.Join(cwd, filename)
 		if fileOrDirectoryExists(keyPath) {
-			fmt.Printf("Not creating backup file: %s already exists.\n\n", common.Code(filename))
+			fmt.Printf("Not creating backup file: %s already exists.\n\n", code(filename))
 			os.Exit(1)
 		}
 
@@ -52,7 +51,7 @@ var BackupKeysCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Done! Saved keys to %s.\n\n", common.Code(filename))
+		fmt.Printf("Done! Saved keys to %s.\n\n", code(filename))
 		return nil
 	},
 }

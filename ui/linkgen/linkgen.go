@@ -10,7 +10,6 @@ import (
 	"github.com/charmbracelet/charm/ui/charmclient"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/charm/ui/keygen"
-	"github.com/muesli/reflow/indent"
 )
 
 type status int
@@ -53,11 +52,12 @@ func NewProgram(cfg *client.Config, parentName string) *tea.Program {
 // Model is the tea model for the link initiator program.
 type Model struct {
 	lh            *linkHandler
-	standalone    bool           // true if this is running as a stadalone tea program
+	standalone    bool           // true if this is running stadalone
 	cfg           *client.Config // only applicable in standalone mode
 	parentName    string         // name of the parent command used in instructional text
-	Quit          bool           // indicates the user wants to exit the whole program
-	Exit          bool           // indicates the user wants to exit this mini-app
+	styles        common.Styles
+	Quit          bool // the user wants to exit the whole program
+	Exit          bool // the user wants to exit this mini-app
 	err           error
 	status        status
 	alreadyLinked bool
@@ -101,6 +101,7 @@ func NewModel(cfg *client.Config) Model {
 		lh:            lh,
 		standalone:    false,
 		parentName:    "charm",
+		styles:        common.DefaultStyles(),
 		cfg:           cfg,
 		Quit:          false,
 		Exit:          false,
@@ -263,38 +264,38 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+func (m Model) preambleView() string {
+	return m.styles.Wrap.Render(fmt.Sprintf(
+		"You can %s the SSH keys on another machine to your Charm account so both machines have access to your stuff. Keys can be unlinked at any time.",
+		m.styles.Keyword.Render("link"),
+	)) + "\n\n"
+}
+
 // View renders the UI.
 func (m Model) View() string {
 	var s string
-	preamble := common.Wrap(fmt.Sprintf(
-		"You can %s the SSH keys on another machine to your Charm account so both machines have access to your stuff. Keys can be unlinked at any time.\n\n",
-		common.Keyword("link"),
-	))
 
 	switch m.status {
 	case initCharmClient:
-		s += preamble
+		s += m.preambleView()
 		s += m.spinner.View() + " Initializing..."
 	case keygenRunning:
-		s += preamble
+		s += m.preambleView()
 		if m.keygen.Status != keygen.StatusSuccess {
 			s += m.spinner.View()
 		}
 		s += m.keygen.View()
 	case linkInit:
-		s += preamble
+		s += m.preambleView()
 		s += m.spinner.View() + " Generating link..."
 	case linkTokenCreated:
-		s += preamble
-		s += fmt.Sprintf(
-			"%s\n\n%s\n\n%s",
-			common.Wrap("To link, run the following command on your other machine:"),
-			common.Code(m.parentName+" link "+m.token),
-			common.HelpView("To cancel, press escape"),
-		)
+		s += m.preambleView()
+		s += m.styles.Wrap.Render("To link, run the following command on your other machine:") + "\n\n"
+		s += m.styles.Code.Render(m.parentName+" link "+m.token) + "\n\n"
+		s += common.HelpView("To cancel, press escape")
 	case linkRequested:
 		var d []string
-		s += preamble
+		s += m.preambleView()
 		s += "Link request from:\n\n"
 		d = append(d, []string{"IP", m.linkRequest.requestAddr}...)
 		if len(m.linkRequest.pubKey) > 50 {
@@ -302,33 +303,30 @@ func (m Model) View() string {
 		}
 		s += common.KeyValueView(d...)
 		s += "\n\nLink this device?\n\n"
-		s += fmt.Sprintf(
-			"%s %s",
-			common.YesButtonView(m.buttonIndex == 0),
-			common.NoButtonView(m.buttonIndex == 1),
-		)
+		s += common.YesButtonView(m.buttonIndex == 0) + " "
+		s += common.NoButtonView(m.buttonIndex == 1)
 	case linkError:
-		s += preamble
+		s += m.preambleView()
 		s += "Uh oh: " + m.err.Error()
 	case linkSuccess:
-		s += common.Keyword("Linked!")
+		s += m.styles.Keyword.Render("Linked!")
 		if m.alreadyLinked {
 			s += " This key is already linked, btw."
 		}
 		if m.standalone {
 			s += "\n"
 		} else {
-			s = preamble + s + common.HelpView("\n\nPress any key to exit...")
+			s = m.preambleView() + s + common.HelpView("\n\nPress any key to exit...")
 		}
 	case linkRequestDenied:
-		s += "Link request " + common.Keyword("denied") + "."
+		s += "Link request " + m.styles.Keyword.Render("denied") + "."
 		if m.standalone {
 			s += "\n"
 		} else {
-			s = preamble + s + common.HelpView("\n\nPress any key to exit...")
+			s = m.preambleView() + s + common.HelpView("\n\nPress any key to exit...")
 		}
 	case linkTimedOut:
-		s += preamble
+		s += m.preambleView()
 		s += "Link request timed out."
 		if m.standalone {
 			s += "\n"
@@ -340,7 +338,7 @@ func (m Model) View() string {
 	}
 
 	if m.standalone {
-		s = fmt.Sprintf("\n%s\n", indent.String(s, 2))
+		s = m.styles.App.Render(s)
 	}
 	return s
 }

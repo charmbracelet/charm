@@ -7,7 +7,6 @@ import (
 
 	"github.com/charmbracelet/charm/client"
 	"github.com/charmbracelet/charm/kv"
-	"github.com/charmbracelet/charm/ui/common"
 	"github.com/dgraph-io/badger/v3"
 	"github.com/spf13/cobra"
 )
@@ -23,7 +22,7 @@ var (
 		Use:    "kv",
 		Hidden: false,
 		Short:  "Use the Charm key value store.",
-		Long:   common.FormatLong(fmt.Sprintf("Commands to set, get and delete data from your Charm Cloud backed key value store.")),
+		Long:   paragraph(fmt.Sprintf("Commands to set, get and delete data from your Charm Cloud backed key value store.")),
 		Args:   cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return nil

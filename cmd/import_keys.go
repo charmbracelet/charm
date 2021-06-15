@@ -29,12 +29,13 @@ const (
 
 var (
 	forceImportOverwrite bool
+
 	// ImportKeysCmd is the cobra.Command to import a user's ssh key backup as creaed by `backup-keys`.
 	ImportKeysCmd = &cobra.Command{
 		Use:                   "import-keys BACKUP.tar",
 		Hidden:                false,
 		Short:                 "Import previously backed up Charm account keys.",
-		Long:                  common.FormatLong(fmt.Sprintf("%s previously backed up Charm account keys.", common.Keyword("Backup"))),
+		Long:                  paragraph(fmt.Sprintf("%s previously backed up Charm account keys.", keyword("Backup"))),
 		Args:                  cobra.ExactArgs(1),
 		DisableFlagsInUseLine: false,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -63,7 +64,7 @@ var (
 			if err != nil {
 				return err
 			}
-			printFormatted(fmt.Sprintf("Done! Keys imported to %s", common.Code(dd)))
+			paragraph(fmt.Sprintf("Done! Keys imported to %s", code(dd)))
 			return nil
 		},
 	}
@@ -133,17 +134,17 @@ func (m confirmationTUI) View() string {
 	var s string
 	switch m.state {
 	case ready:
-		s = fmt.Sprintf("Looks like you might have some existing keys in %s\n\nWould you like to overwrite them?\n\n", common.Code(m.dataPath))
+		s = fmt.Sprintf("Looks like you might have some existing keys in %s\n\nWould you like to overwrite them?\n\n", code(m.dataPath))
 		s += common.YesButtonView(m.yes) + " " + common.NoButtonView(!m.yes)
 	case success:
-		s += fmt.Sprintf("Done! Key imported to %s", common.Code(m.dataPath))
+		s += fmt.Sprintf("Done! Key imported to %s", code(m.dataPath))
 	case fail:
 		s = m.err.Error()
 	case cancelling:
 		s = "Ok, we won’t do anything. Bye!"
 	}
 
-	return common.FormatLong(s) + "\n\n"
+	return paragraph(s) + "\n\n"
 }
 
 func isEmpty(name string) (bool, error) {

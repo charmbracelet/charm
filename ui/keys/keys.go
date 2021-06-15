@@ -11,7 +11,6 @@ import (
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/charm/ui/keygen"
 	"github.com/muesli/reflow/indent"
-	te "github.com/muesli/termenv"
 )
 
 const keysPerPage = 4
@@ -57,6 +56,7 @@ type (
 type Model struct {
 	cc             *client.Client
 	cfg            *client.Config
+	styles         common.Styles
 	pager          pager.Model
 	state          state
 	err            error
@@ -99,15 +99,16 @@ func (m *Model) SetCharmClient(cc *client.Client) {
 
 // NewModel creates a new model with defaults.
 func NewModel(cfg *client.Config) Model {
+	st := common.DefaultStyles()
+
 	p := pager.NewModel()
 	p.PerPage = keysPerPage
 	p.Type = pager.Dots
-	p.InactiveDot = te.String("•").
-		Foreground(common.NewColorPair("#4F4F4F", "#CACACA").Color()).
-		String()
+	p.InactiveDot = st.InactivePagination.Render("•")
 
 	return Model{
 		cfg:            cfg,
+		styles:         st,
 		pager:          p,
 		state:          stateLoading,
 		err:            nil,
@@ -308,11 +309,11 @@ func (m Model) View() string {
 		// Footer
 		switch m.state {
 		case stateDeletingKey:
-			s += promptDeleteView()
+			s += m.promptView("Delete this key?")
 		case stateDeletingActiveKey:
-			s += promptDeleteActiveKeyView()
+			s += m.promptView("This is the key currently in use. Are you, like, for-sure-for-sure?")
 		case stateDeletingAccount:
-			s += promptDeleteAccountView()
+			s += m.promptView("Sure? This will delete your account. Are you absolutely positive?")
 		default:
 			s += "\n\n" + helpView(m)
 		}
@@ -346,7 +347,7 @@ func keysView(m Model) string {
 		} else {
 			state = keyNormal
 		}
-		s += newStyledKey(key, i+start == m.activeKeyIndex).render(state)
+		s += m.newStyledKey(m.styles, key, i+start == m.activeKeyIndex).render(state)
 	}
 
 	// If there aren't enough keys to fill the view, fill the missing parts
@@ -372,19 +373,10 @@ func helpView(m Model) string {
 	return common.HelpView(items...)
 }
 
-func promptDeleteView() string {
-	return te.String("\n\nDelete this key? ").Foreground(common.Red.Color()).String() +
-		te.String("(y/N)").Foreground(common.FaintRed.Color()).String()
-}
-
-func promptDeleteActiveKeyView() string {
-	return te.String("\n\nThis is the key currently in use. Are you, like, for-sure-for-sure? ").Foreground(common.Red.Color()).String() +
-		te.String("(y/N)").Foreground(common.FaintRed.Color()).String()
-}
-
-func promptDeleteAccountView() string {
-	return te.String("\n\nSure? This will delete your account. Are you absolutely positive? ").Foreground(common.Red.Color()).String() +
-		te.String("(y/N)").Foreground(common.FaintRed.Color()).String()
+func (m Model) promptView(prompt string) string {
+	st := m.styles.Delete.Copy().MarginTop(2).MarginRight(1)
+	return st.Render(prompt) +
+		m.styles.DeleteDim.Render("(y/N)")
 }
 
 // LoadKeys returns the command necessary for loading the keys.

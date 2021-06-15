@@ -6,7 +6,6 @@ import (
 
 	"github.com/charmbracelet/charm/client"
 	charm "github.com/charmbracelet/charm/proto"
-	"github.com/charmbracelet/charm/ui/common"
 	"github.com/muesli/reflow/indent"
 	"github.com/spf13/cobra"
 )
@@ -15,7 +14,7 @@ import (
 var NameCmd = &cobra.Command{
 	Use:     "name [username]",
 	Short:   "Username stuff",
-	Long:    common.FormatLong("Print or set your " + common.Keyword("username") + ". If the name is already taken, just run it again with a different, cooler name. Basic latin letters and numbers only, 50 characters max."),
+	Long:    paragraph("Print or set your " + keyword("username") + ". If the name is already taken, just run it again with a different, cooler name. Basic latin letters and numbers only, 50 characters max."),
 	Args:    cobra.RangeArgs(0, 1),
 	Example: indent.String("charm name\ncharm name beatrix", 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -32,21 +31,21 @@ var NameCmd = &cobra.Command{
 		default:
 			n := args[0]
 			if !client.ValidateName(n) {
-				msg := fmt.Sprintf("%s is invalid.\n\nUsernames must be basic latin letters, numerals, and no more than 50 characters. And no emojis, kid.\n", common.Code(n))
-				fmt.Println(common.FormatLong(msg))
+				msg := fmt.Sprintf("%s is invalid.\n\nUsernames must be basic latin letters, numerals, and no more than 50 characters. And no emojis, kid.\n", code(n))
+				fmt.Println(paragraph(msg))
 				os.Exit(1)
 			}
 			u, err := cc.SetName(n)
 			if err == charm.ErrNameTaken {
-				printFormatted(fmt.Sprintf("User name %s is already taken. Try a different, cooler name.\n", common.Code(n)))
+				paragraph(fmt.Sprintf("User name %s is already taken. Try a different, cooler name.\n", code(n)))
 				os.Exit(1)
 			}
 			if err != nil {
-				printFormatted(fmt.Sprintf("Welp, there’s been an error. %s", common.Subtle(err.Error())))
+				paragraph(fmt.Sprintf("Welp, there’s been an error. %s", subtle(err.Error())))
 				return err
 			}
 
-			printFormatted(fmt.Sprintf("OK! Your new username is %s", common.Code(u.Name)))
+			paragraph(fmt.Sprintf("OK! Your new username is %s", code(u.Name)))
 			return nil
 		}
 	},
