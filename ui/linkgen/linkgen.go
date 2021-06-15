@@ -40,11 +40,13 @@ type errMsg struct {
 	err error
 }
 
-// NewProgram is a simple wrapper for tea.NewProgram. For use in standalone
-// mode.
-func NewProgram(cfg *client.Config) *tea.Program {
+// NewProgram is a simple wrapper for tea.NewProgram for use in standalone
+// mode. Pass the Charm configuration and the name of the parent command upon
+// which this TUI is implemented.
+func NewProgram(cfg *client.Config, parentName string) *tea.Program {
 	m := NewModel(cfg)
 	m.standalone = true
+	m.parentName = parentName
 	return tea.NewProgram(m)
 }
 
@@ -53,6 +55,7 @@ type Model struct {
 	lh            *linkHandler
 	standalone    bool           // true if this is running as a stadalone tea program
 	cfg           *client.Config // only applicable in standalone mode
+	parentName    string         // name of the parent command used in instructional text
 	Quit          bool           // indicates the user wants to exit the whole program
 	Exit          bool           // indicates the user wants to exit this mini-app
 	err           error
@@ -97,6 +100,7 @@ func NewModel(cfg *client.Config) Model {
 	return Model{
 		lh:            lh,
 		standalone:    false,
+		parentName:    "charm",
 		cfg:           cfg,
 		Quit:          false,
 		Exit:          false,
@@ -263,7 +267,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	var s string
 	preamble := common.Wrap(fmt.Sprintf(
-		"You can %s the SSH keys on another machine to your Charm account so both machines have access to your stuff. You can unlink keys at any time.\n\n",
+		"You can %s the SSH keys on another machine to your Charm account so both machines have access to your stuff. Keys can be unlinked at any time.\n\n",
 		common.Keyword("link"),
 	))
 
@@ -285,7 +289,7 @@ func (m Model) View() string {
 		s += fmt.Sprintf(
 			"%s\n\n%s\n\n%s",
 			common.Wrap("To link, run the following command on your other machine:"),
-			common.Code("charm link "+m.token),
+			common.Code(m.parentName+" link "+m.token),
 			common.HelpView("To cancel, press escape"),
 		)
 	case linkRequested:
