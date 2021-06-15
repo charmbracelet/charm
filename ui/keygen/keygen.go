@@ -10,7 +10,6 @@ import (
 	"github.com/charmbracelet/charm/keygen"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/muesli/reflow/indent"
-	"github.com/muesli/termenv"
 )
 
 const indentAmount = 2
@@ -52,6 +51,7 @@ type DoneMsg struct{}
 // Model is the Bubble Tea model which stores the state of the keygen.
 type Model struct {
 	Status        Status
+	styles        common.Styles
 	err           error
 	standalone    bool
 	fancy         bool
@@ -63,6 +63,7 @@ type Model struct {
 func NewModel() Model {
 	return Model{
 		Status: StatusRunning,
+		styles: common.DefaultStyles(),
 	}
 }
 
@@ -118,8 +119,7 @@ func (m Model) View() string {
 		}
 		s += " Generating keys..."
 	case StatusSuccess:
-		s += termenv.String("✔").Foreground(common.Green.Color()).String()
-		s += "  Generated keys"
+		s += m.styles.Checkmark.String() + "  Generated keys"
 	case StatusError:
 		switch m.err.(type) {
 		case keygen.SSHKeysAlreadyExistErr:

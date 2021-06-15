@@ -5,7 +5,6 @@ import (
 
 	"github.com/charmbracelet/charm/keygen"
 	"github.com/charmbracelet/charm/server"
-	"github.com/charmbracelet/charm/ui/common"
 	"github.com/spf13/cobra"
 )
 
@@ -19,7 +18,7 @@ var (
 		Use:    "serve",
 		Hidden: false,
 		Short:  "Start a self-hosted Charm Cloud server.",
-		Long:   common.FormatLong(fmt.Sprintf("Start the SSH and HTTP servers needed to power a SQLite backed Charm Cloud.")),
+		Long:   paragraph("Start the SSH and HTTP servers needed to power a SQLite-backed Charm Cloud."),
 		Args:   cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := server.DefaultConfig()

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/lipgloss"
-	te "github.com/muesli/termenv"
 )
 
 // State is a general UI state used to help style components.
@@ -20,25 +20,42 @@ const (
 	StateDeleting
 )
 
+var lineColors = map[State]lipgloss.TerminalColor{
+	StateNormal:   lipgloss.AdaptiveColor{Light: "#BCBCBC", Dark: "#646464"},
+	StateSelected: lipgloss.Color("#F684FF"),
+	StateDeleting: lipgloss.AdaptiveColor{Light: "#FF8BA7", Dark: "#893D4E"},
+	StateSpecial:  lipgloss.Color("#04B575"),
+}
+
 // VerticalLine return a vertical line colored according to the given state.
 func VerticalLine(state State) string {
-	var c te.Color
-	switch state {
-	case StateSelected:
-		c = NewColorPair("#F684FF", "#F684FF").Color()
-	case StateDeleting:
-		c = NewColorPair("#893D4E", "#FF8BA7").Color()
-	case StateActive:
-		c = NewColorPair("#9BA92F", "#6CCCA9").Color()
-	case StateSpecial:
-		c = NewColorPair("#04B575", "#04B575").Color()
-	default:
-		c = NewColorPair("#646464", "#BCBCBC").Color()
-	}
-
-	return te.String("│").
-		Foreground(c).
+	return lipgloss.NewStyle().
+		SetString("│").
+		Foreground(lineColors[state]).
 		String()
+}
+
+var valStyle = lipgloss.NewStyle().Foreground(indigo)
+
+var (
+	spinnerStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.AdaptiveColor{Light: "#8E8E8E", Dark: "#747373"})
+
+	blurredButtonStyle = lipgloss.NewStyle().
+				Foreground(cream).
+				Background(lipgloss.AdaptiveColor{Light: "#BDB0BE", Dark: "#827983"}).
+				Padding(0, 3)
+
+	focusedButtonStyle = blurredButtonStyle.Copy().
+				Background(fuschia)
+)
+
+// NewSpinner returns a spinner model.
+func NewSpinner() spinner.Model {
+	s := spinner.NewModel()
+	s.Spinner = spinner.Dot
+	s.Style = spinnerStyle
+	return s
 }
 
 // KeyValueView renders key-value pairs.
@@ -49,16 +66,16 @@ func KeyValueView(stuff ...string) string {
 
 	var (
 		s     string
-		index = 0
+		index int
 	)
 	for i := 0; i < len(stuff); i++ {
 		if i%2 == 0 {
-			// even
+			// even: key
 			s += fmt.Sprintf("%s %s: ", VerticalLine(StateNormal), stuff[i])
 			continue
 		}
-		// odd
-		s += te.String(stuff[i]).Foreground(Indigo.Color()).String()
+		// odd: value
+		s += valStyle.Render(stuff[i])
 		s += "\n"
 		index++
 	}
@@ -66,7 +83,15 @@ func KeyValueView(stuff ...string) string {
 	return strings.TrimSpace(s)
 }
 
-// HELP
+var (
+	helpDivider = lipgloss.NewStyle().
+			Foreground(lipgloss.AdaptiveColor{Light: "#DDDADA", Dark: "#3C3C3C"}).
+			Padding(0, 1).
+			Render("•")
+
+	helpSection = lipgloss.NewStyle().
+			Foreground(lipgloss.AdaptiveColor{Light: "#9B9B9B", Dark: "#5C5C5C"})
+)
 
 // HelpView renders text intended to display at help text, often at the
 // bottom of a view.
@@ -77,20 +102,14 @@ func HelpView(sections ...string) string {
 	}
 
 	for i := 0; i < len(sections); i++ {
-		s += te.String(sections[i]).Foreground(NewColorPair("#5C5C5C", "#9B9B9B").Color()).String()
+		s += helpSection.Render(sections[i])
 		if i < len(sections)-1 {
-			s += helpDivider()
+			s += helpDivider
 		}
 	}
 
 	return s
 }
-
-func helpDivider() string {
-	return te.String(" • ").Foreground(NewColorPair("#3C3C3C", "#DDDADA").Color()).String()
-}
-
-// BUTTONS
 
 // ButtonView renders something that resembles a button.
 func ButtonView(text string, focused bool) string {
@@ -99,14 +118,44 @@ func ButtonView(text string, focused bool) string {
 
 // YesButtonView return a button reading "Yes".
 func YesButtonView(focused bool) string {
-	str := lipgloss.NewStyle().Underline(true).Render("Y") + "es"
-	return styledButton(str, false, focused)
+	var st lipgloss.Style
+	if focused {
+		st = focusedButtonStyle
+	} else {
+		st = blurredButtonStyle
+	}
+	return underlineInitialCharButton("Yes", st, focused)
 }
 
 // NoButtonView returns a button reading "No.".
 func NoButtonView(focused bool) string {
-	str := lipgloss.NewStyle().Underline(true).Render("N") + "o"
-	return styledButton(str, false, focused)
+	var st lipgloss.Style
+	if focused {
+		st = focusedButtonStyle
+	} else {
+		st = blurredButtonStyle
+	}
+	st = st.
+		PaddingLeft(st.GetPaddingLeft() + 1).
+		PaddingRight(st.GetPaddingRight() + 1)
+	return underlineInitialCharButton("No", st, focused)
+}
+
+func underlineInitialCharButton(str string, style lipgloss.Style, focused bool) string {
+	if len(str) == 0 {
+		return ""
+	}
+
+	var (
+		r     = []rune(str)
+		left  = r[0]
+		right = r[1:]
+	)
+
+	leftStyle := style.Copy().Underline(true).UnsetPaddingRight()
+	rightStyle := style.Copy().UnsetPaddingLeft()
+
+	return leftStyle.Render(string(left)) + rightStyle.Render(string(right))
 }
 
 // OKButtonView returns a button reading "OK".

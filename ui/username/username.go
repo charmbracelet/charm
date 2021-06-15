@@ -9,8 +9,6 @@ import (
 	"github.com/charmbracelet/charm/client"
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/ui/common"
-	"github.com/charmbracelet/lipgloss"
-	te "github.com/muesli/termenv"
 )
 
 type state int
@@ -28,12 +26,6 @@ const (
 	okButton
 	cancelButton
 )
-
-const prompt = "> "
-
-var focusedPrompt = lipgloss.NewStyle().
-	Foreground(common.Fuschia).
-	Render(prompt)
 
 // NameSetMsg is sent when a new name has been set successfully. It contains
 // the new name.
@@ -55,6 +47,7 @@ type Model struct {
 	Quit bool // true when the user wants to quit the whole program
 
 	cc      *client.Client
+	styles  common.Styles
 	state   state
 	newName string
 	index   index
@@ -68,10 +61,10 @@ type Model struct {
 func (m *Model) updateFocus() {
 	if m.index == textInput && !m.input.Focused() {
 		m.input.Focus()
-		m.input.Prompt = focusedPrompt
+		m.input.Prompt = m.styles.FocusedPrompt.String()
 	} else if m.index != textInput && m.input.Focused() {
 		m.input.Blur()
-		m.input.Prompt = prompt
+		m.input.Prompt = m.styles.Prompt.String()
 	}
 }
 
@@ -97,25 +90,26 @@ func (m *Model) indexBackward() {
 
 // NewModel returns a new username model in its initial state.
 func NewModel(cc *client.Client) Model {
-	inputModel := input.NewModel()
-	inputModel.CursorStyle = common.CursorStyle
-	inputModel.Placeholder = "divagurl2000"
-	inputModel.Prompt = focusedPrompt
-	inputModel.CharLimit = 50
-	inputModel.Focus()
+	st := common.DefaultStyles()
 
-	spinnerModel := common.NewSpinner()
+	im := input.NewModel()
+	im.CursorStyle = st.Cursor
+	im.Placeholder = "divagurl2000"
+	im.Prompt = st.FocusedPrompt.String()
+	im.CharLimit = 50
+	im.Focus()
 
 	return Model{
 		Done:    false,
 		Quit:    false,
 		cc:      cc,
+		styles:  st,
 		state:   ready,
 		newName: "",
 		index:   textInput,
 		errMsg:  "",
-		input:   inputModel,
-		spinner: spinnerModel,
+		input:   im,
+		spinner: common.NewSpinner(),
 	}
 }
 
@@ -203,25 +197,25 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 	case NameTakenMsg:
 		m.state = ready
-		m.errMsg = common.Subtle("Sorry, ") +
-			te.String(m.newName).Foreground(common.Red.Color()).String() +
-			common.Subtle(" is taken.")
+		m.errMsg = m.styles.Subtle.Render("Sorry, ") +
+			m.styles.Error.Render(m.newName) +
+			m.styles.Subtle.Render(" is taken.")
 
 		return m, nil
 
 	case NameInvalidMsg:
 		m.state = ready
-		head := te.String("Invalid name. ").Foreground(common.Red.Color()).String()
-		body := common.Subtle("Names can only contain plain letters and numbers and must be less than 50 characters. And no emojis, kiddo.")
-		m.errMsg = common.Wrap(head + body)
+		head := m.styles.Error.Render("Invalid name. ")
+		body := m.styles.Subtle.Render("Names can only contain plain letters and numbers and must be less than 50 characters. And no emojis, kiddo.")
+		m.errMsg = m.styles.Wrap.Render(head + body)
 
 		return m, nil
 
 	case errMsg:
 		m.state = ready
-		head := te.String("Oh, what? There was a curious error we were not expecting. ").Foreground(common.Red.Color()).String()
-		body := common.Subtle(msg.Error())
-		m.errMsg = common.Wrap(head + body)
+		head := m.styles.Error.Render("Oh, what? There was a curious error we were not expecting. ")
+		body := m.styles.Subtle.Render(msg.Error())
+		m.errMsg = m.styles.Wrap.Render(head + body)
 
 		return m, nil
 

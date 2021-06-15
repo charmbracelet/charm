@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/charm/ui/link"
 	"github.com/charmbracelet/charm/ui/linkgen"
 	"github.com/muesli/reflow/indent"
@@ -17,7 +16,7 @@ func LinkCmd(parentName string) *cobra.Command {
 	return &cobra.Command{
 		Use:     "link [code]",
 		Short:   "Link multiple machines to your Charm account",
-		Long:    common.FormatLong("It’s easy to " + common.Keyword("link") + " multiple machines or keys to your Charm account. Just run " + common.Code(parentName+" link") + " on a machine connected to the account to want to link to start the process."),
+		Long:    paragraph("It’s easy to " + keyword("link") + " multiple machines or keys to your Charm account. Just run " + code(parentName+" link") + " on a machine connected to the account to want to link to start the process."),
 		Example: indent.String(fmt.Sprintf("%s link\b%s link XXXXXX", parentName, parentName), 2),
 		Args:    cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {

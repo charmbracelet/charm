@@ -11,7 +11,6 @@ import (
 
 	cfs "github.com/charmbracelet/charm/fs"
 	charm "github.com/charmbracelet/charm/proto"
-	"github.com/charmbracelet/charm/ui/common"
 	"github.com/spf13/cobra"
 )
 
@@ -39,7 +38,7 @@ var (
 		Use:    "fs",
 		Hidden: false,
 		Short:  "Use the Charm file system.",
-		Long:   common.FormatLong(fmt.Sprintf("Commands to set, get and delete data from your Charm Cloud backed file system.")),
+		Long:   paragraph(fmt.Sprintf("Commands to set, get and delete data from your Charm Cloud backed file system.")),
 		Args:   cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return nil

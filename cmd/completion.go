@@ -3,14 +3,13 @@ package cmd
 import (
 	"os"
 
-	"github.com/charmbracelet/charm/ui/common"
 	"github.com/spf13/cobra"
 )
 
 func completionInstructions() string {
-	return common.FormatLong(`Charm supports ` + common.Keyword("shell completion") + ` for bash, zsh, fish and powershell.
+	return paragraph(`Charm supports ` + keyword("shell completion") + ` for bash, zsh, fish and powershell.
 
-` + common.Keyword("Bash") + `
+` + keyword("Bash") + `
 
 To install completions:
 
@@ -26,7 +25,7 @@ way to do this is with Homewbrew. For more info run: brew info bash-completion.
 Or, to just load Charm completion for the current session:
 $ source <(charm completion bash)
 
-` + common.Keyword("Zsh") + `
+` + keyword("Zsh") + `
 
 If shell completion is not already enabled in your environment you will need to enable it. You can execute the following once:
 $ echo "autoload -U compinit; compinit" >> ~/.zshrc
@@ -36,7 +35,7 @@ $ charm completion zsh > "${fpath[1]}/_charm"
 
 You will need to start a new shell for this setup to take effect.
 
-` + common.Keyword("Fish") + `
+` + keyword("Fish") + `
 
 To load completions for each session:
 $ charm completion fish > ~/.config/fish/completions/charm.fish

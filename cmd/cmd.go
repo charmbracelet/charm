@@ -22,8 +22,16 @@ const (
 	silentKeygen                        // generate keys silently
 )
 
+var (
+	styles    = common.DefaultStyles()
+	paragraph = styles.Paragraph.Render
+	keyword   = styles.Keyword.Render
+	code      = styles.Code.Render
+	subtle    = styles.Subtle.Render
+)
+
 func printFormatted(s string) {
-	fmt.Println(common.FormatLong(s + "\n"))
+	fmt.Println(paragraph(s) + "\n")
 }
 
 func getCharmConfig() *client.Config {
@@ -41,7 +49,7 @@ func initCharmClient(kg keygenSetting) *client.Client {
 	if err == charm.ErrMissingSSHAuth {
 
 		if kg != noKeygen {
-			keygenError := "Uh oh. We tried to generate a new pair of keys for your " + common.Keyword("Charm Account") + " but we hit a snag:\n\n"
+			keygenError := "Uh oh. We tried to generate a new pair of keys for your " + keyword("Charm Account") + " but we hit a snag:\n\n"
 
 			if isatty.IsTerminal(os.Stdout.Fd()) {
 				// Generate	keys, using Bubble Tea for feedback
@@ -67,7 +75,7 @@ func initCharmClient(kg keygenSetting) *client.Client {
 			return initCharmClient(noKeygen)
 		}
 
-		printFormatted("We were’t able to authenticate via SSH, which means there’s likely a problem with your key.\n\nYou can generate SSH keys by running " + common.Code("charm keygen") + ". You can also set the environment variable " + common.Code("CHARM_SSH_KEY_PATH") + " to point to a specific private key, or use " + common.Code("-i") + "specifify a location.")
+		printFormatted("We were’t able to authenticate via SSH, which means there’s likely a problem with your key.\n\nYou can generate SSH keys by running " + code("charm keygen") + ". You can also set the environment variable " + code("CHARM_SSH_KEY_PATH") + " to point to a specific private key, or use " + code("-i") + "specifify a location.")
 		os.Exit(1)
 	} else if err != nil {
 		fmt.Println(err)

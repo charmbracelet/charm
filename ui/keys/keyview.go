@@ -6,29 +6,26 @@ import (
 
 	"github.com/charmbracelet/charm/client"
 	"github.com/charmbracelet/charm/ui/common"
-	"github.com/charmbracelet/lipgloss"
-	te "github.com/muesli/termenv"
 )
-
-var labelStyle = lipgloss.NewStyle().Foreground(common.Fuschia)
 
 // wrap fingerprint to support additional states.
 type fingerprint struct {
 	client.Fingerprint
 }
 
-func (f fingerprint) state(s keyState) string {
+func (f fingerprint) state(s keyState, styles common.Styles) string {
 	if s == keyDeleting {
 		return fmt.Sprintf(
 			"%s %s",
-			common.FaintRedFg(strings.ToUpper(f.Algorithm)),
-			common.RedFg(f.Type+":"+f.Value),
+			styles.DeleteDim.Render(strings.ToUpper(f.Algorithm)),
+			styles.Delete.Render(f.Type+":"+f.Value),
 		)
 	}
 	return f.String()
 }
 
 type styledKey struct {
+	styles      common.Styles
 	date        string
 	fingerprint fingerprint
 	gutter      string
@@ -38,7 +35,7 @@ type styledKey struct {
 	note        string
 }
 
-func newStyledKey(key client.Key, active bool) styledKey {
+func (m Model) newStyledKey(styles common.Styles, key client.Key, active bool) styledKey {
 	date := key.CreatedAt.Format("02 Jan 2006 15:04:05 MST")
 	fp, err := key.FingerprintSHA256()
 	if err != nil {
@@ -47,18 +44,18 @@ func newStyledKey(key client.Key, active bool) styledKey {
 
 	var note string
 	if active {
-		bullet := te.String("• ").Foreground(common.NewColorPair("#2B4A3F", "#ABE5D1").Color()).String()
-		note = bullet + te.String("Current Key").Foreground(common.NewColorPair("#04B575", "#04B575").Color()).String()
+		note = m.styles.NoteDim.Render("• ") + m.styles.Note.Render("Current Key")
 	}
 
 	// Default state
 	return styledKey{
+		styles:      styles,
 		date:        date,
 		fingerprint: fingerprint{fp},
 		gutter:      " ",
 		keyLabel:    "Key:",
 		dateLabel:   "Added:",
-		dateVal:     te.String(date).Foreground(common.Indigo.Color()).String(),
+		dateVal:     styles.LabelDim.Render(date),
 		note:        note,
 	}
 }
@@ -66,16 +63,16 @@ func newStyledKey(key client.Key, active bool) styledKey {
 // Selected state
 func (k *styledKey) selected() {
 	k.gutter = common.VerticalLine(common.StateSelected)
-	k.keyLabel = labelStyle.Render("Key:")
-	k.dateLabel = labelStyle.Render("Added:")
+	k.keyLabel = k.styles.Label.Render("Key:")
+	k.dateLabel = k.styles.Label.Render("Added:")
 }
 
 // Deleting state
 func (k *styledKey) deleting() {
 	k.gutter = common.VerticalLine(common.StateDeleting)
-	k.keyLabel = te.String("Key:").Foreground(common.Red.Color()).String()
-	k.dateLabel = te.String("Added:").Foreground(common.Red.Color()).String()
-	k.dateVal = te.String(k.date).Foreground(common.FaintRed.Color()).String()
+	k.keyLabel = k.styles.Delete.Render("Key:")
+	k.dateLabel = k.styles.Delete.Render("Added:")
+	k.dateVal = k.styles.DeleteDim.Render(k.date)
 }
 
 func (k styledKey) render(state keyState) string {
@@ -87,7 +84,7 @@ func (k styledKey) render(state keyState) string {
 	}
 	return fmt.Sprintf(
 		"%s %s %s\n%s %s %s %s\n\n",
-		k.gutter, k.keyLabel, k.fingerprint.state(state),
+		k.gutter, k.keyLabel, k.fingerprint.state(state, k.styles),
 		k.gutter, k.dateLabel, k.dateVal, k.note,
 	)
 }

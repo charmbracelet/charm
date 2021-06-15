@@ -17,24 +17,27 @@ type errMsg struct {
 	err error
 }
 
+// Error satisfies the error interface.
 func (e errMsg) Error() string {
 	return e.err.Error()
 }
 
 // Model stores the state of the info user interface.
 type Model struct {
-	Quit bool // signals it's time to exit the whole application
-	Err  error
-	User *charm.User
-	cc   *client.Client
+	Quit   bool // signals it's time to exit the whole application
+	Err    error
+	User   *charm.User
+	cc     *client.Client
+	styles common.Styles
 }
 
 // NewModel returns a new Model in its initial state.
 func NewModel(cc *client.Client) Model {
 	return Model{
-		Quit: false,
-		User: nil,
-		cc:   cc,
+		Quit:   false,
+		User:   nil,
+		cc:     cc,
+		styles: common.DefaultStyles(),
 	}
 }
 
@@ -62,25 +65,25 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 }
 
 // View renders the current view from the model.
-func View(m Model) string {
+func (m Model) View() string {
 	if m.Err != nil {
 		return "error: " + m.Err.Error()
 	} else if m.User == nil {
 		return " Authenticating..."
 	}
-	return bioView(m.User)
+	return m.bioView()
 }
 
-func bioView(u *charm.User) string {
+func (m Model) bioView() string {
 	var username string
-	if u.Name != "" {
-		username = u.Name
+	if m.User.Name != "" {
+		username = m.User.Name
 	} else {
-		username = common.Subtle("(none set)")
+		username = m.styles.Subtle.Render("(none set)")
 	}
 	return common.KeyValueView(
 		"Username", username,
-		"Joined", u.CreatedAt.Format("02 Jan 2006"),
+		"Joined", m.User.CreatedAt.Format("02 Jan 2006"),
 	)
 }
 

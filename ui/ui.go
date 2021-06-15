@@ -18,24 +18,6 @@ import (
 	"github.com/charmbracelet/charm/ui/username"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/reflow/indent"
-	te "github.com/muesli/termenv"
-)
-
-const indentAmount = 2
-
-var (
-	logo = lipgloss.NewStyle().
-		Foreground(common.Cream).
-		Background(lipgloss.Color("#5A56E0")).
-		Padding(0, 1).
-		Render("Charm")
-
-	selectionMarker = lipgloss.NewStyle().
-			Foreground(common.Fuschia).
-			Render("> ")
-
-	selectedMenuItemStyle = lipgloss.NewStyle().
-				Foreground(common.Fuschia)
 )
 
 // NewProgram returns a new Bubble Tea program. Use this to start up the
@@ -107,6 +89,7 @@ var menuChoices = map[menuChoice]string{
 type model struct {
 	cfg        *client.Config
 	cc         *client.Client
+	styles     common.Styles
 	user       *charm.User
 	err        error
 	status     status
@@ -124,6 +107,7 @@ type model struct {
 func initialModel(cfg *client.Config) model {
 	return model{
 		cfg:        cfg,
+		styles:     common.DefaultStyles(),
 		status:     statusInit,
 		menuChoice: unsetChoice,
 		spinner:    common.NewSpinner(),
@@ -365,7 +349,7 @@ func updateChilden(msg tea.Msg, m model) (model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	s := charmLogoView()
+	s := m.styles.Logo.String() + "\n\n"
 
 	switch m.status {
 	case statusInit:
@@ -381,10 +365,10 @@ func (m model) View() string {
 		if m.info.User == nil {
 			s += m.spinner.View()
 		}
-		s += info.View(m.info)
+		s += m.info.View()
 	case statusReady:
-		s += info.View(m.info)
-		s += "\n\n" + menuView(m.menuIndex)
+		s += m.info.View()
+		s += "\n\n" + m.menuView()
 		s += footerView(m)
 	case statusLinking:
 		s += m.linkgen.View()
@@ -393,27 +377,24 @@ func (m model) View() string {
 	case statusSettingUsername:
 		s += username.View(m.username)
 	case statusShowBackupInfo:
-		s += backupView(m)
+		s += m.backupView()
 	case statusQuitting:
-		s += quitView(m)
+		s += m.quitView()
 	case statusError:
 		s += m.err.Error()
 	}
 
-	return indent.String(s, indentAmount) + "\n"
+	return m.styles.App.Render(s)
 }
 
-func charmLogoView() string {
-	return fmt.Sprintf("\n%s\n\n", logo)
-}
-
-func menuView(currentIndex int) string {
+func (m model) menuView() string {
 	var s string
 	for i := 0; i < len(menuChoices); i++ {
 		e := "  "
 		menuItem := menuChoices[menuChoice(i)]
-		if i == currentIndex {
-			e = selectionMarker + selectedMenuItemStyle.Render(menuItem)
+		if i == m.menuIndex {
+			e = m.styles.SelectionMarker.String() +
+				m.styles.SelectedMenuItem.Render(menuItem)
 		} else {
 			e += menuItem
 		}
@@ -426,22 +407,26 @@ func menuView(currentIndex int) string {
 	return s
 }
 
-func backupView(m model) string {
+func (m model) backupView() string {
+	keyword := m.styles.Keyword.Render
+	code := m.styles.Code.Render
+	em := lipgloss.NewStyle().Underline(true).Render
+
 	p, err := client.DataPath()
 	if err != nil {
-		return errorView(err)
+		return m.errorView(err)
 	}
-	s := "Your Charm account uses SSH keys specific to Charm. These keys are automatically cut the first time you authenticate. It’s " + te.String("very important").Bold().String() + " that you keep these keys safe as they’re the keys to your account.\n\n"
+	s := "Your Charm account uses SSH keys specific to Charm. These keys are automatically cut the first time you authenticate. It’s " + em("very important") + " that you keep these keys safe as they’re the keys to your account.\n\n"
 	s += "You can make a quick backup of your keys by running:\n\n"
-	s += "  " + common.Code("charm backup-keys") + "\n\n"
+	s += "  " + code("charm backup-keys") + "\n\n"
 	s += "Your keys can also be found at:\n\n"
-	s += "  " + common.Keyword(p) + "\n\n"
-	s += "For more info see " + common.Code("charm backup-keys -h") + ". We’ll be adding more recovery features in the future.\n\n"
+	s += "  " + keyword(p) + "\n\n"
+	s += "For more info see " + code("charm backup-keys -h") + ". We’ll be adding more recovery features in the future.\n\n"
 	s += common.HelpView("esc: back", "q: quit") + "\n\n"
-	return common.Wrap(s)
+	return m.styles.Wrap.Render(s)
 }
 
-func quitView(m model) string {
+func (m model) quitView() string {
 	if m.err != nil {
 		return fmt.Sprintf("Uh oh, there’s been an error: %v\n", m.err)
 	}
@@ -450,14 +435,14 @@ func quitView(m model) string {
 
 func footerView(m model) string {
 	if m.err != nil {
-		return errorView(m.err)
+		return m.errorView(m.err)
 	}
 	return "\n\n" + common.HelpView("j/k, ↑/↓: choose", "enter: select")
 }
 
-func errorView(err error) string {
-	head := te.String("Error: ").Foreground(common.Red.Color()).String()
-	body := common.Subtle(err.Error())
-	msg := common.Wrap(head + body)
+func (m model) errorView(err error) string {
+	head := m.styles.Error.Render("Error: ")
+	body := m.styles.Subtle.Render(err.Error())
+	msg := m.styles.Wrap.Render(head + body)
 	return "\n\n" + indent.String(msg, 2)
 }

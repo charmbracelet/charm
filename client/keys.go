@@ -12,6 +12,8 @@ import (
 	"github.com/charmbracelet/charm/ui/common"
 )
 
+var styles = common.DefaultStyles()
+
 // Fingerprint is the fingerprint of an SSH key.
 type Fingerprint struct {
 	Algorithm string
@@ -23,8 +25,8 @@ type Fingerprint struct {
 func (f Fingerprint) String() string {
 	return fmt.Sprintf(
 		"%s %s",
-		common.SubtleIndigoFg(strings.ToUpper(f.Algorithm)),
-		common.IndigoFg(f.Type+":"+f.Value),
+		styles.ListDim.Render(strings.ToUpper(f.Algorithm)),
+		styles.ListKey.Render(f.Type+":"+f.Value),
 	)
 }
 

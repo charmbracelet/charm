@@ -16,7 +16,7 @@ var (
 		Use:    "keygen",
 		Hidden: true,
 		Short:  "Generate SSH keys",
-		Long:   common.FormatLong("Charm accounts are powered by " + common.Keyword("SSH keys") + ". This command will create them for you."),
+		Long:   paragraph("Charm accounts are powered by " + keyword("SSH keys") + ". This command will create them for you."),
 		Args:   cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if common.IsTTY() && !simpleOutput {

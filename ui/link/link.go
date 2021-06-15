@@ -9,8 +9,10 @@ import (
 	"github.com/charmbracelet/charm/ui/charmclient"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/charm/ui/keygen"
-	"github.com/muesli/reflow/indent"
+	"github.com/charmbracelet/lipgloss"
 )
+
+var viewStyle = lipgloss.NewStyle().Padding(1, 2, 2, 3)
 
 // NewProgram returns a Tea program for the link participant.
 func NewProgram(cfg *client.Config, code string) *tea.Program {
@@ -40,15 +42,14 @@ type (
 	requestDeniedMsg struct{}
 	successMsg       bool
 	timeoutMsg       struct{}
-	errMsg           struct {
-		err error
-	}
+	errMsg           struct{ err error }
 )
 
 type model struct {
 	lh            *linkHandler
 	cfg           *client.Config
 	cc            *client.Client
+	styles        common.Styles
 	code          string
 	status        status
 	alreadyLinked bool
@@ -59,8 +60,9 @@ type model struct {
 
 func newModel(cfg *client.Config, code string) model {
 	return model{
-		cfg:           cfg,
 		lh:            newLinkHandler(),
+		cfg:           cfg,
+		styles:        common.DefaultStyles(),
 		code:          code,
 		status:        initCharmClient,
 		alreadyLinked: false,
@@ -163,7 +165,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	if m.err != nil {
-		return paddedView(m.err.Error())
+		return viewStyle.Render(m.err.Error())
 	}
 
 	s := m.spinner.View() + " "
@@ -180,31 +182,27 @@ func (m model) View() string {
 	case linkInit:
 		s += "Linking..."
 	case linkTokenSent:
-		s += fmt.Sprintf("Token %s. Waiting for validation...", common.Keyword("sent"))
+		s += fmt.Sprintf("Token %s. Waiting for validation...", m.styles.Keyword.Render("sent"))
 	case linkTokenValid:
-		s += fmt.Sprintf("Token %s. Waiting for authorization...", common.Keyword("valid"))
+		s += fmt.Sprintf("Token %s. Waiting for authorization...", m.styles.Keyword.Render("valid"))
 	case linkTokenInvalid:
-		s = fmt.Sprintf("%s token. Goodbye.", common.Keyword("Invalid"))
+		s = fmt.Sprintf("%s token. Goodbye.", m.styles.Keyword.Render("Invalid"))
 	case linkRequestDenied:
-		s = fmt.Sprintf("Link request %s. Sorry, kid.", common.Keyword("denied"))
+		s = fmt.Sprintf("Link request %s. Sorry, kid.", m.styles.Keyword.Render("denied"))
 	case linkSuccess:
-		s = common.Keyword("Linked!")
+		s = m.styles.Keyword.Render("Linked!")
 		if m.alreadyLinked {
 			s += " You already linked this key, btw."
 		}
 	case linkTimeout:
-		s = fmt.Sprintf("Link request %s. Sorry.", common.Keyword("timed out"))
+		s = fmt.Sprintf("Link request %s. Sorry.", m.styles.Keyword.Render("timed out"))
 	case linkErr:
-		s = common.Keyword("Error.")
+		s = m.styles.Keyword.Render("Error.")
 	case quitting:
 		s = "Oh, ok. Bye."
 	}
 
-	return paddedView(s)
-}
-
-func paddedView(s string) string {
-	return indent.String(fmt.Sprintf("\n%s\n\n", s), 2)
+	return viewStyle.Render(s)
 }
 
 func handleLinkRequest(m model) tea.Cmd {

@@ -17,10 +17,12 @@ var (
 	Version   = ""
 	CommitSHA = ""
 
+	styles = common.DefaultStyles()
+
 	rootCmd = &cobra.Command{
 		Use:                   "charm",
 		Short:                 "Do Charm stuff",
-		Long:                  common.FormatLong(fmt.Sprintf("Do %s stuff. Run without arguments for a TUI or use the sub-commands like a pro.", common.Keyword("Charm"))),
+		Long:                  styles.Paragraph.Render(fmt.Sprintf("Do %s stuff. Run without arguments for a TUI or use the sub-commands like a pro.", styles.Keyword.Render("Charm"))),
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if common.IsTTY() {
