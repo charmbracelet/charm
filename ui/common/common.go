@@ -2,6 +2,7 @@ package common
 
 import (
 	"os"
+	"sync"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/lipgloss"
@@ -128,7 +129,15 @@ func FormatLong(s string) string {
 	return indent.String(wordwrap.String("\n"+s, wrapAt-2), 2)
 }
 
+var (
+	isTTY    bool
+	checkTTY sync.Once
+)
+
 // Returns true if standard out is a terminal
 func IsTTY() bool {
-	return isatty.IsTerminal(os.Stdout.Fd())
+	checkTTY.Do(func() {
+		isTTY = isatty.IsTerminal(os.Stdout.Fd())
+	})
+	return isTTY
 }
