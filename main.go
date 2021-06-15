@@ -62,7 +62,7 @@ func init() {
 		cmd.JWTCmd,
 		cmd.KeysCmd,
 		cmd.KeygenCmd,
-		cmd.LinkCmd,
+		cmd.LinkCmd("charm"),
 		cmd.NameCmd,
 		cmd.BackupKeysCmd,
 		cmd.ImportKeysCmd,
