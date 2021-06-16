@@ -56,6 +56,9 @@ func OpenWithDefaults(name string, path string) (*KV, error) {
 	}
 	pn := filepath.Join(path, name)
 	opts := badger.DefaultOptions(pn).WithLoggingLevel(badger.ERROR)
+	// By default we have no logger as it will interfere with Bubble Tea
+	// rendering. Use Open with custom options to specify one.
+	opts.Logger = nil
 	return Open(cc, name, opts)
 }
 
