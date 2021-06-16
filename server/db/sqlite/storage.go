@@ -9,7 +9,7 @@ import (
 
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/google/uuid"
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 type DB struct {
@@ -20,7 +20,7 @@ type DB struct {
 func NewDB(path string) *DB {
 	var err error
 	log.Printf("Opening SQLite db: %s\n", path)
-	db, err := sql.Open("sqlite3", filepath.Join(path, "charm_sqlite.db"))
+	db, err := sql.Open("sqlite", filepath.Join(path, "charm_sqlite.db"))
 	if err != nil {
 		panic(err)
 	}
