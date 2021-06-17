@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	charm "github.com/charmbracelet/charm/proto"
@@ -301,14 +302,50 @@ func (me *DB) NextSeq(u *charm.User, name string) (uint64, error) {
 	return seq, nil
 }
 
+func (me *DB) GetNews(id string) (*charm.News, error) {
+	n := &charm.News{}
+	i, err := strconv.Atoi(id)
+	if err != nil {
+		return nil, err
+	}
+	err = me.wrapTransaction(func(tx *sql.Tx) error {
+		r := me.selectNews(tx, i)
+		return r.Scan(&n.ID, &n.Subject, &n.Body, &n.CreatedAt)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return n, nil
+}
+
+func (me *DB) GetNewsList(tag string, page int) ([]*charm.News, error) {
+	var ns []*charm.News
+	err := me.wrapTransaction(func(tx *sql.Tx) error {
+		rs, err := me.selectNewsList(tx, tag, page)
+		if err != nil {
+			return err
+		}
+		for rs.Next() {
+			n := &charm.News{}
+			err := rs.Scan(&n.ID, &n.Subject, &n.CreatedAt)
+			if err != nil {
+				return err
+			}
+			ns = append(ns, n)
+		}
+		return nil
+	})
+	return ns, err
+}
+
+func (me *DB) PostNews(subject string, body string, tags []string) error {
+	return me.wrapTransaction(func(tx *sql.Tx) error {
+		return me.insertNews(tx, subject, body, tags)
+	})
+}
+
 func (me *DB) MergeUsers(userID1 int, userID2 int) error {
 	return me.wrapTransaction(func(tx *sql.Tx) error {
-		// TODO: Where to put glow stuff
-		// err := me.updateMergeStash(tx, userID1, userID2)
-		// if err != nil {
-		// 	return err
-		// }
-
 		err := me.updateMergePublicKeys(tx, userID1, userID2)
 		if err != nil {
 			return err
@@ -332,7 +369,19 @@ func (me *DB) CreateDB() error {
 		if err != nil {
 			return err
 		}
-		return me.createEncryptKeyTable(tx)
+		err = me.createEncryptKeyTable(tx)
+		if err != nil {
+			return err
+		}
+		err = me.createNewsTable(tx)
+		if err != nil {
+			return err
+		}
+		err = me.createNewsTagTable(tx)
+		if err != nil {
+			return err
+		}
+		return nil
 	})
 }
 
@@ -373,6 +422,21 @@ func (me *DB) insertEncryptKey(tx *sql.Tx, key string, globalID string, publicKe
 		_, err = tx.Exec(sqlInsertEncryptKeyWithDate, key, globalID, publicKeyID, createdAt)
 	}
 	return err
+}
+
+func (me *DB) insertNews(tx *sql.Tx, subject string, body string, tags []string) error {
+	r, err := tx.Exec(sqlInsertNews, subject, body)
+	nid, err := r.LastInsertId()
+	if err != nil {
+		return err
+	}
+	for _, tag := range tags {
+		_, err = tx.Exec(sqlInsertNewsTag, nid, tag)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (me *DB) selectNamedSeq(tx *sql.Tx, userID int, name string) (uint64, error) {
@@ -430,6 +494,14 @@ func (me *DB) selectEncryptKeys(tx *sql.Tx, publicKeyID int) (*sql.Rows, error) 
 	return tx.Query(sqlSelectEncryptKeys, publicKeyID)
 }
 
+func (me *DB) selectNews(tx *sql.Tx, id int) *sql.Row {
+	return tx.QueryRow(sqlSelectNews, id)
+}
+
+func (me *DB) selectNewsList(tx *sql.Tx, tag string, offset int) (*sql.Rows, error) {
+	return tx.Query(sqlSelectNewsList, tag, offset)
+}
+
 func (me *DB) deleteUserPublicKey(tx *sql.Tx, userID int, publicKey string) error {
 	_, err := tx.Exec(sqlDeleteUserPublicKey, userID, publicKey)
 	return err
@@ -462,6 +534,16 @@ func (me *DB) createEncryptKeyTable(tx *sql.Tx) error {
 
 func (me *DB) createNamedSeqTable(tx *sql.Tx) error {
 	_, err := tx.Exec(sqlCreateNamedSeqTable)
+	return err
+}
+
+func (me *DB) createNewsTable(tx *sql.Tx) error {
+	_, err := tx.Exec(sqlCreateNewsTable)
+	return err
+}
+
+func (me *DB) createNewsTagTable(tx *sql.Tx) error {
+	_, err := tx.Exec(sqlCreateNewsTagTable)
 	return err
 }
 

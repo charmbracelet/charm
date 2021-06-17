@@ -206,6 +206,11 @@ func (kv *KV) Keys() ([][]byte, error) {
 	return ks, nil
 }
 
+// Client returns the underlying *client.Client.
+func (kv *KV) Client() *client.Client {
+	return kv.cc
+}
+
 // Reset deletes the local copy of the Badger DB and rebuilds with a fresh sync
 // from the Charm Cloud
 func (kv *KV) Reset() error {

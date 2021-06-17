@@ -71,6 +71,7 @@ func init() {
 		cmd.KeySyncCmd,
 		cmd.CompletionCmd,
 		cmd.ServeCmd,
+		cmd.PostNewsCmd,
 		cmd.KVCmd,
 		cmd.FSCmd,
 		cmd.CryptCmd,

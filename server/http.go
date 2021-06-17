@@ -21,6 +21,8 @@ import (
 	"goji.io/pattern"
 )
 
+const resultsPerPage = 50
+
 // HTTPServer is the HTTP server for the Charm Cloud backend.
 type HTTPServer struct {
 	db     db.DB
@@ -35,12 +37,6 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "We live!")
 	})
-	go func() {
-		err := http.ListenAndServe(fmt.Sprintf(":%s", cfg.HealthPort), nil)
-		if err != nil {
-			log.Fatalf("http health endpoint server exited with error: %s", err)
-		}
-	}()
 
 	mux := goji.NewMux()
 	s := &HTTPServer{
@@ -65,6 +61,8 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 	mux.HandleFunc(pat.Delete("/v1/fs/*"), s.handleDeleteFile)
 	mux.HandleFunc(pat.Get("/v1/seq/:name"), s.handleGetSeq)
 	mux.HandleFunc(pat.Post("/v1/seq/:name"), s.handlePostSeq)
+	mux.HandleFunc(pat.Get("/v1/news"), s.handleGetNewsList)
+	mux.HandleFunc(pat.Get("/v1/news/:id"), s.handleGetNews)
 	s.db = cfg.DB
 	s.fstore = cfg.FileStore
 	return s, nil
@@ -72,6 +70,12 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 
 // Start starts the HTTP server on the port specified in the Config.
 func (s *HTTPServer) Start() {
+	go func() {
+		err := http.ListenAndServe(fmt.Sprintf(":%s", s.cfg.HealthPort), nil)
+		if err != nil {
+			log.Fatalf("http health endpoint server exited with error: %s", err)
+		}
+	}()
 	listenAddr := fmt.Sprintf(":%d", s.cfg.HTTPPort)
 	log.Printf("HTTP server listening on: %s", listenAddr)
 	log.Fatalf("Server crashed: %s", http.ListenAndServe(listenAddr, s.mux))
@@ -257,6 +261,46 @@ func (s *HTTPServer) handleDeleteFile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *HTTPServer) handleGetNewsList(w http.ResponseWriter, r *http.Request) {
+	p := r.FormValue("page")
+	if p == "" {
+		p = "1"
+	}
+	page, err := strconv.Atoi(p)
+	if err != nil {
+		log.Printf("page not a number: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	offset := (page - 1) * resultsPerPage
+	tag := r.FormValue("tag")
+	if tag == "" {
+		tag = "server"
+	}
+	ns, err := s.db.GetNewsList(tag, offset)
+	if err != nil {
+		log.Printf("cannot get news: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(ns)
+	s.cfg.Stats.GetNews()
+}
+
+func (s *HTTPServer) handleGetNews(w http.ResponseWriter, r *http.Request) {
+	id := pat.Param(r, "id")
+	news, err := s.db.GetNews(id)
+	if err != nil {
+		log.Printf("cannot get news markdown: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(news)
+	s.cfg.Stats.GetNews()
+}
 func (s *HTTPServer) charmUserFromRequest(w http.ResponseWriter, r *http.Request) *charm.User {
 	u := r.Context().Value(ctxUserKey)
 	if u == nil {
