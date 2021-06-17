@@ -39,7 +39,7 @@ func (me *SSHServer) handleAPIAuth(s Session) {
 		PublicKey:   u.PublicKey.Key,
 		EncryptKeys: eks,
 	})
-	// me.config.Stats.APIAuthCalls.Inc()
+	me.config.Stats.APIAuth()
 }
 
 func (me *SSHServer) handleAPIKeys(s Session) {
@@ -79,7 +79,7 @@ func (me *SSHServer) handleAPIKeys(s Session) {
 		ActiveKey: activeKey,
 		Keys:      keys,
 	})
-	// me.config.Stats.APIKeysCalls.Inc()
+	me.config.Stats.APIKeys()
 }
 
 func (me *SSHServer) handleID(s Session) {
@@ -95,7 +95,7 @@ func (me *SSHServer) handleID(s Session) {
 	}
 	log.Printf("ID for user %s\n", u.CharmID)
 	_, _ = s.Write([]byte(u.CharmID))
-	// me.config.Stats.IDCalls.Inc()
+	me.config.Stats.ID()
 }
 
 func (me *SSHServer) handleJWT(s Session) {
@@ -116,7 +116,7 @@ func (me *SSHServer) handleJWT(s Session) {
 		return
 	}
 	_, _ = s.Write([]byte(j))
-	// me.config.Stats.JWTCalls.Inc()
+	me.config.Stats.JWT()
 }
 
 func (me *SSHServer) newJWT(charmID string) (string, error) {

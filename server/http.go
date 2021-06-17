@@ -25,13 +25,12 @@ import (
 type HTTPServer struct {
 	db     db.DB
 	fstore storage.FileStore
-	stats  PrometheusStats
-	cfg    Config
+	cfg    *Config
 	mux    *goji.Mux
 }
 
 // NewHTTPServer returns a new *HTTPServer with the specified Config.
-func NewHTTPServer(cfg Config) (*HTTPServer, error) {
+func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 	// No auth health check endpoint
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "We live!")
@@ -93,7 +92,7 @@ func (s *HTTPServer) handleGetUserByID(w http.ResponseWriter, r *http.Request) {
 	u := s.charmUserFromRequest(w, r)
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(u)
-	// s.stats.GetUserByIDCalls.Inc()
+	s.cfg.Stats.GetUserByID()
 }
 
 // TODO do we need this since you can only get the authed user?
@@ -101,7 +100,7 @@ func (s *HTTPServer) handleGetUser(w http.ResponseWriter, r *http.Request) {
 	u := s.charmUserFromRequest(w, r)
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(u)
-	// s.stats.GetUserCalls.Inc()
+	s.cfg.Stats.GetUser()
 }
 
 func (s *HTTPServer) handlePostUser(w http.ResponseWriter, r *http.Request) {
@@ -133,7 +132,7 @@ func (s *HTTPServer) handlePostUser(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(nu)
-	// s.stats.SetUserNameCalls.Inc()
+	s.cfg.Stats.SetUserName()
 }
 
 func (s *HTTPServer) handlePostEncryptKey(w http.ResponseWriter, r *http.Request) {
@@ -157,7 +156,7 @@ func (s *HTTPServer) handlePostEncryptKey(w http.ResponseWriter, r *http.Request
 		s.renderError(w)
 		return
 	}
-	// s.stats.SetUserNameCalls.Inc()
+	s.cfg.Stats.SetUserName()
 }
 
 func (s *HTTPServer) handleGetSeq(w http.ResponseWriter, r *http.Request) {

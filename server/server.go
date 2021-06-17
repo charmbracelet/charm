@@ -7,6 +7,8 @@ import (
 
 	"github.com/charmbracelet/charm/server/db"
 	"github.com/charmbracelet/charm/server/db/sqlite"
+	"github.com/charmbracelet/charm/server/stats"
+	sls "github.com/charmbracelet/charm/server/stats/sqlite"
 	"github.com/charmbracelet/charm/server/storage"
 	lfs "github.com/charmbracelet/charm/server/storage/local"
 	"github.com/meowgorithm/babyenv"
@@ -25,24 +27,23 @@ type Config struct {
 	PrivateKey []byte
 	DB         db.DB
 	FileStore  storage.FileStore
-	Stats      PrometheusStats
+	Stats      stats.Stats
 }
 
 // Server contains the SSH and HTTP servers required to host the Charm Cloud.
 type Server struct {
-	Config        Config
+	Config        *Config
 	ssh           *SSHServer
 	http          *HTTPServer
-	stats         PrometheusStats
 	publicKey     []byte
 	privateKeyPEM []byte
 }
 
 // DefaultConfig returns a Config with the values populated with the defaults
 // or specified environment variables.
-func DefaultConfig() Config {
-	var cfg Config
-	err := babyenv.Parse(&cfg)
+func DefaultConfig() *Config {
+	cfg := &Config{}
+	err := babyenv.Parse(cfg)
 	if err != nil {
 		log.Fatalf("could not read environment: %s", err)
 	}
@@ -56,38 +57,41 @@ func DefaultConfig() Config {
 	if err != nil {
 		log.Fatalf("could not init file path: %s", err)
 	}
-	return cfg.WithDB(db).WithFileStore(fs).WithStats(NewPrometheusStats(db, cfg.StatsPort))
+	sts, err := sls.NewStats(fmt.Sprintf("%s/stats", cfg.DataDir))
+	if err != nil {
+		log.Fatalf("could not init stats db: %s", err)
+	}
+	return cfg.WithDB(db).WithFileStore(fs).WithStats(sts)
 }
 
 // WithDB returns a Config with the provided DB interface implementation.
-func (cfg Config) WithDB(db db.DB) Config {
+func (cfg *Config) WithDB(db db.DB) *Config {
 	cfg.DB = db
 	return cfg
 }
 
 // WithFileStore returns a Config with the provided FileStore implementation.
-func (cfg Config) WithFileStore(fs storage.FileStore) Config {
+func (cfg *Config) WithFileStore(fs storage.FileStore) *Config {
 	cfg.FileStore = fs
 	return cfg
 }
 
-// WithStats returns a Config with the provided PrometheusStats implementation.
-func (cfg Config) WithStats(ps PrometheusStats) Config {
-	// TODO: make stats an interface
-	cfg.Stats = ps
+// WithStats returns a Config with the provided Stats implementation.
+func (cfg *Config) WithStats(s stats.Stats) *Config {
+	cfg.Stats = s
 	return cfg
 }
 
 // WithKeys returns a Config with the provided public and private keys for the
 // SSH server and JWT signing.
-func (cfg Config) WithKeys(publicKey []byte, privateKey []byte) Config {
+func (cfg *Config) WithKeys(publicKey []byte, privateKey []byte) *Config {
 	cfg.PublicKey = publicKey
 	cfg.PrivateKey = privateKey
 	return cfg
 }
 
 // NewServer returns a *Server with the specified Config.
-func NewServer(cfg Config) (*Server, error) {
+func NewServer(cfg *Config) (*Server, error) {
 	s := &Server{Config: cfg}
 	ss, err := NewSSHServer(cfg)
 	if err != nil {
@@ -99,15 +103,11 @@ func NewServer(cfg Config) (*Server, error) {
 		return nil, err
 	}
 	s.http = hs
-	s.stats = cfg.Stats
 	return s, nil
 }
 
 // Start starts the HTTP, SSH and stats HTTP servers for the Charm Cloud.
 func (srv *Server) Start() {
-	go func() {
-		srv.stats.Start()
-	}()
 	go func() {
 		srv.http.Start()
 	}()
