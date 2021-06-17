@@ -288,7 +288,7 @@ func (me *SSHServer) handleLinkGenAPI(s Session) {
 		_ = me.sendAPIMessage(s, fmt.Sprintf("Error linking account: %s", err))
 		return
 	}
-	me.config.Stats.APILinkGenCalls.Inc()
+	me.config.Stats.APILinkGen()
 }
 
 func (me *SSHServer) handleLinkRequestAPI(s Session) {
@@ -310,7 +310,7 @@ func (me *SSHServer) handleLinkRequestAPI(s Session) {
 		_ = me.sendAPIMessage(s, fmt.Sprintf("Error linking account: %s", err))
 		return
 	}
-	me.config.Stats.APILinkRequestCalls.Inc()
+	me.config.Stats.APILinkRequest()
 }
 
 func (me *SSHServer) handleAPILink(s Session) {
@@ -355,7 +355,7 @@ func (me *SSHServer) handleAPIUnlink(s Session) {
 		_ = me.sendAPIMessage(s, fmt.Sprintf("Error unlinking account: %s", err))
 		return
 	}
-	me.config.Stats.APIUnlinkCalls.Inc()
+	me.config.Stats.APIUnlink()
 }
 
 func (me *SSHServer) sendLink(lt charm.LinkTransport, lc chan *charm.Link, l *charm.Link) {
