@@ -206,6 +206,11 @@ func (cfs *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 	return f.(*File).ReadDir(0)
 }
 
+// Client returns the underlying *client.Client.
+func (cfs *FS) Client() *client.Client {
+	return cfs.cc
+}
+
 // Stat returns an fs.FileInfo that describes the file.
 func (f *File) Stat() (fs.FileInfo, error) {
 	return f.info, nil

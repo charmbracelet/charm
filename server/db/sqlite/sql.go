@@ -30,6 +30,17 @@ const (
                             name varchar(1024) NOT NULL,
                             UNIQUE (user_id, name))`
 
+	sqlCreateNewsTable = `CREATE TABLE IF NOT EXISTS news(
+                        id INTEGER NOT NULL PRIMARY KEY,
+                        subject text,
+                        body text,
+                        created_at timestamp default current_timestamp)`
+
+	sqlCreateNewsTagTable = `CREATE TABLE IF NOT EXISTS news_tag(
+                           id INTEGER NOT NULL PRIMARY KEY,
+                           tag varchar(250),
+                           news_id integer REFERENCES news (id) NOT NULL)`
+
 	sqlSelectUserWithName         = `SELECT id, charm_id, name, email, bio, created_at FROM charm_user WHERE name like ?`
 	sqlSelectUserWithCharmID      = `SELECT id, charm_id, name, email, bio, created_at FROM charm_user WHERE charm_id = ?`
 	sqlSelectUserWithID           = `SELECT id, charm_id, name, email, bio, created_at FROM charm_user WHERE id = ?`
@@ -47,6 +58,8 @@ const (
                         ON CONFLICT (user_id, public_key) DO UPDATE SET
                         user_id = excluded.user_id,
                         public_key = excluded.public_key`
+	sqlInsertNews    = `INSERT INTO news (subject, body) VALUES (?,?)`
+	sqlInsertNewsTag = `INSERT INTO news_tag (news_id, tag) VALUES (?,?)`
 
 	sqlIncNamedSeq = `INSERT INTO named_seq (user_id, name)
                     VALUES(?,?)
@@ -66,4 +79,11 @@ const (
 
 	sqlCountUsers     = `SELECT COUNT(*) FROM charm_user`
 	sqlCountUserNames = `SELECT COUNT(*) FROM charm_user WHERE name <> ''`
+
+	sqlSelectNews     = `SELECT id, subject, body, created_at FROM news WHERE id = ?`
+	sqlSelectNewsList = `SELECT n.id, n.subject, n.created_at FROM news AS n
+	                     INNER JOIN news_tag AS t ON t.news_id = n.id
+	                     WHERE t.tag = ?
+	                     ORDER BY n.created_at desc
+	                     LIMIT 50 OFFSET ?`
 )

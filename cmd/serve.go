@@ -15,11 +15,12 @@ var (
 
 	//ServeCmd is the cobra.Command to self-host the Charm Cloud.
 	ServeCmd = &cobra.Command{
-		Use:    "serve",
-		Hidden: false,
-		Short:  "Start a self-hosted Charm Cloud server.",
-		Long:   paragraph("Start the SSH and HTTP servers needed to power a SQLite-backed Charm Cloud."),
-		Args:   cobra.NoArgs,
+		Use:     "serve",
+		Aliases: []string{"server"},
+		Hidden:  false,
+		Short:   "Start a self-hosted Charm Cloud server.",
+		Long:    paragraph("Start the SSH and HTTP servers needed to power a SQLite-backed Charm Cloud."),
+		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := server.DefaultConfig()
 			if serverHTTPPort != 0 {
@@ -48,7 +49,7 @@ var (
 )
 
 func init() {
-	ServeCmd.Flags().IntVar(&serverHTTPPort, "http-port", 0, "HTTP port to listen on.")
-	ServeCmd.Flags().IntVar(&serverSSHPort, "ssh-port", 0, "SSH port to listen on.")
-	ServeCmd.Flags().StringVar(&serverDataDir, "data-dir", "", "Directory to store SQLite db, SSH keys and file data.")
+	ServeCmd.Flags().IntVar(&serverHTTPPort, "http-port", 0, "HTTP port to listen on")
+	ServeCmd.Flags().IntVar(&serverSSHPort, "ssh-port", 0, "SSH port to listen on")
+	ServeCmd.Flags().StringVar(&serverDataDir, "data-dir", "", "Directory to store SQLite db, SSH keys and file data")
 }

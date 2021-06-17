@@ -7,8 +7,7 @@ import (
 )
 
 const (
-	sqlCreateStatsTable = `
-	CREATE TABLE IF NOT EXISTS stats(
+	sqlCreateStatsTable = `CREATE TABLE IF NOT EXISTS stats(
 	id INTEGER PRIMARY KEY,
 	api_link_gen integer NOT NULL DEFAULT 0,
 	api_link_request integer NOT NULL DEFAULT 0,
@@ -23,6 +22,9 @@ const (
 	get_user_by_id integer NOT NULL DEFAULT 0,
 	get_user integer NOT NULL DEFAULT 0,
 	set_user_name integer NOT NULL DEFAULT 0,
+	get_news integer NOT NULL DEFAULT 0,
+	post_news integer NOT NULL DEFAULT 0,
+	get_news_list integer NOT NULL DEFAULT 0,
 	created_at timestamp default current_timestamp
 	)`
 )
@@ -127,4 +129,19 @@ func (s *Stats) GetUser() {
 // SetUserName increments the number of set-user-name calls.
 func (s *Stats) SetUserName() {
 	s.increment("set_user_name")
+}
+
+// GetNews increments the number of get-news calls.
+func (s *Stats) GetNews() {
+	s.increment("get_news")
+}
+
+// PostNews increments the number of post-news calls.
+func (s *Stats) PostNews() {
+	s.increment("post_news")
+}
+
+// GetNewsList increments the number of get-news-list calls.
+func (s *Stats) GetNewsList() {
+	s.increment("get_news_list")
 }

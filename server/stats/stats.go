@@ -16,4 +16,7 @@ type Stats interface {
 	GetUserByID()
 	GetUser()
 	SetUserName()
+	GetNewsList()
+	GetNews()
+	PostNews()
 }

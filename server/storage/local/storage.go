@@ -19,11 +19,13 @@ type LocalFileStore struct {
 	Path string
 }
 
+// DirFile is a fs.File that represents a directory entry.
 type DirFile struct {
 	buffer   *bytes.Buffer
 	fileInfo fs.FileInfo
 }
 
+// Stat returns a fs.FileInfo.
 func (df *DirFile) Stat() (fs.FileInfo, error) {
 	if df.fileInfo == nil {
 		return nil, fmt.Errorf("missing file info")
@@ -31,10 +33,12 @@ func (df *DirFile) Stat() (fs.FileInfo, error) {
 	return df.fileInfo, nil
 }
 
+// Read reads from the DirFile and satisfies fs.FS
 func (df *DirFile) Read(buf []byte) (int, error) {
 	return df.buffer.Read(buf)
 }
 
+// Close is a no-op but satisfies fs.FS
 func (df *DirFile) Close() error {
 	return nil
 }
