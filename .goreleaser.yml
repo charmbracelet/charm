@@ -11,14 +11,13 @@ before:
 builds:
   - id: "charm"
     binary: "charm"
-    dir: ./cmd/charm
     ldflags: -s -w -X main.Version={{ .Version }} -X main.CommitSHA={{ .Commit }}
     goos:
       - linux
-      - freebsd
-      - openbsd
+      # - freebsd
+      # - openbsd
       - darwin
-      - windows
+      # - windows
     goarch:
       - amd64
       - arm64
@@ -27,6 +26,92 @@ builds:
     goarm:
       - 6
       - 7
+
+dockers:
+  - image_templates:
+      - "charmbracelet/charm:latest-amd64"
+      - "charmbracelet/charm:{{ .Tag }}-amd64"
+      - "ghcr.io/charmbracelet/charm:latest-amd64"
+      - "ghcr.io/charmbracelet/charm:{{ .Tag }}-amd64"
+    ids: [charm]
+    goarch: amd64
+    build_flag_templates:
+      - --platform=linux/amd64
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.description={{ .ProjectName }}
+      - --label=org.opencontainers.image.url=https://github.com/charmbracelet/charm
+      - --label=org.opencontainers.image.source=https://github.com/charmbracelet/charm
+      - --label=org.opencontainers.image.version={{ .Tag }}
+      - --label=org.opencontainers.image.created={{ .Date }}
+      - --label=org.opencontainers.image.revision={{ .FullCommit }}
+      - --label=org.opencontainers.image.licenses=MIT
+    dockerfile: Dockerfile
+    use_buildx: true
+  - image_templates:
+      - "charmbracelet/charm:latest-arm64"
+      - "charmbracelet/charm:{{ .Tag }}-arm64"
+      - "ghcr.io/charmbracelet/charm:latest-arm64"
+      - "ghcr.io/charmbracelet/charm:{{ .Tag }}-arm64"
+    ids: [charm]
+    goarch: arm64
+    goarm: ''
+    build_flag_templates:
+      - --platform=linux/arm64/v8
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.description={{ .ProjectName }}
+      - --label=org.opencontainers.image.url=https://github.com/charmbracelet/charm
+      - --label=org.opencontainers.image.source=https://github.com/charmbracelet/charm
+      - --label=org.opencontainers.image.version={{ .Tag }}
+      - --label=org.opencontainers.image.created={{ .Date }}
+      - --label=org.opencontainers.image.revision={{ .FullCommit }}
+      - --label=org.opencontainers.image.licenses=MIT
+    dockerfile: Dockerfile
+    use_buildx: true
+  - image_templates:
+      - "charmbracelet/charm:latest-armhf"
+      - "charmbracelet/charm:{{ .Tag }}-armhf"
+      - "ghcr.io/charmbracelet/charm:latest-armhf"
+      - "ghcr.io/charmbracelet/charm:{{ .Tag }}-armhf"
+    ids: [charm]
+    goarch: arm
+    goarm: 7
+    build_flag_templates:
+      - --platform=linux/arm32/v7
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.description={{ .ProjectName }}
+      - --label=org.opencontainers.image.url=https://github.com/charmbracelet/charm
+      - --label=org.opencontainers.image.source=https://github.com/charmbracelet/charm
+      - --label=org.opencontainers.image.version={{ .Tag }}
+      - --label=org.opencontainers.image.created={{ .Date }}
+      - --label=org.opencontainers.image.revision={{ .FullCommit }}
+      - --label=org.opencontainers.image.licenses=MIT
+    dockerfile: Dockerfile
+    use_buildx: true
+
+docker_manifests:
+  - name_template: charmbracelet/charm:{{ .Tag }}
+    image_templates:
+      - charmbracelet/charm:{{ .Tag }}-amd64
+      - charmbracelet/charm:{{ .Tag }}-arm64
+      - charmbracelet/charm:{{ .Tag }}-armhf
+    skip_push: true
+  - name_template: ghcr.io/charmbracelet/charm:{{ .Tag }}
+    image_templates:
+      - ghcr.io/charmbracelet/charm:{{ .Tag }}-amd64
+      - ghcr.io/charmbracelet/charm:{{ .Tag }}-arm64
+      - ghcr.io/charmbracelet/charm:{{ .Tag }}-armhf
+    skip_push: true
+  - name_template: charmbracelet/charm:latest
+    image_templates:
+      - charmbracelet/charm:latest-amd64
+      - charmbracelet/charm:latest-arm64
+      - charmbracelet/charm:latest-armhf
+    skip_push: true
+  - name_template: ghcr.io/charmbracelet/charm:latest
+    image_templates:
+      - ghcr.io/charmbracelet/charm:latest-amd64
+      - ghcr.io/charmbracelet/charm:latest-arm64
+      - ghcr.io/charmbracelet/charm:latest-armhf
 
 archives:
   - id: default
