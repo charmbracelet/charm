@@ -1,108 +1,105 @@
 Charm
 =====
 
-Manage your Charm account and access The Charm Cloud.
+Charm is a set of tools designed to make building Terminal based applications
+fun and easy! Quickly build modern CLI applications without worrying about user
+accounts, data storage or encryption.
 
-<p align="center">
-  <img src="https://stuff.charm.sh/charm-tool-github-header.png" width="300" alt="Charm Tool Header Treatment"><br>
-  <a href="https://github.com/charmbracelet/charm/releases"><img src="https://img.shields.io/github/release/charmbracelet/charm.svg" alt="Latest Release"></a>
-  <a href="https://pkg.go.dev/github.com/charmbracelet/charm?tab=doc"><img src="https://godoc.org/github.com/golang/gddo?status.svg" alt="GoDoc"></a>
-  <a href="https://github.com/charmbracelet/charm/actions"><img src="https://github.com/charmbracelet/charm/workflows/build/badge.svg" alt="Build Status"></a>
-</p>
+Charm powers the back-end to Terminal apps like
+[https://github.com/charmbracelet/glow](Glow) and
+[https://github.com/charmbracelet/skate](Skate).
 
-<p align="center">
-    <img src="https://stuff.charm.sh/charm-tool-github.gif" width="600" alt="Charm UI Trailer" />
-</p>
+## Features
 
-## Installation
+* Invisible user account creation and authentication
+* Golang `fs.FS` compatible cloud based user data storage
+* Charm managed and cloud synced BadgerDB key values stores
+* End-to-end encryption and user encryption library
+* Charmbracelet Inc. hosted default server, with the option for self-hosting
 
-Use your fave package manager:
+## Charm Accounts
 
-```bash
-# macOS or Linux
-brew tap charmbracelet/tap && brew install charmbracelet/tap/charm
+Typical account systems put a lot of burden on users. Who wants to create a new
+account before they can try out a piece of software? Charm accounts are based
+on SSH keys and account creation is invisible to the user. If they already have
+Charm SSH keys, we authenticate with them, if not we'll create a new Charm
+account and SSH keys. Users can easily link multiple machines, meaning that any
+app built by Charm will seamlessly access that user's account after they link a
+new machine. When you use any of the Charm libaries, the user account system
+will be handled invisibly for you.
 
-# Arch Linux (btw)
-yay -S charm-tool
+## Charm FS
 
-# Nix
-nix-env -iA nixpkgs.charm
+Each Charm user has a virtual filesystem on the Charm server. [Charm FS](/fs)
+provides a Golang [fs.FS](https://golang.org/pkg/io/fs/) implementation for the
+user along with additional write and delete methods. If you're a building a
+tool that requires file storage, Charm FS will provide it without
+friction-filled authentication flows.
+
+```
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"io/fs"
+
+	charmfs "github.com/charmbracelet/charm/fs"
+)
+
+func main() {
+	cfs, err := charmfs.NewFS()
+	if err != nil {
+		panic(err)
+	}
+
+	// Write a file
+	data := []byte("some data")
+	buf := bytes.NewBuffer(data)
+	err = cfs.WriteFile("/our/test/data", buf, fs.FileMode(0644))
+	if err != nil {
+		panic(err)
+	}
+
+	// Get a file
+	f, err := cfs.Open("/our/test/data")
+	if err != nil {
+		panic(err)
+	}
+	buf = bytes.NewBuffer(nil)
+	_, err = io.Copy(buf, f)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(buf.Bytes()))
+
+	// Or use fs.ReadFileFS
+	bs, err := cfs.ReadFile("/our/test/data")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(bs))
+
+	// Since we're using fs.FS interfaces we can also do typical things, like print a tree
+	err = fs.WalkDir(cfs, "/", func(path string, d fs.DirEntry, err error) error {
+		fmt.Println(path)
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
+}
 ```
 
-Or you can download a binary from the [releases][releases] page. macOS, Linux,
-Windows, FreeBSD, and OpenBSD binaries are available, as well as Debian, RPM,
-and Alpine packages. ARM builds are also available for Linux, FreeBSD, and
-OpenBSD.
+## Charm KV / BadgerDB
 
-Or just build and install it yourself:
+## Charm Crypt
 
-```bash
-git clone https://github.com/charmbracelet/charm.git
-cd charm
-go install
-```
+## Charm Server
 
-Bash/Zsh/Fish completion is also available. See `charm help completion`.
-
-## Usage
-
-Run without arguments for the TUI. Or, for shortcuts and additional functionality see the CLI usage at `charm help`.
-
-## Encryption and Decryption
-
-The Charm Tool (and Charm library) includes a simple, powerful encryption
-interface. Data encrypted with Charm is decryptable only by machines linked to
-your Charm account. Even we couldn’t decrypt your data if we somehow got our
-hands on it.
-
-```bash
-# Encryption is easy
-echo "Secret message" | charm encrypt
-
-# Save an encrypted message to disk
-echo "Secret message" | charm encrypt > secret_message.json
-
-# Decryption is easy too
-cat secret_message.json | charm decrypt
-
-# You can encrypt any kind of data
-charm encrypt < my_secret_photo.jpg > encrypted_photo.json
-
-# Encrypt and compress
-charm encrypt < secret_document.md | gzip > encrypted_document.json.gz
-
-# Decompress, decrypt, and read wth Glow
-gunzip encrypted_document.json.gz | charm decrypt | glow -p -
-```
-
-### How It Works
-
-Encryption works by issuing symmetric keys (basically a generated password) and
-encrypting it with the local SSH public key generated by this library.  That
-encrypted key is then sent up to our server. We can’t read it since we don’t
-have your private key. When you want to decrypt something or view your stash,
-that key is downloaded from our server and decrypted locally using the SSH
-private key. When you link accounts, the symmetric key is encrypted for each
-new public key. This happens on your machine and not our server, so we never
-see any unencrypted data.
-
-## The Library
-
-The Charm library is a simple API to the Charm Cloud for doing things like:
-
-* Frictionless user identification
-* User accounts linking
-* Encrypt and decrypt data
-* Simple SSH key generation
-* Programatically read, write and delete from a user’s [Glow][glow] markdown stash
-
-For more details and the full feature set check out [the Go docs][docs].
-
-## Charming Projects
-
-Check out these projects, which use the `charm` library:
-
-* [Glow][glow], a markdown reader for the CLI
+## Charm Client
 
 ## License
 
