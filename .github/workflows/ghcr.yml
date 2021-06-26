@@ -1,0 +1,46 @@
+name: publish-to-ghcr
+on:
+  push:
+    branches:
+      - release
+jobs:
+  test:
+    strategy:
+      matrix:
+        go-version: [1.16.x, ^1]
+        platform: [ubuntu-latest]
+    runs-on: ${{ matrix.platform }}
+    env:
+      GO111MODULE: "on"
+    steps:
+
+    - name: Install Go
+      uses: actions/setup-go@v1
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build Docker images using GoReleaser
+      uses: goreleaser/goreleaser-action@master
+      with:
+        version: latest
+        # https://github.com/goreleaser/goreleaser/discussions/1534
+        args: -f .goreleaser-internal.yml --snapshot
+      env:
+        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+    - name: Push Docker images
+      run: |
+        docker push ghcr.io/${{ github.repository }}:snapshot
+        docker push ghcr.io/${{ github.repository }}:${{ github.ref }}-snapshot
