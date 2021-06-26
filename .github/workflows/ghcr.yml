@@ -43,4 +43,4 @@ jobs:
     - name: Push Docker images
       run: |
         docker push ghcr.io/${{ github.repository }}:snapshot
-        docker push ghcr.io/${{ github.repository }}:${{ github.ref }}-snapshot
+        docker push ghcr.io/${{ github.repository }}:$GITHUB_SHA-snapshot
