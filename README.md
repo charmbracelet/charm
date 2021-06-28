@@ -35,7 +35,7 @@ value store. Charm provides a managed BadgerDB that's simple to develop with
 and transparent to your users. When you use the Charm BadgerDB, your users will
 get:
 
-* Cloud backup
+* Cloud backup, with the ability to self-host
 * Full encryption, both at rest and end-to-end in the cloud
 * Syncing across machines
 
@@ -169,7 +169,17 @@ func main() {
 
 ## Charm Server
 
+By default the Charm libraries point at our hosted Charm Cloud (api.charm.sh).
+By running `charm serve` and setting the `CHARM_HOST` environment variable,
+users can easily self-host their own Charm Cloud.
+
 ## Charm Client
+
+The `charm` binary includes easy access to a lot of the functionality available
+in the libraries. This could be useful in scripts, as a standalone utility or
+when testing functionality. To access the key value store, check out the `charm
+kv` commands, `charm fs` for the file store and `charm crypt` for encryption.
+The `charm` tool can also be used to link accounts.
 
 ## License
 
