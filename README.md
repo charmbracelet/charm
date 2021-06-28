@@ -6,8 +6,8 @@ fun and easy! Quickly build modern CLI applications without worrying about user
 accounts, data storage or encryption.
 
 Charm powers the back-end to Terminal apps like
-[https://github.com/charmbracelet/glow](Glow) and
-[https://github.com/charmbracelet/skate](Skate).
+[Glow](https://github.com/charmbracelet/glow) and
+[Skate](https://github.com/charmbracelet/skate).
 
 ## Features
 
