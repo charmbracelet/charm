@@ -171,7 +171,8 @@ func main() {
 
 By default the Charm libraries point at our hosted Charm Cloud (api.charm.sh).
 By running `charm serve` and setting the `CHARM_HOST` environment variable,
-users can easily self-host their own Charm Cloud.
+users can easily self-host their own Charm Cloud. All tools build with the
+Charm libraries will then access their own personal host.
 
 ## Charm Client
 
