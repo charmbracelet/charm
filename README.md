@@ -56,7 +56,7 @@ import (
 )
 
 func main() {
-	// Open a key value db with the name "charm.sh.test.db" and path ./db.
+	// Open a kv store with the name "charm.sh.test.db" and local path ./db
 	db, err := kv.OpenWithDefaults("charm.sh.test.db", "./db")
 	if err != nil {
 		panic(err)
@@ -123,7 +123,7 @@ import (
 )
 
 func main() {
-  // Open the file system
+	// Open the file system
 	cfs, err := charmfs.NewFS()
 	if err != nil {
 		panic(err)
@@ -180,6 +180,12 @@ in the libraries. This could be useful in scripts, as a standalone utility or
 when testing functionality. To access the key value store, check out the `charm
 kv` commands, `charm fs` for the file store and `charm crypt` for encryption.
 The `charm` tool can also be used to link accounts.
+
+## Charming Projects
+
+* [Glow](https://github.com/charmbracelet/glow), Render markdown on the CLI, with pizzazz! 💅🏻
+* [Skate](https://github.com/charmbracelet/skate), A personal key value store 🛼
+* Your app here! Just let us know what you build at vt100@charm.sh.
 
 ## License
 
