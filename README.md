@@ -28,6 +28,78 @@ app built by Charm will seamlessly access that user's account after they link a
 new machine. When you use any of the Charm libaries, the user account system
 will be handled invisibly for you.
 
+## Charm KV / BadgerDB
+
+The quickest way to get started building apps with Charm is to use our key
+value store. Charm provides a managed BadgerDB that's simple to develop with
+and transparent to your users. When you use the Charm BadgerDB, your users will
+get:
+
+* Cloud backup
+* Full encryption, both at rest and end-to-end in the cloud
+* Syncing across machines
+
+The [Charm KV](https://github.com/charmbracelet/charm/kv) library makes it easy
+to enhance existing BadgerDB implementations. It works with standard Badger
+transactions and provides top level functions that mirror those in Badger.
+
+### Example
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/charmbracelet/charm/kv"
+	"github.com/dgraph-io/badger/v3"
+)
+
+func main() {
+	// Open a key value db with the name "charm.sh.test.db" and path ./db.
+	db, err := kv.OpenWithDefaults("charm.sh.test.db", "./db")
+	if err != nil {
+		panic(err)
+	}
+
+	// Get the latest updates from the Charm Cloud
+	db.Sync()
+
+	// Quickly set a value
+	err = db.Set([]byte("dog"), []byte("food"))
+	if err != nil {
+		panic(err)
+	}
+
+	// Quickly get a value
+	v, err := db.Get([]byte("dog"))
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("got value: %s\n", string(v))
+
+	// Go full-blown Badger and use transactions to list values and keys
+	db.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchSize = 10
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			k := item.Key()
+			err := item.Value(func(v []byte) error {
+				fmt.Printf("%s - %s\n", k, v)
+				return nil
+			})
+			if err != nil {
+				panic(err)
+			}
+		}
+		return nil
+	})
+}
+```
+
 ## Charm FS
 
 Each Charm user has a virtual filesystem on the Charm server. [Charm FS](/fs)
@@ -36,7 +108,9 @@ user along with additional write and delete methods. If you're a building a
 tool that requires file storage, Charm FS will provide it without
 friction-filled authentication flows.
 
-```
+### Example
+
+```go
 package main
 
 import (
@@ -92,10 +166,6 @@ func main() {
 
 }
 ```
-
-## Charm KV / BadgerDB
-
-## Charm Crypt
 
 ## Charm Server
 
