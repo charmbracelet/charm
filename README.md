@@ -123,6 +123,7 @@ import (
 )
 
 func main() {
+  // Open the file system
 	cfs, err := charmfs.NewFS()
 	if err != nil {
 		panic(err)
@@ -155,7 +156,7 @@ func main() {
 	}
 	fmt.Println(string(bs))
 
-	// Since we're using fs.FS interfaces we can also do typical things, like print a tree
+	// Since we're using fs.FS interfaces we can also do things like walk a tree
 	err = fs.WalkDir(cfs, "/", func(path string, d fs.DirEntry, err error) error {
 		fmt.Println(path)
 		return nil
@@ -163,7 +164,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
 }
 ```
 
