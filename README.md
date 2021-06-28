@@ -183,8 +183,8 @@ The `charm` tool can also be used to link accounts.
 
 ## Charming Projects
 
-* [Glow](https://github.com/charmbracelet/glow), Render markdown on the CLI, with pizzazz! 💅🏻
-* [Skate](https://github.com/charmbracelet/skate), A personal key value store 🛼
+* [Glow](https://github.com/charmbracelet/glow) - Render markdown on the CLI, with pizzazz! 💅🏻
+* [Skate](https://github.com/charmbracelet/skate) - A personal key value store 🛼
 * Your app here! Just let us know what you build at vt100@charm.sh.
 
 ## License
