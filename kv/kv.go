@@ -45,7 +45,7 @@ func Open(cc *client.Client, name string, opt badger.Options) (*KV, error) {
 
 // OpenWithDefaults opens a Charm Cloud managed Badger DB instance with the
 // default settings pulled from environment variables.
-func OpenWithDefaults(name string, path string) (*KV, error) {
+func OpenWithDefaults(name string) (*KV, error) {
 	cfg, err := client.ConfigFromEnv()
 	if err != nil {
 		return nil, err
@@ -54,7 +54,11 @@ func OpenWithDefaults(name string, path string) (*KV, error) {
 	if err != nil {
 		return nil, err
 	}
-	pn := filepath.Join(path, name)
+	dd, err := client.DataPath()
+	if err != nil {
+		return nil, err
+	}
+	pn := filepath.Join(fmt.Sprintf("%s/kv/", dd), name)
 	opts := badger.DefaultOptions(pn).WithLoggingLevel(badger.ERROR)
 	// By default we have no logger as it will interfere with Bubble Tea
 	// rendering. Use Open with custom options to specify one.

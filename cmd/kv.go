@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/charmbracelet/charm/client"
 	"github.com/charmbracelet/charm/kv"
 	"github.com/dgraph-io/badger/v3"
 	"github.com/spf13/cobra"
@@ -225,14 +224,10 @@ func keyParser(k string) ([]byte, string, error) {
 }
 
 func openKV(name string) (*kv.KV, error) {
-	dd, err := client.DataPath()
-	if err != nil {
-		return nil, err
-	}
 	if name == "" {
 		name = "charm.sh.kv.user.default"
 	}
-	return kv.OpenWithDefaults(name, fmt.Sprintf("%s/kv/", dd))
+	return kv.OpenWithDefaults(name)
 }
 
 func init() {
