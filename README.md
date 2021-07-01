@@ -1,192 +1,172 @@
 Charm
 =====
 
-Charm is a set of tools designed to make building Terminal based applications
-fun and easy! Quickly build modern CLI applications without worrying about user
-accounts, data storage or encryption.
+Charm is a set of tools that makes adding a backend to your terminal-based
+applications fun and easy. Quickly build modern CLI applications without
+worrying about user accounts, data storage and encryption.
 
-Charm powers the back-end to Terminal apps like
-[Glow](https://github.com/charmbracelet/glow) and
-[Skate](https://github.com/charmbracelet/skate).
+Charm powers terminal apps like [Glow][skate] and [Skate][skate].
 
 ## Features
 
-* Invisible user account creation and authentication
-* Golang `fs.FS` compatible cloud based user data storage
-* Charm managed and cloud synced BadgerDB key values stores
-* End-to-end encryption and user encryption library
-* Charmbracelet Inc. hosted default server, with the option for self-hosting
+* [**Charm Accounts:**](#charm-accounts) invisible user account creation and authentication
+* [**Charm KV:**](#charm-kv) a fast, cloud-synced key value store built on [BadgerDB][badger]
+* [**Charm FS:**](#charm-fs) a Go `fs.FS` compatible cloud-based user filesystem
+* **Charm Encrypt:** end-to-end encryption for stored data and on-demand encryption for arbitrary data
+
+By default, applications built with Charm use Charmbracelet, Inc. servers,
+however it's also very easy for users to [self-host](#self-hosting).
 
 ## Charm Accounts
 
-Typical account systems put a lot of burden on users. Who wants to create a new
-account before they can try out a piece of software? Charm accounts are based
-on SSH keys and account creation is invisible to the user. If they already have
-Charm SSH keys, we authenticate with them, if not we'll create a new Charm
-account and SSH keys. Users can easily link multiple machines, meaning that any
-app built by Charm will seamlessly access that user's account after they link a
-new machine. When you use any of the Charm libaries, the user account system
-will be handled invisibly for you.
+The best part of Charm accounts is that both you and your users don’t need to
+think about them. Charm authentication is based on SSH keys, so account
+creation and authentication is built into all Charm tools and is invisible and
+frictionless.
 
-## Charm KV / BadgerDB
+If a user already has Charm keys, we authenticate with them. If not, we create
+new ones. Users can also easily link multiple machines to their account, and
+linked machines will seamlessly gain access to their owners Charm data. Of
+course, users can revoke machines’ access too.
 
-The quickest way to get started building apps with Charm is to use our key
-value store. Charm provides a managed BadgerDB that's simple to develop with
-and transparent to your users. When you use the Charm BadgerDB, your users will
-get:
+## Charm KV
 
-* Cloud backup, with the ability to self-host
+A simple, powerful, cloud-backed key-value store built on [BadgerDB][badger].
+Charm KV is a quick, powerful way to get started building apps with Charm.
+
+```go
+import "github.com/charmbracelet/charm/kv"
+
+// Open a database (or create one if it doesn’t exist)
+db, err := kv.OpenWithDefaults("my-cute-db")
+if err != nil {
+    log.Fatal(err)
+}
+defer db.Close()
+
+// Fetch updates (for this user)
+db.Sync()
+
+// Save some data (for this user)
+if err := db.Set([]byte("fave-food"), []byte("gherkin")); err != nil {
+    log.Fatal(err)
+}
+
+// All data is binary
+if err := db.Set([]byte("profile-pic"), someJPEG); err != nil {
+    log.Fatal(err)
+}
+```
+
+When you use Charm KV, your users get:
+
+* Invisible authentication
+* Automatic cloud backup, with the ability to self-host
 * Full encryption, both at rest and end-to-end in the cloud
 * Syncing across machines
 
-The [Charm KV](https://github.com/charmbracelet/charm/kv) library makes it easy
-to enhance existing BadgerDB implementations. It works with standard Badger
-transactions and provides top level functions that mirror those in Badger.
+Charm KV can also enhance existing [BadgerDB][badger] implementations. It works
+with standard Badger transactions and provides top level functions that mirror
+those in Badger.
 
-### Example
-
-```go
-package main
-
-import (
-	"fmt"
-
-	"github.com/charmbracelet/charm/kv"
-	"github.com/dgraph-io/badger/v3"
-)
-
-func main() {
-	// Open a kv store with the name "charm.sh.test.db" and local path ./db
-	db, err := kv.OpenWithDefaults("charm.sh.test.db", "./db")
-	if err != nil {
-		panic(err)
-	}
-
-	// Get the latest updates from the Charm Cloud
-	db.Sync()
-
-	// Quickly set a value
-	err = db.Set([]byte("dog"), []byte("food"))
-	if err != nil {
-		panic(err)
-	}
-
-	// Quickly get a value
-	v, err := db.Get([]byte("dog"))
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("got value: %s\n", string(v))
-
-	// Go full-blown Badger and use transactions to list values and keys
-	db.View(func(txn *badger.Txn) error {
-		opts := badger.DefaultIteratorOptions
-		opts.PrefetchSize = 10
-		it := txn.NewIterator(opts)
-		defer it.Close()
-		for it.Rewind(); it.Valid(); it.Next() {
-			item := it.Item()
-			k := item.Key()
-			err := item.Value(func(v []byte) error {
-				fmt.Printf("%s - %s\n", k, v)
-				return nil
-			})
-			if err != nil {
-				panic(err)
-			}
-		}
-		return nil
-	})
-}
-```
+For details on Charm KV, see [the Charm KV docs][kv].
 
 ## Charm FS
 
-Each Charm user has a virtual filesystem on the Charm server. [Charm FS](/fs)
-provides a Golang [fs.FS](https://golang.org/pkg/io/fs/) implementation for the
-user along with additional write and delete methods. If you're a building a
-tool that requires file storage, Charm FS will provide it without
-friction-filled authentication flows.
-
-### Example
+A user-based virtual filesystem.
 
 ```go
-package main
+import charmfs "github.com/charmbracelet/charm/fs"
 
-import (
-	"bytes"
-	"fmt"
-	"io"
-	"io/fs"
+// Open the user’s filesystem
+cfs, err := charmfs.NewFS()
+if err != nil {
+    log.Fatal(err)
+}
 
-	charmfs "github.com/charmbracelet/charm/fs"
-)
+// Save a file
+data := bytes.NewBuffer([]byte("some data"))
+if err := cfs.WriteFile("./path/to/file", data, fs.FileMode(0644)); err != nil {
+    log.Fatal(err)
+}
 
-func main() {
-	// Open the file system
-	cfs, err := charmfs.NewFS()
-	if err != nil {
-		panic(err)
-	}
+// Get a file
+f, err := cfs.Open("./path/to/file")
+if err != nil {
+    log.Fatal(err)
+}
+defer f.Close()
 
-	// Write a file
-	data := []byte("some data")
-	buf := bytes.NewBuffer(data)
-	err = cfs.WriteFile("/our/test/data", buf, fs.FileMode(0644))
-	if err != nil {
-		panic(err)
-	}
-
-	// Get a file
-	f, err := cfs.Open("/our/test/data")
-	if err != nil {
-		panic(err)
-	}
-	buf = bytes.NewBuffer(nil)
-	_, err = io.Copy(buf, f)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(string(buf.Bytes()))
-
-	// Or use fs.ReadFileFS
-	bs, err := cfs.ReadFile("/our/test/data")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(string(bs))
-
-	// Since we're using fs.FS interfaces we can also do things like walk a tree
-	err = fs.WalkDir(cfs, "/", func(path string, d fs.DirEntry, err error) error {
-		fmt.Println(path)
-		return nil
-	})
-	if err != nil {
-		panic(err)
-	}
+// Just read whole file in one shot
+data, err := cfs.ReadFile("./path/to/file")
+if err != nil {
+    log.Fatal(err)
 }
 ```
 
-## Charm Server
+Each Charm user has a virtual personal filesystem on the Charm server.  Charm
+FS provides a Go [fs.FS](https://golang.org/pkg/io/fs/) implementation for the
+user along with additional write and delete methods. If you're a building
+a tool that requires file storage, Charm FS will provide it on
+a networked-basis without friction-filled authentication flows.
 
-By default the Charm libraries point at our hosted Charm Cloud (api.charm.sh).
-By running `charm serve` and setting the `CHARM_HOST` environment variable,
-users can easily self-host their own Charm Cloud. All tools build with the
-Charm libraries will then access their own personal host.
+For more on Charm FS see [the Charm FS docs][fs].
 
-## Charm Client
+## Self Hosting
 
-The `charm` binary includes easy access to a lot of the functionality available
-in the libraries. This could be useful in scripts, as a standalone utility or
-when testing functionality. To access the key value store, check out the `charm
-kv` commands, `charm fs` for the file store and `charm crypt` for encryption.
-The `charm` tool can also be used to link accounts.
+Charm libraries point at our Charmbracelet, Inc. servers by default (that’s
+api.charm.sh), however it's very simple for users to host their own Charm
+instances. The `charm` binary is a single, statically-linked executable capable
+of serving an entire Charm instance:
 
-## Charming Projects
+```bash
+charm serve
+```
 
-* [Glow](https://github.com/charmbracelet/glow) - Render markdown on the CLI, with pizzazz! 💅🏻
-* [Skate](https://github.com/charmbracelet/skate) - A personal key value store 🛼
-* Your app here! Just let us know what you build at vt100@charm.sh.
+You can also use the Docker image, which has the benefit of putting the server
+behind HTTPS:
+
+```bash
+docker pull charm:latest
+docker run charm
+```
+
+To change hosts users can set `CHARM_HOST` to the domain or IP or their
+choosing:
+
+```bash
+export CHARM_HOST=burrito.example.com
+```
+
+
+## The Charm Client
+
+The `charm` binary also includes easy access to a lot of the functionality
+available in the libraries. This could be useful in scripts, as a standalone
+utility or when testing functionality.
+
+```bash
+# Link a machine to your Charm account
+charm link
+
+# Set a value
+charm kv set weather humid
+
+# Print out a tree of your files
+charm fs tree /
+
+# Encrypt something
+charm encrypt < secretphoto.jpg > encrypted.jpg.json
+
+# For more info
+charm help
+```
+
+## Projects using Charm
+
+* [Glow][glow]: Render markdown on the CLI, with pizzazz! 💅🏻
+* [Skate][skate]: A personal key value store 🛼
+* Your app here! Let us know what you build: [vt100@charm.sh](mailto:vt100@charm.sh)
 
 ## License
 
@@ -196,10 +176,15 @@ The `charm` tool can also be used to link accounts.
 
 Part of [Charm](https://charm.sh).
 
-<a href="https://charm.sh/"><img alt="the Charm logo" src="https://stuff.charm.sh/charm-badge.jpg" width="400"></a>
+<a href="https://charm.sh/"><img alt="the Charm logo" src="https://stuff.charm.sh/charm-badge-unrounded.jpg" width="400"></a>
 
-Charm热爱开源! / Charm loves open source!
+Charm热爱开源 • Charm loves open source
+
 
 [releases]: https://github.com/charmbracelet/charm/releases
 [docs]: https://pkg.go.dev/github.com/charmbracelet/charm?tab=doc
+[kv]: https://github.com/charmbracelet/charm/tree/master/kv
+[fs]: https://github.com/charmbracelet/charm/tree/master/fs
 [glow]: https://github.com/charmbracelet/glow
+[skate]: https://github.com/charmbracelet/skate
+[badger]: https://github.com/dgraph-io/badger
