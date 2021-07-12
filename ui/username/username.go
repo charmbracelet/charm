@@ -96,6 +96,9 @@ func NewModel(cc *charm.Client) Model {
 	inputModel := input.NewModel()
 	inputModel.CursorColor = common.Fuschia.String()
 	inputModel.Placeholder = "divagurl2000"
+	if u, err := cc.Bio(); err == nil && u.Name != "" {
+		inputModel.Placeholder = u.Name
+	}
 	inputModel.Prompt = focusedPrompt
 	inputModel.CharLimit = 50
 	inputModel.Focus()
