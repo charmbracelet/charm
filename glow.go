@@ -137,6 +137,27 @@ func (cc *Client) DeleteMarkdown(markdownID int) error {
 	return cc.makeAPIRequest("DELETE", fmt.Sprintf("%s/stash/%d", auth.CharmID, markdownID), nil, nil)
 }
 
+// SetMarkdownContent updates the note and body for a given stash markdown ID.
+func (cc *Client) SetMarkdownContent(markdownID int, note string, body string) error {
+	auth, err := cc.Auth()
+	if err != nil {
+		return err
+	}
+
+	md, err := cc.GetStashMarkdown(markdownID)
+	if err != nil {
+		return err
+	}
+	md.Note = note
+	md.Body = body
+	md, err = cc.encryptMarkdown(md)
+	if err != nil {
+		return err
+	}
+
+	return cc.makeAPIRequest("PUT", fmt.Sprintf("%s/stash/%d", auth.CharmID, markdownID), md, nil)
+}
+
 // SetMarkdownNote updates the note for a given stash markdown ID.
 func (cc *Client) SetMarkdownNote(markdownID int, note string) error {
 	auth, err := cc.Auth()
@@ -149,6 +170,26 @@ func (cc *Client) SetMarkdownNote(markdownID int, note string) error {
 		return err
 	}
 	md.Note = note
+	md, err = cc.encryptMarkdown(md)
+	if err != nil {
+		return err
+	}
+
+	return cc.makeAPIRequest("PUT", fmt.Sprintf("%s/stash/%d", auth.CharmID, markdownID), md, nil)
+}
+
+// SetMarkdownBody updates the body for a given stash markdown ID.
+func (cc *Client) SetMarkdownBody(markdownID int, body string) error {
+	auth, err := cc.Auth()
+	if err != nil {
+		return err
+	}
+
+	md, err := cc.GetStashMarkdown(markdownID)
+	if err != nil {
+		return err
+	}
+	md.Body = body
 	md, err = cc.encryptMarkdown(md)
 	if err != nil {
 		return err
