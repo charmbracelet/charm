@@ -5,34 +5,30 @@ Charm is a set of tools that makes adding a backend to your terminal-based
 applications fun and easy. Quickly build modern CLI applications without
 worrying about user accounts, data storage and encryption.
 
-Charm powers terminal apps like [Glow][skate] and [Skate][skate].
+Charm powers terminal apps like [Glow][glow] and [Skate][skate].
 
 ## Features
 
-* [**Charm Accounts:**](#charm-accounts) invisible user account creation and authentication
-* [**Charm KV:**](#charm-kv) a fast, cloud-synced key value store built on [BadgerDB][badger]
+* [**Charm KV:**](#charm-kv) an embeddable, encrypted, cloud-synced key value store built on [BadgerDB][badger]
 * [**Charm FS:**](#charm-fs) a Go `fs.FS` compatible cloud-based user filesystem
-* **Charm Encrypt:** end-to-end encryption for stored data and on-demand encryption for arbitrary data
-
-By default, applications built with Charm use Charmbracelet, Inc. servers,
-however it's also very easy for users to [self-host](#self-hosting).
-
-## Charm Accounts
-
-The best part of Charm accounts is that both you and your users don’t need to
-think about them. Charm authentication is based on SSH keys, so account
-creation and authentication is built into all Charm tools and is invisible and
-frictionless.
-
-If a user already has Charm keys, we authenticate with them. If not, we create
-new ones. Users can also easily link multiple machines to their account, and
-linked machines will seamlessly gain access to their owners Charm data. Of
-course, users can revoke machines’ access too.
+* [**Charm Crypt:**](##charm-crypt) end-to-end encryption for stored data and on-demand encryption for arbitrary data
+* [**Charm Accounts:**](#charm-accounts) invisible user account creation and authentication
+* [**Charm Client:**](#charm-client) the powerful client for directly accessing all Charm services
+* [**Self Hosting:**](#charm-serve) anyone can self-host their own Charm Cloud with `charm serve`
 
 ## Charm KV
 
-A simple, powerful, cloud-backed key-value store built on [BadgerDB][badger].
-Charm KV is a quick, powerful way to get started building apps with Charm.
+A powerful embeddable key value store built on [BadgerDB][badger]. Store user
+data, configuration, create a cache or even store large files as values.
+
+When you use Charm KV, your users get cloud backup, the ability to self-host,
+multi-machine syncing, and encryption for free.
+
+Charm KV can also enhance existing [BadgerDB][badger] implementations. It works
+with standard Badger transactions and provides top level functions that mirror
+those in Badger.
+
+For details on Charm KV, see [the Charm KV docs][kv].
 
 ```go
 import "github.com/charmbracelet/charm/kv"
@@ -44,10 +40,12 @@ if err != nil {
 }
 defer db.Close()
 
-// Fetch updates (for this user)
-db.Sync()
+// Fetch updates and easily define your own syncing strategy
+if err := db.Sync(); err != nil {
+    log.Fatal(err)
+}
 
-// Save some data (for this user)
+// Save some data
 if err := db.Set([]byte("fave-food"), []byte("gherkin")); err != nil {
     log.Fatal(err)
 }
@@ -58,22 +56,15 @@ if err := db.Set([]byte("profile-pic"), someJPEG); err != nil {
 }
 ```
 
-When you use Charm KV, your users get:
-
-* Invisible authentication
-* Automatic cloud backup, with the ability to self-host
-* Full encryption, both at rest and end-to-end in the cloud
-* Syncing across machines
-
-Charm KV can also enhance existing [BadgerDB][badger] implementations. It works
-with standard Badger transactions and provides top level functions that mirror
-those in Badger.
-
-For details on Charm KV, see [the Charm KV docs][kv].
-
 ## Charm FS
 
-A user-based virtual filesystem.
+Each Charm user has a virtual personal filesystem on the Charm server.  Charm
+FS provides a Go [fs.FS](https://golang.org/pkg/io/fs/) implementation for the
+user along with additional write and delete methods. If you're a building
+a tool that requires file storage, Charm FS will provide it on
+a networked-basis without friction-filled authentication flows.
+
+For more on Charm FS see [the Charm FS docs][fs].
 
 ```go
 import charmfs "github.com/charmbracelet/charm/fs"
@@ -104,13 +95,49 @@ if err != nil {
 }
 ```
 
-Each Charm user has a virtual personal filesystem on the Charm server.  Charm
-FS provides a Go [fs.FS](https://golang.org/pkg/io/fs/) implementation for the
-user along with additional write and delete methods. If you're a building
-a tool that requires file storage, Charm FS will provide it on
-a networked-basis without friction-filled authentication flows.
+## Charm Crypt
 
-For more on Charm FS see [the Charm FS docs][fs].
+All data sent to a Charm server is fully encrypted on the client. Charm Crypt
+provides methods for easily encrypting and decrypting data for a Charm user.
+All key management and account linking is handled seamlessly by Charm.
+
+For more on Charm Crypt see [the Charm Crypt docs][crypt].
+
+## Charm Accounts
+
+The best part of Charm accounts is that both you and your users don’t need to
+think about them. Charm authentication is based on SSH keys, so account
+creation and authentication is built into all Charm tools and is invisible and
+frictionless.
+
+If a user already has Charm keys, we authenticate with them. If not, we create
+new ones. Users can also easily link multiple machines to their account, and
+linked machines will seamlessly gain access to their owners Charm data. Of
+course, users can revoke machines’ access too.
+
+
+## Charm Client
+
+The `charm` binary also includes easy access to a lot of the functionality
+available in the libraries. This could be useful in scripts, as a standalone
+utility or when testing functionality.
+
+```bash
+# Link a machine to your Charm account
+charm link
+
+# Set a value
+charm kv set weather humid
+
+# Print out a tree of your files
+charm fs tree /
+
+# Encrypt something
+charm encrypt < secretphoto.jpg > encrypted.jpg.json
+
+# For more info
+charm help
+```
 
 ## Self Hosting
 
@@ -136,30 +163,6 @@ choosing:
 
 ```bash
 export CHARM_HOST=burrito.example.com
-```
-
-
-## The Charm Client
-
-The `charm` binary also includes easy access to a lot of the functionality
-available in the libraries. This could be useful in scripts, as a standalone
-utility or when testing functionality.
-
-```bash
-# Link a machine to your Charm account
-charm link
-
-# Set a value
-charm kv set weather humid
-
-# Print out a tree of your files
-charm fs tree /
-
-# Encrypt something
-charm encrypt < secretphoto.jpg > encrypted.jpg.json
-
-# For more info
-charm help
 ```
 
 ## Projects using Charm
