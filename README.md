@@ -11,10 +11,12 @@ Charm powers terminal apps like [Glow][glow] and [Skate][skate].
 
 * [**Charm KV:**](#charm-kv) an embeddable, encrypted, cloud-synced key-value store built on [BadgerDB][badger]
 * [**Charm FS:**](#charm-fs) a Go `fs.FS` compatible cloud-based user filesystem
-* [**Charm Crypt:**](##charm-crypt) end-to-end encryption for stored data and on-demand encryption for arbitrary data
+* [**Charm Crypt:**](#charm-crypt) end-to-end encryption for stored data and on-demand encryption for arbitrary data
 * [**Charm Accounts:**](#charm-accounts) invisible user account creation and authentication
-* [**Charm Client:**](#charm-client) the powerful client for directly accessing all Charm services
-* [**Self Hosting:**](#self-hosting) anyone can self-host their own Charm Cloud with `charm serve`
+
+There’s also the powerful [Charm Client](#charm-client) for directly accessing
+Charm services. [Self-hosting](#self-hosting) a Charm Cloud is as simple as
+running `charm serve`.
 
 ## Charm KV
 
@@ -23,12 +25,6 @@ data, configuration, create a cache or even store large files as values.
 
 When you use Charm KV, your users get cloud backup, the ability to self-host,
 multi-machine syncing, and encryption for free.
-
-Charm KV can also enhance existing [BadgerDB][badger] implementations. It works
-with standard Badger transactions and provides top level functions that mirror
-those in Badger.
-
-For details on Charm KV, see [the Charm KV docs][kv].
 
 ```go
 import "github.com/charmbracelet/charm/kv"
@@ -56,15 +52,19 @@ if err := db.Set([]byte("profile-pic"), someJPEG); err != nil {
 }
 ```
 
+Charm KV can also enhance existing [BadgerDB][badger] implementations. It works
+with standard Badger transactions and provides top level functions that mirror
+those in Badger.
+
+For details on Charm KV, see [the Charm KV docs][kv].
+
 ## Charm FS
 
-Each Charm user has a virtual personal filesystem on the Charm server.  Charm
+Each Charm user has a virtual personal filesystem on the Charm server. Charm
 FS provides a Go [fs.FS](https://golang.org/pkg/io/fs/) implementation for the
 user along with additional write and delete methods. If you're a building
 a tool that requires file storage, Charm FS will provide it on
 a networked-basis without friction-filled authentication flows.
-
-For more on Charm FS see [the Charm FS docs][fs].
 
 ```go
 import charmfs "github.com/charmbracelet/charm/fs"
@@ -95,6 +95,8 @@ if err != nil {
 }
 ```
 
+For more on Charm FS see [the Charm FS docs][fs].
+
 ## Charm Crypt
 
 All data sent to a Charm server is fully encrypted on the client. Charm Crypt
@@ -115,10 +117,9 @@ new ones. Users can also easily link multiple machines to their account, and
 linked machines will seamlessly gain access to their owners Charm data. Of
 course, users can revoke machines’ access too.
 
-
 ## Charm Client
 
-The `charm` binary also includes easy access to a lot of the functionality
+The [`charm`][releases] binary also includes easy access to a lot of the functionality
 available in the libraries. This could be useful in scripts, as a standalone
 utility or when testing functionality.
 
@@ -139,10 +140,37 @@ charm encrypt < secretphoto.jpg > encrypted.jpg.json
 charm help
 ```
 
-## Self Hosting
+### Installation
+
+Use a package manager:
+
+```bash
+# macOS or Linux
+brew tap charmbracelet/tap && brew install charmbracelet/tap/charm
+
+# Arch Linux (btw)
+yay -S charm-tool
+
+# Nix
+nix-env -iA nixpkgs.charm
+```
+
+Or download a package or binary from the [releases][releases] page. All
+major platforms and architectures are supported, including FreeBSD, OpenBSD and
+ARM.
+
+You can also just build and install it yourself:
+
+```bash
+git clone https://github.com/charmbracelet/charm.git
+cd charm
+go install
+```
+
+## Self-Hosting
 
 Charm libraries point at our Charmbracelet, Inc. servers by default (that’s
-api.charm.sh), however it's very simple for users to host their own Charm
+api.charm.sh), however it's very easy for users to host their own Charm
 instances. The `charm` binary is a single, statically-linked executable capable
 of serving an entire Charm instance:
 
@@ -188,6 +216,7 @@ Charm热爱开源 • Charm loves open source
 [docs]: https://pkg.go.dev/github.com/charmbracelet/charm?tab=doc
 [kv]: https://github.com/charmbracelet/charm/tree/master/kv
 [fs]: https://github.com/charmbracelet/charm/tree/master/fs
+[crypt]: https://github.com/charmbracelet/charm/tree/master/crypt
 [glow]: https://github.com/charmbracelet/glow
 [skate]: https://github.com/charmbracelet/skate
 [badger]: https://github.com/dgraph-io/badger
