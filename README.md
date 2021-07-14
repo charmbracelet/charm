@@ -14,7 +14,7 @@ Charm powers terminal apps like [Glow][glow] and [Skate][skate].
 * [**Charm Crypt:**](##charm-crypt) end-to-end encryption for stored data and on-demand encryption for arbitrary data
 * [**Charm Accounts:**](#charm-accounts) invisible user account creation and authentication
 * [**Charm Client:**](#charm-client) the powerful client for directly accessing all Charm services
-* [**Self Hosting:**](#charm-serve) anyone can self-host their own Charm Cloud with `charm serve`
+* [**Self Hosting:**](#self-hosting) anyone can self-host their own Charm Cloud with `charm serve`
 
 ## Charm KV
 
