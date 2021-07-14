@@ -9,7 +9,7 @@ Charm powers terminal apps like [Glow][glow] and [Skate][skate].
 
 ## Features
 
-* [**Charm KV:**](#charm-kv) an embeddable, encrypted, cloud-synced key value store built on [BadgerDB][badger]
+* [**Charm KV:**](#charm-kv) an embeddable, encrypted, cloud-synced key-value store built on [BadgerDB][badger]
 * [**Charm FS:**](#charm-fs) a Go `fs.FS` compatible cloud-based user filesystem
 * [**Charm Crypt:**](##charm-crypt) end-to-end encryption for stored data and on-demand encryption for arbitrary data
 * [**Charm Accounts:**](#charm-accounts) invisible user account creation and authentication
@@ -18,7 +18,7 @@ Charm powers terminal apps like [Glow][glow] and [Skate][skate].
 
 ## Charm KV
 
-A powerful embeddable key value store built on [BadgerDB][badger]. Store user
+A powerful embeddable key-value store built on [BadgerDB][badger]. Store user
 data, configuration, create a cache or even store large files as values.
 
 When you use Charm KV, your users get cloud backup, the ability to self-host,
@@ -168,7 +168,7 @@ export CHARM_HOST=burrito.example.com
 ## Projects using Charm
 
 * [Glow][glow]: Render markdown on the CLI, with pizzazz! 💅🏻
-* [Skate][skate]: A personal key value store 🛼
+* [Skate][skate]: A personal key-value store 🛼
 * Your app here! Let us know what you build: [vt100@charm.sh](mailto:vt100@charm.sh)
 
 ## License
