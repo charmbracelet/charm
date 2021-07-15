@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"text/tabwriter"
 
 	cfs "github.com/charmbracelet/charm/fs"
 	charm "github.com/charmbracelet/charm/proto"
@@ -299,18 +300,25 @@ func printFileInfo(fi fs.FileInfo) {
 	fmt.Printf("%s %d %s %s\n", fi.Mode(), fi.Size(), fi.ModTime().Format("Jan 2 15:04"), fi.Name())
 }
 
+func fprintFileInfo(w io.Writer, fi fs.FileInfo) {
+	fmt.Fprintf(w, "%s\t%d\t%s\t %s\n", fi.Mode(), fi.Size(), fi.ModTime().Format("Jan _2 15:04"), fi.Name())
+}
+
 func printDir(f fs.ReadDirFile) error {
 	des, err := f.ReadDir(0)
 	if err != nil {
 		return err
 	}
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 0, 1, 1, ' ', tabwriter.AlignRight)
 	for _, v := range des {
 		dfi, err := v.Info()
 		if err != nil {
 			return err
 		}
-		printFileInfo(dfi)
+		fprintFileInfo(w, dfi)
 	}
+	w.Flush()
 	return nil
 }
 
