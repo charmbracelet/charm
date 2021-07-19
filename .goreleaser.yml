@@ -46,7 +46,7 @@ dockers:
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
       - --label=org.opencontainers.image.licenses=MIT
     dockerfile: Dockerfile
-    use_buildx: true
+    use: buildx
   - image_templates:
       - "charmbracelet/charm:latest-arm64"
       - "charmbracelet/charm:{{ .Tag }}-arm64"
@@ -66,7 +66,7 @@ dockers:
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
       - --label=org.opencontainers.image.licenses=MIT
     dockerfile: Dockerfile
-    use_buildx: true
+    use: buildx
   - image_templates:
       - "charmbracelet/charm:latest-armhf"
       - "charmbracelet/charm:{{ .Tag }}-armhf"
@@ -86,7 +86,7 @@ dockers:
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
       - --label=org.opencontainers.image.licenses=MIT
     dockerfile: Dockerfile
-    use_buildx: true
+    use: buildx
 
 docker_manifests:
   - name_template: charmbracelet/charm:{{ .Tag }}
