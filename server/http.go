@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/server/db"
@@ -25,23 +27,22 @@ const resultsPerPage = 50
 
 // HTTPServer is the HTTP server for the Charm Cloud backend.
 type HTTPServer struct {
-	db     db.DB
-	fstore storage.FileStore
-	cfg    *Config
-	mux    *goji.Mux
+	db      db.DB
+	fstore  storage.FileStore
+	cfg     *Config
+	handler http.Handler
+	tlsKey  []byte
+	tlsCert []byte
 }
 
 // NewHTTPServer returns a new *HTTPServer with the specified Config.
 func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
-	// No auth health check endpoint
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "We live!")
-	})
-
 	mux := goji.NewMux()
 	s := &HTTPServer{
-		cfg: cfg,
-		mux: mux,
+		cfg:     cfg,
+		handler: mux,
+		tlsKey:  cfg.TLSKey,
+		tlsCert: cfg.TLSCert,
 	}
 
 	var jwtMiddleware func(http.Handler) http.Handler
@@ -70,15 +71,56 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 
 // Start starts the HTTP server on the port specified in the Config.
 func (s *HTTPServer) Start() {
+	useTls := s.cfg.HTTPScheme == "https"
+	tlsCfg := &tls.Config{}
+	listenAddr := fmt.Sprintf(":%d", s.cfg.HTTPPort)
+	server := &http.Server{
+		Addr:      listenAddr,
+		Handler:   s.handler,
+		TLSConfig: tlsCfg,
+	}
+
+	// TLS key and cert files take precedence over passing them as environment variables.
+	if useTls {
+		if len(s.cfg.TLSKey) > 0 && len(s.cfg.TLSCert) > 0 {
+			cert, err := tls.X509KeyPair(s.tlsCert, s.tlsKey)
+			if err != nil {
+				log.Fatalf("couldn't load TLS key pair: %s", err)
+			}
+			tlsCfg.Certificates = []tls.Certificate{cert}
+		} else if s.cfg.TLSKeyFile == "" || s.cfg.TLSCertFile == "" {
+			log.Fatal("TLS key and cert files must be specified if using TLS")
+		}
+	}
+
 	go func() {
-		err := http.ListenAndServe(fmt.Sprintf(":%s", s.cfg.HealthPort), nil)
+		var err error
+		mux := http.NewServeMux()
+		// No auth health check endpoint
+		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprintf(w, "We live!")
+		})
+
+		hs := &http.Server{
+			Addr:      fmt.Sprintf(":%s", s.cfg.HealthPort),
+			Handler:   mux,
+			TLSConfig: tlsCfg,
+		}
+		if useTls {
+			err = hs.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile)
+		} else {
+			err = hs.ListenAndServe()
+		}
 		if err != nil {
 			log.Fatalf("http health endpoint server exited with error: %s", err)
 		}
 	}()
-	listenAddr := fmt.Sprintf(":%d", s.cfg.HTTPPort)
-	log.Printf("HTTP server listening on: %s", listenAddr)
-	log.Fatalf("Server crashed: %s", http.ListenAndServe(listenAddr, s.mux))
+
+	log.Printf("%s server listening on: %s", strings.ToUpper(s.cfg.HTTPScheme), listenAddr)
+	log.Fatalf("Server crashed: %s", map[bool]error{
+		true:  server.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile),
+		false: server.ListenAndServe(),
+	}[useTls])
 }
 
 func (s *HTTPServer) renderError(w http.ResponseWriter) {
