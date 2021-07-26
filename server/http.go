@@ -37,6 +37,11 @@ type HTTPServer struct {
 
 // NewHTTPServer returns a new *HTTPServer with the specified Config.
 func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
+	// No auth health check endpoint
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "We live!")
+	})
+
 	mux := goji.NewMux()
 	s := &HTTPServer{
 		cfg:     cfg,
@@ -94,23 +99,7 @@ func (s *HTTPServer) Start() {
 	}
 
 	go func() {
-		var err error
-		mux := http.NewServeMux()
-		// No auth health check endpoint
-		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprintf(w, "We live!")
-		})
-
-		hs := &http.Server{
-			Addr:      fmt.Sprintf(":%s", s.cfg.HealthPort),
-			Handler:   mux,
-			TLSConfig: tlsCfg,
-		}
-		if useTls {
-			err = hs.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile)
-		} else {
-			err = hs.ListenAndServe()
-		}
+		err := http.ListenAndServe(fmt.Sprintf(":%s", s.cfg.HealthPort), nil)
 		if err != nil {
 			log.Fatalf("http health endpoint server exited with error: %s", err)
 		}
