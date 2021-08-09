@@ -58,6 +58,7 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 	mux.Use(babylogger.Middleware)
 	mux.Use(jwtMiddleware)
 	mux.Use(CharmUserMiddleware(s))
+	mux.Use(RequestLimitMiddleware())
 	mux.HandleFunc(pat.Get("/v1/id/:id"), s.handleGetUserByID)
 	mux.HandleFunc(pat.Get("/v1/bio/:name"), s.handleGetUser)
 	mux.HandleFunc(pat.Post("/v1/bio"), s.handlePostUser)

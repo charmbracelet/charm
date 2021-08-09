@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	jwtmiddleware "github.com/auth0/go-jwt-middleware"
 	charm "github.com/charmbracelet/charm/proto"
@@ -16,6 +17,26 @@ import (
 type contextKey string
 
 var ctxUserKey contextKey = "charmUser"
+
+func RequestLimitMiddleware() func(http.Handler) http.Handler {
+	return func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var maxRequestSize int64
+			if strings.HasPrefix(r.URL.Path, "/v1/fs") {
+				maxRequestSize = 1 << 30 // limit request size to 1GB for fs endpoints
+			} else {
+				maxRequestSize = 1 << 20 // limit request size to 1MB for other endpoints
+			}
+			// Check if the request body is too large using Content-Length
+			if r.ContentLength > maxRequestSize {
+				http.Error(w, http.StatusText(http.StatusRequestEntityTooLarge), http.StatusRequestEntityTooLarge)
+			}
+			// Limit body read using MaxBytesReader
+			r.Body = http.MaxBytesReader(w, r.Body, maxRequestSize)
+			h.ServeHTTP(w, r)
+		})
+	}
+}
 
 // JWTMiddleware creates a new middleware function that will validate JWT
 // tokesn based on the supplied public key.
