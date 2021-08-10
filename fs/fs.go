@@ -4,7 +4,6 @@ package fs
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -21,7 +20,13 @@ import (
 )
 
 // ErrFileTooLarge is returned when a file is too large to upload.
-var ErrFileTooLarge = errors.New("file too large")
+type ErrFileTooLarge struct {
+	Limit int64
+}
+
+func (e ErrFileTooLarge) Error() string {
+	return fmt.Sprintf("file too large: %d", e.Limit)
+}
 
 // FS is an implementation of fs.FS, fs.ReadFileFS and fs.ReadDirFS with
 // additional write methods. Data is stored across the network on a Charm Cloud
@@ -162,7 +167,7 @@ func (cfs *FS) WriteFile(name string, src fs.File) error {
 		return err
 	}
 	if info.Size() > cfs.maxFileSize {
-		return ErrFileTooLarge
+		return ErrFileTooLarge{Limit: cfs.maxFileSize}
 	}
 	ebuf := bytes.NewBuffer(nil)
 	eb, err := cfs.crypt.NewEncryptedWriter(ebuf)
