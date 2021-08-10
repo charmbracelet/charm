@@ -3,10 +3,15 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
+
+// ErrRequestTooLarge is an error for a request that is too large.
+var ErrRequestTooLarge = errors.New("request too large")
 
 // AuthedRequest sends an authorized JSON request to the Charm and Glow HTTP servers.
 func (cc *Client) AuthedJSONRequest(method string, path string, reqBody interface{}, respBody interface{}) error {
@@ -29,6 +34,12 @@ func (cc *Client) AuthedJSONRequest(method string, path string, reqBody interfac
 
 // AuthedRequest sends an authorized request to the Charm and Glow HTTP servers.
 func (cc *Client) AuthedRequest(method string, path string, contentType string, reqBody io.Reader) (*http.Response, error) {
+	var maxRequestSize int64
+	if strings.HasPrefix(path, "/v1/fs") {
+		maxRequestSize = 1 << 30
+	} else {
+		maxRequestSize = 1 << 20
+	}
 	client := &http.Client{}
 	cfg := cc.Config
 	auth, err := cc.Auth()
@@ -39,6 +50,9 @@ func (cc *Client) AuthedRequest(method string, path string, contentType string, 
 	req, err := http.NewRequest(method, fmt.Sprintf("%s://%s:%d%s", cc.httpScheme, cfg.Host, cfg.HTTPPort, path), reqBody)
 	if err != nil {
 		return nil, err
+	}
+	if req.ContentLength > maxRequestSize {
+		return nil, ErrRequestTooLarge
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("bearer %s", jwt))
 	if contentType != "" {

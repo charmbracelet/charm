@@ -22,7 +22,6 @@ require (
 	github.com/jacobsa/oglemock v0.0.0-20150831005832-e94d794d06ff // indirect
 	github.com/jacobsa/ogletest v0.0.0-20170503003838-80d50a735a11 // indirect
 	github.com/jacobsa/reqtrace v0.0.0-20150505043853-245c9e0234cb // indirect
-	github.com/lib/pq v1.3.0
 	github.com/mattn/go-isatty v0.0.12
 	github.com/meowgorithm/babyenv v1.3.0
 	github.com/meowgorithm/babylogger v1.1.3
@@ -31,9 +30,7 @@ require (
 	github.com/muesli/go-app-paths v0.2.1
 	github.com/muesli/reflow v0.2.1-0.20210115123740-9e1d0d53df68
 	github.com/muesli/sasquatch v0.0.0-20200811221207-66979d92330a
-	github.com/muesli/termenv v0.8.1
 	github.com/muesli/toktok v0.0.0-20201007181047-c74187025f3f
-	github.com/prometheus/client_golang v0.9.3
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.6.1 // indirect
