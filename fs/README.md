@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"ioutil"
+	"os"
 
 	charmfs "github.com/charmbracelet/charm/fs"
 )
@@ -20,15 +22,20 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
 	// Write a file
 	data := []byte("some data")
-	buf := bytes.NewBuffer(data)
-	err = cfs.WriteFile("/our/test/data", buf, fs.FileMode(0644))
+	err = ioutil.WriteFile("/tmp/data", data, 0644)
 	if err != nil {
 		panic(err)
 	}
-
+	file, err := os.Open("/tmp/data")
+	if err != nil {
+		panic(err)
+	}
+	err = cfs.WriteFile("/our/test/data", file)
+	if err != nil {
+		panic(err)
+	}
 	// Get a file
 	f, err := cfs.Open("/our/test/data")
 	if err != nil {

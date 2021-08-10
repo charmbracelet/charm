@@ -4,6 +4,7 @@ package fs
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -19,12 +20,16 @@ import (
 	charm "github.com/charmbracelet/charm/proto"
 )
 
+// ErrFileTooLarge is returned when a file is too large to upload.
+var ErrFileTooLarge = errors.New("file too large")
+
 // FS is an implementation of fs.FS, fs.ReadFileFS and fs.ReadDirFS with
 // additional write methods. Data is stored across the network on a Charm Cloud
 // server, with encryption and decryption happening client-side.
 type FS struct {
-	cc    *client.Client
-	crypt *crypt.Crypt
+	cc          *client.Client
+	crypt       *crypt.Crypt
+	maxFileSize int64 // Max file size in bytes
 }
 
 // File implements the fs.File interface.
@@ -64,7 +69,7 @@ func NewFSWithClient(cc *client.Client) (*FS, error) {
 		return nil, err
 	}
 	crypt := crypt.NewCryptWithKey(k)
-	return &FS{cc: cc, crypt: crypt}, nil
+	return &FS{cc: cc, crypt: crypt, maxFileSize: 1 << 30}, nil
 }
 
 // Open implements Open for fs.FS.
@@ -151,7 +156,14 @@ func (cfs *FS) ReadFile(name string) ([]byte, error) {
 // configured Charm Cloud server. The fs.FileMode is retained. If the file is
 // in a directory that doesn't exist, it and any needed subdirectories are
 // created.
-func (cfs *FS) WriteFile(name string, src io.Reader, mode fs.FileMode) error {
+func (cfs *FS) WriteFile(name string, src fs.File) error {
+	info, err := src.Stat()
+	if err != nil {
+		return err
+	}
+	if info.Size() > cfs.maxFileSize {
+		return ErrFileTooLarge
+	}
 	ebuf := bytes.NewBuffer(nil)
 	eb, err := cfs.crypt.NewEncryptedWriter(ebuf)
 	if err != nil {
@@ -177,7 +189,7 @@ func (cfs *FS) WriteFile(name string, src io.Reader, mode fs.FileMode) error {
 	if err != nil {
 		return err
 	}
-	path := fmt.Sprintf("/v1/fs/%s?mode=%d", ep, mode)
+	path := fmt.Sprintf("/v1/fs/%s?mode=%d", ep, info.Mode())
 	_, err = cfs.cc.AuthedRequest("POST", path, w.FormDataContentType(), buf)
 	return err
 }

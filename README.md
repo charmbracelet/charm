@@ -77,7 +77,7 @@ if err != nil {
 
 // Save a file
 data := bytes.NewBuffer([]byte("some data"))
-if err := cfs.WriteFile("./path/to/file", data, fs.FileMode(0644)); err != nil {
+if err := cfs.WriteFile("./path/to/file", data, fs.FileMode(0644), int64(data.Len())); err != nil {
     log.Fatal(err)
 }
 
