@@ -3,7 +3,6 @@ package localstorage
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -17,30 +16,6 @@ import (
 // folder.
 type LocalFileStore struct {
 	Path string
-}
-
-// DirFile is a fs.File that represents a directory entry.
-type DirFile struct {
-	buffer   *bytes.Buffer
-	fileInfo fs.FileInfo
-}
-
-// Stat returns a fs.FileInfo.
-func (df *DirFile) Stat() (fs.FileInfo, error) {
-	if df.fileInfo == nil {
-		return nil, fmt.Errorf("missing file info")
-	}
-	return df.fileInfo, nil
-}
-
-// Read reads from the DirFile and satisfies fs.FS
-func (df *DirFile) Read(buf []byte) (int, error) {
-	return df.buffer.Read(buf)
-}
-
-// Close is a no-op but satisfies fs.FS
-func (df *DirFile) Close() error {
-	return nil
 }
 
 // NewLocalFileStore creates a FileStore locally in the provided path. Files
@@ -95,7 +70,10 @@ func (lfs *LocalFileStore) Get(charmID string, path string) (fs.File, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &DirFile{buf, info}, nil
+		return &charm.DirFile{
+			Buffer:   buf,
+			FileInfo: info,
+		}, nil
 	}
 	return f, nil
 }
@@ -112,10 +90,10 @@ func (lfs *LocalFileStore) Put(charmID string, path string, r io.Reader, mode fs
 		return err
 	}
 	f, err := os.Create(fp)
-	defer f.Close()
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 	_, err = io.Copy(f, r)
 	if err != nil {
 		return err
