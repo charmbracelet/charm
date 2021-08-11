@@ -126,9 +126,12 @@ func (cfs *FS) Open(name string) (fs.File, error) {
 	case "application/octet-stream":
 		b := bytes.NewBuffer(nil)
 		dec, err := cfs.crypt.NewDecryptedReader(resp.Body)
-		io.Copy(b, dec)
 		if err != nil {
 			return nil, pathError(name, err)
+		}
+		_, err = io.Copy(b, dec)
+		if err != nil {
+			return nil, err
 		}
 		f.data = io.NopCloser(b)
 		fi.FileInfo.Size = int64(b.Len())
