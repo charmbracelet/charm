@@ -26,7 +26,10 @@ func (cc *Client) AuthedJSONRequest(method string, path string, reqBody interfac
 	if err != nil {
 		return err
 	}
-	resp, err := cc.AuthedRequest(method, path, "application/json", buf)
+	headers := http.Header{
+		"Content-Type": {"application/json"},
+	}
+	resp, err := cc.AuthedRequest(method, path, headers, buf)
 	if err != nil {
 		return err
 	}
@@ -39,7 +42,7 @@ func (cc *Client) AuthedJSONRequest(method string, path string, reqBody interfac
 }
 
 // AuthedRequest sends an authorized request to the Charm and Glow HTTP servers.
-func (cc *Client) AuthedRequest(method string, path string, contentType string, reqBody io.Reader) (*http.Response, error) {
+func (cc *Client) AuthedRequest(method string, path string, headers http.Header, reqBody io.Reader) (*http.Response, error) {
 	var maxRequestSize int64
 	if strings.HasPrefix(path, "/v1/fs") {
 		maxRequestSize = 1 << 30
@@ -60,10 +63,12 @@ func (cc *Client) AuthedRequest(method string, path string, contentType string, 
 	if req.ContentLength > maxRequestSize {
 		return nil, ErrRequestTooLarge{Size: req.ContentLength, Limit: maxRequestSize}
 	}
-	req.Header.Add("Authorization", fmt.Sprintf("bearer %s", jwt))
-	if contentType != "" {
-		req.Header.Set("Content-Type", contentType)
+	for k, v := range headers {
+		for _, vv := range v {
+			req.Header.Add(k, vv)
+		}
 	}
+	req.Header.Add("Authorization", fmt.Sprintf("bearer %s", jwt))
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -76,5 +81,5 @@ func (cc *Client) AuthedRequest(method string, path string, contentType string, 
 
 // AuthedRawRequest sends an authorized request with no request body to the Charm and Glow HTTP servers.
 func (cc *Client) AuthedRawRequest(method string, path string) (*http.Response, error) {
-	return cc.AuthedRequest(method, path, "", nil)
+	return cc.AuthedRequest(method, path, nil, nil)
 }

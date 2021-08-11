@@ -133,8 +133,13 @@ func (cfs *FS) Open(name string) (fs.File, error) {
 		if err != nil {
 			return nil, err
 		}
+		modTime, err := time.Parse(http.TimeFormat, resp.Header.Get("Last-Modified"))
+		if err != nil {
+			return nil, pathError(name, err)
+		}
 		f.data = io.NopCloser(b)
 		fi.FileInfo.Size = int64(b.Len())
+		fi.FileInfo.ModTime = modTime
 		f.info = fi
 	default:
 		return nil, pathError(name, fmt.Errorf("invalid content-type returned from server"))
@@ -194,7 +199,10 @@ func (cfs *FS) WriteFile(name string, src fs.File) error {
 		return err
 	}
 	path := fmt.Sprintf("/v1/fs/%s?mode=%d", ep, info.Mode())
-	_, err = cfs.cc.AuthedRequest("POST", path, w.FormDataContentType(), buf)
+	headers := http.Header{
+		"Content-Type": {w.FormDataContentType()},
+	}
+	_, err = cfs.cc.AuthedRequest("POST", path, headers, buf)
 	return err
 }
 
@@ -205,7 +213,7 @@ func (cfs *FS) Remove(name string) error {
 		return err
 	}
 	path := fmt.Sprintf("/v1/fs/%s", ep)
-	_, err = cfs.cc.AuthedRequest("DELETE", path, "", nil)
+	_, err = cfs.cc.AuthedRequest("DELETE", path, nil, nil)
 	return err
 }
 
