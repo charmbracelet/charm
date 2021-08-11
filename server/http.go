@@ -271,6 +271,7 @@ func (s *HTTPServer) handleGetFile(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 	default:
 		w.Header().Set("Content-Type", "application/octet-stream")
+		w.Header().Set("Last-Modified", fi.ModTime().Format(http.TimeFormat))
 	}
 	w.Header().Set("X-File-Mode", fmt.Sprintf("%d", fi.Mode()))
 	_, err = io.Copy(w, f)
