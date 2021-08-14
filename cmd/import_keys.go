@@ -39,7 +39,11 @@ var (
 		Args:                  cobra.ExactArgs(1),
 		DisableFlagsInUseLine: false,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			dd, err := client.DataPath()
+			cfg, err := client.ConfigFromEnv()
+			if err != nil {
+				return err
+			}
+			dd, err := client.DataPath(cfg.Host)
 			if err != nil {
 				return err
 			}

@@ -27,7 +27,7 @@ const (
 )
 
 // NewProgram creates a new keygen TUI program
-func NewProgram(fancy bool) *tea.Program {
+func NewProgram(host string, fancy bool) *tea.Program {
 	m := NewModel()
 	m.standalone = true
 	m.fancy = fancy
@@ -51,6 +51,7 @@ type DoneMsg struct{}
 // Model is the Bubble Tea model which stores the state of the keygen.
 type Model struct {
 	Status        Status
+	host          string
 	styles        common.Styles
 	err           error
 	standalone    bool
@@ -69,7 +70,7 @@ func NewModel() Model {
 
 // Init is the Bubble Tea initialization function for the keygen.
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(GenerateKeys, spinner.Tick)
+	return tea.Batch(GenerateKeys(m.host), spinner.Tick)
 }
 
 // Update is the Bubble Tea update loop for the keygen.
@@ -140,16 +141,18 @@ func (m Model) View() string {
 
 // GenerateKeys is a Bubble Tea command that generates a pair of SSH keys and
 // writes them to disk.
-func GenerateKeys() tea.Msg {
-	dp, err := client.DataPath()
-	if err != nil {
-		return FailedMsg{err}
+func GenerateKeys(host string) tea.Cmd {
+	return func() tea.Msg {
+		dp, err := client.DataPath(host)
+		if err != nil {
+			return FailedMsg{err}
+		}
+		_, err = keygen.NewSSHKeyPair(dp, "charm", nil, "rsa")
+		if err != nil {
+			return FailedMsg{err}
+		}
+		return SuccessMsg{}
 	}
-	_, err = keygen.NewSSHKeyPair(dp, "charm", nil, "rsa")
-	if err != nil {
-		return FailedMsg{err}
-	}
-	return SuccessMsg{}
 }
 
 // pause runs the final pause before we wrap things up.

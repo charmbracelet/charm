@@ -42,7 +42,7 @@ func (cc *Client) DefaultEncryptKey() (*charm.EncryptKey, error) {
 }
 
 func (cc *Client) findIdentities() ([]sasquatch.Identity, error) {
-	keys, err := FindAuthKeys()
+	keys, err := FindAuthKeys(cc.Config.Host)
 	if err != nil {
 		return nil, err
 	}

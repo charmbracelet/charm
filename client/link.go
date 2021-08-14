@@ -148,7 +148,7 @@ func (cc *Client) SyncEncryptKeys() error {
 // TODO find a better place for this, or do something more sophisticated than
 // just wiping it out.
 func (cc *Client) deleteUserData() error {
-	dd, err := DataPath()
+	dd, err := DataPath(cc.Config.Host)
 	if err != nil {
 		return err
 	}

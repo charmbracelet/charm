@@ -102,7 +102,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.status == initCharmClient {
 			m.status = keygenRunning
 			m.keygen = keygen.NewModel()
-			return m, keygen.GenerateKeys
+			return m, keygen.GenerateKeys(m.cfg.Host)
 		}
 		m.err = msg.Err
 		return m, tea.Quit

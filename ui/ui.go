@@ -184,7 +184,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.status == statusInit {
 			// SSH auth didn't work so let's try generating keys
 			m.status = statusKeygen
-			return m, keygen.GenerateKeys
+			return m, keygen.GenerateKeys(m.cfg.Host)
 		}
 		// We tried the keygen, to no avail. Quit.
 		m.err = msg.Err
@@ -412,7 +412,7 @@ func (m model) backupView() string {
 	code := m.styles.Code.Render
 	em := lipgloss.NewStyle().Underline(true).Render
 
-	p, err := client.DataPath()
+	p, err := client.DataPath(m.cfg.Host)
 	if err != nil {
 		return m.errorView(err)
 	}

@@ -38,7 +38,12 @@ var BackupKeysCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		dd, err := client.DataPath()
+		cfg, err := client.ConfigFromEnv()
+		if err != nil {
+			return err
+		}
+
+		dd, err := client.DataPath(cfg.Host)
 		if err != nil {
 			return err
 		}

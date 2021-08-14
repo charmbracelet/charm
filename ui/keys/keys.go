@@ -202,7 +202,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Couldn't find SSH keys, so let's try the keygen
 			m.state = stateKeygenRunning
 			m.keygen = keygen.NewModel()
-			return m, keygen.GenerateKeys
+			return m, keygen.GenerateKeys(m.cfg.Host)
 		}
 		// Keygen failed too
 		m.err = msg.Err
