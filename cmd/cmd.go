@@ -53,14 +53,14 @@ func initCharmClient(kg keygenSetting) *client.Client {
 
 			if isatty.IsTerminal(os.Stdout.Fd()) {
 				// Generate	keys, using Bubble Tea for feedback
-				err := keygenTUI.NewProgram(false).Start()
+				err := keygenTUI.NewProgram(cfg.Host, false).Start()
 				if err != nil {
 					printFormatted(keygenError + err.Error())
 					os.Exit(1)
 				}
 			} else {
 				// Generate keys
-				dp, err := client.DataPath()
+				dp, err := client.DataPath(cfg.Host)
 				if err != nil {
 					printFormatted(keygenError + err.Error())
 					os.Exit(1)

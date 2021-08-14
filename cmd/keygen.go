@@ -29,7 +29,7 @@ var (
 					}
 					defer f.Close()
 				}
-				return keygen.NewProgram(true).Start()
+				return keygen.NewProgram(cfg.Host, true).Start()
 			}
 			return nil
 		},

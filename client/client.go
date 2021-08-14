@@ -71,7 +71,7 @@ func NewClient(cfg *Config) (*Client, error) {
 		authLock:       &sync.Mutex{},
 		encryptKeyLock: &sync.Mutex{},
 	}
-	sshKeys, err := FindAuthKeys()
+	sshKeys, err := FindAuthKeys(cfg.Host)
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +93,19 @@ func NewClient(cfg *Config) (*Client, error) {
 		User:            "charm",
 		Auth:            []ssh.AuthMethod{pkam},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+	return cc, nil
+}
+
+func NewClientWithDefaults() (*Client, error) {
+	cfg, err := ConfigFromEnv()
+	if err != nil {
+		return nil, err
+	}
+	cc, err := NewClient(cfg)
+	if err == charm.ErrMissingSSHAuth {
+	} else if err != nil {
+		return nil, err
 	}
 	return cc, nil
 }
@@ -273,8 +286,8 @@ func agentAuthMethod() (ssh.AuthMethod, error) {
 
 // FindAuthKeys looks in a user's XDG charm-dir for possible auth keys.
 // If no keys are found we return an empty slice.
-func FindAuthKeys() (pathsToKeys []string, err error) {
-	keyPath, err := DataPath()
+func FindAuthKeys(host string) (pathsToKeys []string, err error) {
+	keyPath, err := DataPath(host)
 	if err != nil {
 		return nil, err
 	}

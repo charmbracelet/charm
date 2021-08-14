@@ -199,7 +199,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// SSH auth didn't work, so let's try generating keys
 			m.status = keygenRunning
 			m.keygen = keygen.NewModel()
-			return m, keygen.GenerateKeys
+			return m, keygen.GenerateKeys(m.cfg.Host)
 		}
 		// We tried the keygen and it still didn't work: fatal
 		m.err = msg.Err
