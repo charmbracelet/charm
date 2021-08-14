@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"sync"
 
+	"github.com/charmbracelet/charm/keygen"
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/meowgorithm/babyenv"
@@ -104,6 +105,15 @@ func NewClientWithDefaults() (*Client, error) {
 	}
 	cc, err := NewClient(cfg)
 	if err == charm.ErrMissingSSHAuth {
+		dp, err := DataPath(cfg.Host)
+		if err != nil {
+			return nil, err
+		}
+		_, err = keygen.NewSSHKeyPair(dp, "charm", []byte(""), "rsa")
+		if err != nil {
+			return nil, err
+		}
+		return NewClient(cfg)
 	} else if err != nil {
 		return nil, err
 	}

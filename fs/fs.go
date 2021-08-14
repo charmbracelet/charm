@@ -56,11 +56,7 @@ type sysFuture struct {
 
 // NewFS returns an FS with the default configuration.
 func NewFS() (*FS, error) {
-	cfg, err := client.ConfigFromEnv()
-	if err != nil {
-		return nil, err
-	}
-	cc, err := client.NewClient(cfg)
+	cc, err := client.NewClientWithDefaults()
 	if err != nil {
 		return nil, err
 	}
