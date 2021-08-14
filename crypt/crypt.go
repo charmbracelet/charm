@@ -32,11 +32,7 @@ type DecryptedReader struct {
 // NewCrypt authenticates a user to the Charm Cloud and returns a Crypt struct
 // ready for encrypting and decrypting.
 func NewCrypt() (*Crypt, error) {
-	cfg, err := client.ConfigFromEnv()
-	if err != nil {
-		return nil, err
-	}
-	cc, err := client.NewClient(cfg)
+	cc, err := client.NewClientWithDefaults()
 	if err != nil {
 		return nil, err
 	}

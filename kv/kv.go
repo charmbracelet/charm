@@ -46,15 +46,11 @@ func Open(cc *client.Client, name string, opt badger.Options) (*KV, error) {
 // OpenWithDefaults opens a Charm Cloud managed Badger DB instance with the
 // default settings pulled from environment variables.
 func OpenWithDefaults(name string) (*KV, error) {
-	cfg, err := client.ConfigFromEnv()
+	cc, err := client.NewClientWithDefaults()
 	if err != nil {
 		return nil, err
 	}
-	cc, err := client.NewClient(cfg)
-	if err != nil {
-		return nil, err
-	}
-	dd, err := client.DataPath(cfg.Host)
+	dd, err := client.DataPath(cc.Config.Host)
 	if err != nil {
 		return nil, err
 	}
