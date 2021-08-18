@@ -257,12 +257,11 @@ func fsCopy(cmd *cobra.Command, args []string) error {
 }
 
 func fsList(cmd *cobra.Command, args []string) error {
-	p := newLocalRemotePath(args[0])
 	lsfs, err := cfs.NewFS()
 	if err != nil {
 		return err
 	}
-	f, err := lsfs.Open(p.path)
+	f, err := lsfs.Open(args[0])
 	if err != nil {
 		return err
 	}
