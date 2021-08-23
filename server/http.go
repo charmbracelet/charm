@@ -96,6 +96,9 @@ func (s *HTTPServer) Start() {
 		} else if s.cfg.TLSKeyFile == "" || s.cfg.TLSCertFile == "" {
 			log.Fatal("TLS key and cert files must be specified if using TLS")
 		}
+		if s.cfg.TLSGetCertFn != nil {
+			tlsCfg.GetCertificate = s.cfg.TLSGetCertFn
+		}
 	}
 
 	go func() {
