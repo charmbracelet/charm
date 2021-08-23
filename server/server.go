@@ -2,6 +2,7 @@
 package server
 
 import (
+	"crypto/tls"
 	"fmt"
 	"log"
 
@@ -16,22 +17,23 @@ import (
 
 // Config is the configuration for the Charm server.
 type Config struct {
-	Host        string `env:"CHARM_SERVER_HOST" default:"localhost"`
-	SSHPort     int    `env:"CHARM_SERVER_SSH_PORT" default:"35353"`
-	HTTPPort    int    `env:"CHARM_SERVER_HTTP_PORT" default:"35354"`
-	HTTPScheme  string `env:"CHARM_SERVER_HTTP_SCHEME" default:"http"`
-	StatsPort   int    `env:"CHARM_SERVER_STATS_PORT" default:"35355"`
-	HealthPort  string `env:"CHARM_SERVER_HEALTH_PORT" default:"35356"`
-	DataDir     string `env:"CHARM_SERVER_DATA_DIR" default:"./data"`
-	TLSKey      []byte `env:"CHARM_SERVER_TLS_KEY" default:""`
-	TLSCert     []byte `env:"CHARM_SERVER_TLS_CERT" default:""`
-	TLSKeyFile  string `env:"CHARM_SERVER_TLS_KEY_FILE" default:""`
-	TLSCertFile string `env:"CHARM_SERVER_TLS_CERT_FILE" default:""`
-	PublicKey   []byte
-	PrivateKey  []byte
-	DB          db.DB
-	FileStore   storage.FileStore
-	Stats       stats.Stats
+	Host         string `env:"CHARM_SERVER_HOST" default:"localhost"`
+	SSHPort      int    `env:"CHARM_SERVER_SSH_PORT" default:"35353"`
+	HTTPPort     int    `env:"CHARM_SERVER_HTTP_PORT" default:"35354"`
+	HTTPScheme   string `env:"CHARM_SERVER_HTTP_SCHEME" default:"http"`
+	StatsPort    int    `env:"CHARM_SERVER_STATS_PORT" default:"35355"`
+	HealthPort   string `env:"CHARM_SERVER_HEALTH_PORT" default:"35356"`
+	DataDir      string `env:"CHARM_SERVER_DATA_DIR" default:"./data"`
+	TLSKey       []byte `env:"CHARM_SERVER_TLS_KEY" default:""`
+	TLSCert      []byte `env:"CHARM_SERVER_TLS_CERT" default:""`
+	TLSKeyFile   string `env:"CHARM_SERVER_TLS_KEY_FILE" default:""`
+	TLSCertFile  string `env:"CHARM_SERVER_TLS_CERT_FILE" default:""`
+	TLSGetCertFn func(*tls.ClientHelloInfo) (*tls.Certificate, error)
+	PublicKey    []byte
+	PrivateKey   []byte
+	DB           db.DB
+	FileStore    storage.FileStore
+	Stats        stats.Stats
 }
 
 // Server contains the SSH and HTTP servers required to host the Charm Cloud.
