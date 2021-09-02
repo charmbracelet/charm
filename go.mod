@@ -22,7 +22,7 @@ require (
 	github.com/jacobsa/oglemock v0.0.0-20150831005832-e94d794d06ff // indirect
 	github.com/jacobsa/ogletest v0.0.0-20170503003838-80d50a735a11 // indirect
 	github.com/jacobsa/reqtrace v0.0.0-20150505043853-245c9e0234cb // indirect
-	github.com/mattn/go-isatty v0.0.13
+	github.com/mattn/go-isatty v0.0.14-0.20210829144114-504425e14f74
 	github.com/meowgorithm/babyenv v1.3.1
 	github.com/meowgorithm/babylogger v1.2.0
 	github.com/mikesmitty/edkey v0.0.0-20170222072505-3356ea4e686a
@@ -37,7 +37,6 @@ require (
 	github.com/stretchr/testify v1.6.1 // indirect
 	goji.io v2.0.2+incompatible
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
-	golang.org/x/sys v0.0.0-20210503173754-0981d6026fa6 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	modernc.org/sqlite v1.10.8
 )
