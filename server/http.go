@@ -109,10 +109,11 @@ func (s *HTTPServer) Start() {
 	}()
 
 	log.Printf("%s server listening on: %s", strings.ToUpper(s.cfg.HTTPScheme), listenAddr)
-	log.Fatalf("Server crashed: %s", map[bool]error{
-		true:  server.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile),
-		false: server.ListenAndServe(),
-	}[useTls])
+	if useTls {
+		log.Fatalf("Server crashed: %s", server.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile))
+	} else {
+		log.Fatalf("Server crashed: %s", server.ListenAndServe())
+	}
 }
 
 func (s *HTTPServer) renderError(w http.ResponseWriter) {
