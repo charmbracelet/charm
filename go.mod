@@ -1,9 +1,10 @@
 module github.com/charmbracelet/charm
 
-go 1.15
+go 1.17
+
+replace github.com/charmbracelet/wish => ../wish
 
 require (
-	github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239 // indirect
 	github.com/auth0/go-jwt-middleware v1.0.0
 	github.com/calmh/randomart v1.1.0
 	github.com/charmbracelet/bubbles v0.8.0
@@ -11,9 +12,8 @@ require (
 	github.com/charmbracelet/lipgloss v0.3.0
 	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.2+incompatible
-	github.com/gliderlabs/ssh v0.3.0
+	github.com/gliderlabs/ssh v0.3.3
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/google/uuid v1.1.1
@@ -30,13 +30,48 @@ require (
 	github.com/muesli/go-app-paths v0.2.1
 	github.com/muesli/reflow v0.3.0
 	github.com/muesli/sasquatch v0.0.0-20200811221207-66979d92330a
-	github.com/muesli/termenv v0.9.0 // indirect
 	github.com/muesli/toktok v0.0.0-20201007181047-c74187025f3f
 	github.com/spf13/cobra v1.0.0
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.6.1 // indirect
 	goji.io v2.0.2+incompatible
-	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
+	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
 	google.golang.org/protobuf v1.25.0 // indirect
 	modernc.org/sqlite v1.10.8
+)
+
+require (
+	github.com/DataDog/zstd v1.4.1 // indirect
+	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be // indirect
+	github.com/atotto/clipboard v0.1.2 // indirect
+	github.com/cespare/xxhash v1.1.0 // indirect
+	github.com/containerd/console v1.0.2 // indirect
+	github.com/dgraph-io/ristretto v0.0.4-0.20210122082011-bb5d392ed82d // indirect
+	github.com/dustin/go-humanize v1.0.0 // indirect
+	github.com/golang/snappy v0.0.1 // indirect
+	github.com/google/flatbuffers v1.12.0 // indirect
+	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
+	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
+	github.com/mattn/go-runewidth v0.0.13 // indirect
+	github.com/muesli/termenv v0.9.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
+	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
+	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/xrash/smetrics v0.0.0-20200730060457-89a2a8a1fb0b // indirect
+	go.opencensus.io v0.22.5 // indirect
+	golang.org/x/mod v0.3.0 // indirect
+	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
+	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
+	golang.org/x/term v0.0.0-20210422114643-f5beecf764ed // indirect
+	golang.org/x/tools v0.0.0-20201124115921-2c860bdd6e78 // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	modernc.org/cc/v3 v3.33.5 // indirect
+	modernc.org/ccgo/v3 v3.9.4 // indirect
+	modernc.org/libc v1.9.5 // indirect
+	modernc.org/mathutil v1.2.2 // indirect
+	modernc.org/memory v1.0.4 // indirect
+	modernc.org/opt v0.1.1 // indirect
+	modernc.org/strutil v1.1.0 // indirect
+	modernc.org/token v1.0.0 // indirect
 )
