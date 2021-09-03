@@ -38,11 +38,9 @@ type Config struct {
 
 // Server contains the SSH and HTTP servers required to host the Charm Cloud.
 type Server struct {
-	Config        *Config
-	ssh           *SSHServer
-	http          *HTTPServer
-	publicKey     []byte
-	privateKeyPEM []byte
+	Config *Config
+	ssh    *SSHServer
+	http   *HTTPServer
 }
 
 // DefaultConfig returns a Config with the values populated with the defaults
