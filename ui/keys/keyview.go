@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/charm/client"
+	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/ui/common"
 )
 
@@ -35,9 +36,9 @@ type styledKey struct {
 	note        string
 }
 
-func (m Model) newStyledKey(styles common.Styles, key client.Key, active bool) styledKey {
+func (m Model) newStyledKey(styles common.Styles, key charm.PublicKey, active bool) styledKey {
 	date := key.CreatedAt.Format("02 Jan 2006 15:04:05 MST")
-	fp, err := key.FingerprintSHA256()
+	fp, err := client.FingerprintSHA256(key)
 	if err != nil {
 		fp = client.Fingerprint{Value: "[error generating fingerprint]"}
 	}

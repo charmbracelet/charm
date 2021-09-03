@@ -72,10 +72,7 @@ func (me *SSHServer) handleAPIKeys(s Session) {
 		}
 	}
 
-	_ = me.sendJSON(s, struct {
-		ActiveKey int                `json:"active_key"`
-		Keys      []*charm.PublicKey `json:"keys"`
-	}{
+	_ = me.sendJSON(s, charm.Keys{
 		ActiveKey: activeKey,
 		Keys:      keys,
 	})

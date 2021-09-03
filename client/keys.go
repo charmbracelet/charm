@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/calmh/randomart"
 	charm "github.com/charmbracelet/charm/proto"
@@ -30,15 +29,9 @@ func (f Fingerprint) String() string {
 	)
 }
 
-// Key contains data and metadata for an SSH key.
-type Key struct {
-	Key       string     `json:"key"`
-	CreatedAt *time.Time `json:"created_at,omitempty"`
-}
-
 // FingerprintSHA256 returns the algorithm and SHA256 fingerprint for the given
 // key.
-func (k Key) FingerprintSHA256() (Fingerprint, error) {
+func FingerprintSHA256(k charm.PublicKey) (Fingerprint, error) {
 	keyParts := strings.Split(k.Key, " ")
 	if len(keyParts) != 2 {
 		return Fingerprint{}, charm.ErrMalformedKey
@@ -61,7 +54,7 @@ func (k Key) FingerprintSHA256() (Fingerprint, error) {
 }
 
 // RandomArt returns the randomart for the given key.
-func (k Key) RandomArt() (string, error) {
+func RandomArt(k charm.PublicKey) (string, error) {
 	keyParts := strings.Split(k.Key, " ")
 	if len(keyParts) != 2 {
 		return "", charm.ErrMalformedKey

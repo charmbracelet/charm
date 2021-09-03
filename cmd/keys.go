@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/charm/client"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/charm/ui/keys"
 	"github.com/spf13/cobra"
@@ -43,11 +44,11 @@ var KeysCmd = &cobra.Command{
 				fmt.Println(keys[i].Key)
 				continue
 			}
-			fp, err := keys[i].FingerprintSHA256()
+			fp, err := client.FingerprintSHA256(*keys[i])
 			if err != nil {
 				fp.Value = fmt.Sprintf("Could not generate fingerprint for key %s: %v\n\n", keys[i].Key, err)
 			}
-			board, err := keys[i].RandomArt()
+			board, err := client.RandomArt(*keys[i])
 			if err != nil {
 				board = fmt.Sprintf("Could not generate randomart for key %s: %v\n\n", keys[i].Key, err)
 			}
