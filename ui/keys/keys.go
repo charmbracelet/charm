@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm/client"
+	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/ui/charmclient"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/charm/ui/keygen"
@@ -45,7 +46,7 @@ func NewProgram(cfg *client.Config) *tea.Program {
 }
 
 type (
-	keysLoadedMsg  client.Keys
+	keysLoadedMsg  charm.Keys
 	unlinkedKeyMsg int
 	errMsg         struct {
 		err error
@@ -61,9 +62,9 @@ type Model struct {
 	state          state
 	err            error
 	standalone     bool
-	activeKeyIndex int          // index of the key in the below slice which is currently in use
-	keys           []client.Key // keys linked to user's account
-	index          int          // index of selected key in relation to the current page
+	activeKeyIndex int                // index of the key in the below slice which is currently in use
+	keys           []*charm.PublicKey // keys linked to user's account
+	index          int                // index of selected key in relation to the current page
 	Exit           bool
 	Quit           bool
 	spinner        spinner.Model
@@ -113,7 +114,7 @@ func NewModel(cfg *client.Config) Model {
 		state:          stateLoading,
 		err:            nil,
 		activeKeyIndex: -1,
-		keys:           []client.Key{},
+		keys:           []*charm.PublicKey{},
 		index:          0,
 		spinner:        common.NewSpinner(),
 		Exit:           false,
@@ -347,7 +348,7 @@ func keysView(m Model) string {
 		} else {
 			state = keyNormal
 		}
-		s += m.newStyledKey(m.styles, key, i+start == m.activeKeyIndex).render(state)
+		s += m.newStyledKey(m.styles, *key, i+start == m.activeKeyIndex).render(state)
 	}
 
 	// If there aren't enough keys to fill the view, fill the missing parts

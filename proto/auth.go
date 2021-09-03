@@ -9,3 +9,10 @@ type Auth struct {
 	PublicKey   string        `json:"public_key,omitempty"`
 	EncryptKeys []*EncryptKey `json:"encrypt_keys,omitempty"`
 }
+
+// Keys is the response returned when the user queries for the keys linked
+// to their account.
+type Keys struct {
+	ActiveKey int          `json:"active_key"`
+	Keys      []*PublicKey `json:"keys"`
+}

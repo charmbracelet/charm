@@ -7,10 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
-	"net"
-	"os"
 	"path/filepath"
 	"regexp"
 	"sync"
@@ -21,7 +18,6 @@ import (
 	"github.com/meowgorithm/babyenv"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/agent"
 )
 
 var nameValidator = regexp.MustCompile("^[a-zA-Z0-9]{1,50}$")
@@ -46,13 +42,6 @@ type Client struct {
 	plainTextEncryptKeys []*charm.EncryptKey
 	authKeyPaths         []string
 	encryptKeyLock       *sync.Mutex
-}
-
-// Keys is a server response returned when the user queries for the keys linked
-// to her account.
-type Keys struct {
-	ActiveKey int   `json:"active_key"`
-	Keys      []Key `json:"keys"`
 }
 
 // ConfigFromEnv loads the configuration from the environment.
@@ -163,7 +152,7 @@ func (cc *Client) AuthorizedKeys() (string, error) {
 }
 
 // AuthorizedKeysWithMetadata fetches keys linked to a user's account, with metadata.
-func (cc *Client) AuthorizedKeysWithMetadata() (*Keys, error) {
+func (cc *Client) AuthorizedKeysWithMetadata() (*charm.Keys, error) {
 	s, err := cc.sshSession()
 	if err != nil {
 		return nil, err
@@ -175,7 +164,7 @@ func (cc *Client) AuthorizedKeysWithMetadata() (*Keys, error) {
 		return nil, err
 	}
 
-	var k Keys
+	var k charm.Keys
 	err = json.Unmarshal(b, &k)
 	return &k, err
 }
@@ -192,7 +181,7 @@ func (cc *Client) UnlinkAuthorizedKey(key string) error {
 		return err
 	}
 	defer s.Close()
-	k := Key{Key: key}
+	k := charm.PublicKey{Key: key}
 	in, err := s.StdinPipe()
 	if err != nil {
 		return err
@@ -279,21 +268,6 @@ func publicKeyAuthMethod(kp string) (ssh.AuthMethod, error) {
 	return ssh.PublicKeys(signer), nil
 }
 
-func agentAuthMethod() (ssh.AuthMethod, error) {
-	socket := os.Getenv("SSH_AUTH_SOCK")
-	if socket == "" {
-		// fmt.Println("No SSH_AUTH_SOCK set, not using ssh-agent")
-		return nil, fmt.Errorf("Missing socket env var")
-	}
-	conn, err := net.Dial("unix", socket)
-	if err != nil {
-		// fmt.Printf("SSH agent dial error: %s\n", err)
-		return nil, err
-	}
-	agentClient := agent.NewClient(conn)
-	return ssh.PublicKeysCallback(agentClient.Signers), nil
-}
-
 // FindAuthKeys looks in a user's XDG charm-dir for possible auth keys.
 // If no keys are found we return an empty slice.
 func FindAuthKeys(host string) (pathsToKeys []string, err error) {
@@ -323,24 +297,4 @@ func FindAuthKeys(host string) (pathsToKeys []string, err error) {
 	}
 
 	return found, nil
-}
-
-const privateKeySizeLimit = 1 << 24 // 16 MiB
-
-func parsePrivateKey(file string) (interface{}, error) {
-	f, err := os.Open(file)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	contents, err := ioutil.ReadAll(io.LimitReader(f, privateKeySizeLimit))
-	if err != nil {
-		return nil, err
-	}
-	if len(contents) == privateKeySizeLimit {
-		return nil, fmt.Errorf("key size exceeded limit")
-	}
-
-	return ssh.ParseRawPrivateKey(contents)
 }
