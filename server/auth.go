@@ -6,11 +6,40 @@ import (
 	"time"
 
 	charm "github.com/charmbracelet/charm/proto"
+	"github.com/charmbracelet/wish"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gliderlabs/ssh"
 )
 
-func (me *SSHServer) handleAPIAuth(s Session) {
-	key, err := s.KeyText()
+func (me *SSHServer) sshMiddleware() wish.Middleware {
+	return func(sh ssh.Handler) ssh.Handler {
+		return func(s ssh.Session) {
+			cmd := s.Command()
+			if len(cmd) >= 1 {
+				r := cmd[0]
+				log.Printf("ssh %s\n", r)
+				switch r {
+				case "api-auth":
+					me.handleAPIAuth(s)
+				case "api-keys":
+					me.handleAPIKeys(s)
+				case "api-link":
+					me.handleAPILink(s)
+				case "api-unlink":
+					me.handleAPIUnlink(s)
+				case "id":
+					me.handleID(s)
+				case "jwt":
+					me.handleJWT(s)
+				}
+			}
+			sh(s)
+		}
+	}
+}
+
+func (me *SSHServer) handleAPIAuth(s ssh.Session) {
+	key, err := keyText(s)
 	if err != nil {
 		log.Println(err)
 		return
@@ -42,8 +71,8 @@ func (me *SSHServer) handleAPIAuth(s Session) {
 	me.config.Stats.APIAuth()
 }
 
-func (me *SSHServer) handleAPIKeys(s Session) {
-	key, err := s.KeyText()
+func (me *SSHServer) handleAPIKeys(s ssh.Session) {
+	key, err := keyText(s)
 	if err != nil {
 		log.Println(err)
 		_ = me.sendAPIMessage(s, "Missing key")
@@ -79,8 +108,8 @@ func (me *SSHServer) handleAPIKeys(s Session) {
 	me.config.Stats.APIKeys()
 }
 
-func (me *SSHServer) handleID(s Session) {
-	key, err := s.KeyText()
+func (me *SSHServer) handleID(s ssh.Session) {
+	key, err := keyText(s)
 	if err != nil {
 		log.Println(err)
 		return
@@ -95,8 +124,8 @@ func (me *SSHServer) handleID(s Session) {
 	me.config.Stats.ID()
 }
 
-func (me *SSHServer) handleJWT(s Session) {
-	key, err := s.KeyText()
+func (me *SSHServer) handleJWT(s ssh.Session) {
+	key, err := keyText(s)
 	if err != nil {
 		log.Println(err)
 		return
