@@ -8,13 +8,14 @@ import (
 	"time"
 
 	charm "github.com/charmbracelet/charm/proto"
+	"github.com/gliderlabs/ssh"
 )
 
 // SSHLinker implments proto.LinkTransport for the Charm SSH server.
 type SSHLinker struct {
 	server  *SSHServer
 	account *charm.User
-	session Session
+	session ssh.Session
 }
 
 // TokenCreated implements the proto.LinkTransport interface for the SSHLinker.
@@ -265,8 +266,8 @@ func (me *SSHServer) NewToken() charm.Token {
 	return charm.Token(t)
 }
 
-func (me *SSHServer) handleLinkGenAPI(s Session) {
-	key, err := s.KeyText()
+func (me *SSHServer) handleLinkGenAPI(s ssh.Session) {
+	key, err := keyText(s)
 	if err != nil {
 		_ = me.sendAPIMessage(s, fmt.Sprintf("Missing public key %s", err))
 		return
@@ -291,8 +292,8 @@ func (me *SSHServer) handleLinkGenAPI(s Session) {
 	me.config.Stats.APILinkGen()
 }
 
-func (me *SSHServer) handleLinkRequestAPI(s Session) {
-	key, err := s.KeyText()
+func (me *SSHServer) handleLinkRequestAPI(s ssh.Session) {
+	key, err := keyText(s)
 	if err != nil {
 		_ = me.sendAPIMessage(s, fmt.Sprintf("Missing public key %s", err))
 		return
@@ -313,7 +314,7 @@ func (me *SSHServer) handleLinkRequestAPI(s Session) {
 	me.config.Stats.APILinkRequest()
 }
 
-func (me *SSHServer) handleAPILink(s Session) {
+func (me *SSHServer) handleAPILink(s ssh.Session) {
 	args := s.Command()[1:]
 	if len(args) == 0 {
 		me.handleLinkGenAPI(s)
@@ -322,8 +323,8 @@ func (me *SSHServer) handleAPILink(s Session) {
 	}
 }
 
-func (me *SSHServer) handleAPIUnlink(s Session) {
-	key, err := s.KeyText()
+func (me *SSHServer) handleAPIUnlink(s ssh.Session) {
+	key, err := keyText(s)
 	if err != nil {
 		log.Println(err)
 		_ = me.sendAPIMessage(s, "Missing key")
