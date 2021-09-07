@@ -16,6 +16,7 @@ import (
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/server/db"
 	"github.com/charmbracelet/charm/server/storage"
+	lfs "github.com/charmbracelet/charm/server/storage/local"
 	"github.com/meowgorithm/babylogger"
 	"goji.io"
 	"goji.io/pat"
@@ -271,7 +272,7 @@ func (s *HTTPServer) handleGetFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch f.(type) {
-	case *charm.DirFile:
+	case *lfs.DirFile:
 		w.Header().Set("Content-Type", "application/json")
 	default:
 		w.Header().Set("Content-Type", "application/octet-stream")

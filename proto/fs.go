@@ -1,8 +1,6 @@
 package proto
 
 import (
-	"bytes"
-	"fmt"
 	"io/fs"
 	"time"
 )
@@ -14,30 +12,6 @@ type FileInfo struct {
 	Size    int64       `json:"size"`
 	ModTime time.Time   `json:"modtime"`
 	Mode    fs.FileMode `json:"mode"`
-}
-
-// DirFile is a fs.File that represents a directory entry.
-type DirFile struct {
-	Buffer   *bytes.Buffer
-	FileInfo fs.FileInfo
-}
-
-// Stat returns a fs.FileInfo.
-func (df *DirFile) Stat() (fs.FileInfo, error) {
-	if df.FileInfo == nil {
-		return nil, fmt.Errorf("missing file info")
-	}
-	return df.FileInfo, nil
-}
-
-// Read reads from the DirFile and satisfies fs.FS
-func (df *DirFile) Read(buf []byte) (int, error) {
-	return df.Buffer.Read(buf)
-}
-
-// Close is a no-op but satisfies fs.FS
-func (df *DirFile) Close() error {
-	return nil
 }
 
 // Add execute permissions to an fs.FileMode to mirror read permissions.
