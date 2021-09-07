@@ -54,6 +54,30 @@ type sysFuture struct {
 	path string
 }
 
+// DirFile is a fs.File that represents a directory entry.
+type DirFile struct {
+	Buffer   *bytes.Buffer
+	FileInfo fs.FileInfo
+}
+
+// Stat returns a fs.FileInfo.
+func (df *DirFile) Stat() (fs.FileInfo, error) {
+	if df.FileInfo == nil {
+		return nil, fmt.Errorf("missing file info")
+	}
+	return df.FileInfo, nil
+}
+
+// Read reads from the DirFile and satisfies fs.FS
+func (df *DirFile) Read(buf []byte) (int, error) {
+	return df.Buffer.Read(buf)
+}
+
+// Close is a no-op but satisfies fs.FS
+func (df *DirFile) Close() error {
+	return nil
+}
+
 // NewFS returns an FS with the default configuration.
 func NewFS() (*FS, error) {
 	cc, err := client.NewClientWithDefaults()

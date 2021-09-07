@@ -12,6 +12,7 @@ type FileInfo struct {
 	Size    int64       `json:"size"`
 	ModTime time.Time   `json:"modtime"`
 	Mode    fs.FileMode `json:"mode"`
+	Files   []FileInfo  `json:"files,omitempty"`
 }
 
 // Add execute permissions to an fs.FileMode to mirror read permissions.
