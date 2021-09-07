@@ -99,9 +99,9 @@ func NewFSWithClient(cc *client.Client) (*FS, error) {
 
 // Open implements Open for fs.FS.
 func (cfs *FS) Open(name string) (fs.File, error) {
-	f := &File{}
-	fi := &FileInfo{}
-	fi.FileInfo.Name = path.Base(name)
+	f := &File{
+		info: &FileInfo{},
+	}
 	ep, err := cfs.encryptPath(name)
 	if err != nil {
 		return nil, pathError(name, err)
@@ -115,39 +115,41 @@ func (cfs *FS) Open(name string) (fs.File, error) {
 	}
 	defer resp.Body.Close()
 
-	m, err := strconv.ParseUint(resp.Header.Get("X-File-Mode"), 10, 32)
-	if err != nil {
-		return nil, pathError(name, err)
-	}
-	fi.FileInfo.Mode = fs.FileMode(m)
-
 	switch resp.Header.Get("Content-Type") {
 	case "application/json":
-		fis := make([]*FileInfo, 0)
+		dir := &charm.FileInfo{}
 		dec := json.NewDecoder(resp.Body)
-		err = dec.Decode(&fis)
+		err = dec.Decode(&dir)
 		if err != nil {
 			return nil, pathError(name, err)
 		}
-		fi.FileInfo.IsDir = true
+		f.info.FileInfo = *dir
 		var des []fs.DirEntry
-		for _, de := range fis {
-			p := fmt.Sprintf("%s/%s", strings.Trim(ep, "/"), de.Name())
+		for _, de := range dir.Files {
+			p := fmt.Sprintf("%s/%s", strings.Trim(ep, "/"), de.Name)
 			sf := sysFuture{
 				fs:   cfs,
 				path: p,
 			}
-			dn, err := cfs.crypt.DecryptLookupField(de.Name())
+			dn, err := cfs.crypt.DecryptLookupField(de.Name)
 			if err != nil {
 				return nil, pathError(name, err)
 			}
-			de.sys = sf
-			de.FileInfo.Name = dn
-			des = append(des, de)
+			dei := FileInfo{
+				FileInfo: de,
+				sys:      sf,
+			}
+			dei.FileInfo.Name = dn
+			des = append(des, &dei)
 		}
-		fi.sys = des
-		f.info = fi
+		f.info.sys = des
 	case "application/octet-stream":
+		f.info.FileInfo.Name = path.Base(name)
+		m, err := strconv.ParseUint(resp.Header.Get("X-File-Mode"), 10, 32)
+		if err != nil {
+			return nil, pathError(name, err)
+		}
+		f.info.FileInfo.Mode = fs.FileMode(m)
 		b := bytes.NewBuffer(nil)
 		dec, err := cfs.crypt.NewDecryptedReader(resp.Body)
 		if err != nil {
@@ -162,9 +164,9 @@ func (cfs *FS) Open(name string) (fs.File, error) {
 			return nil, pathError(name, err)
 		}
 		f.data = io.NopCloser(b)
-		fi.FileInfo.Size = int64(b.Len())
-		fi.FileInfo.ModTime = modTime
-		f.info = fi
+		f.info.FileInfo.Size = int64(b.Len())
+		f.info.FileInfo.ModTime = modTime
+		f.info.FileInfo.IsDir = false
 	default:
 		return nil, pathError(name, fmt.Errorf("invalid content-type returned from server"))
 	}
