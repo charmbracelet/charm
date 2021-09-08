@@ -111,6 +111,9 @@ func (cr *Crypt) DecryptLookupField(field string) (string, error) {
 		return "", err
 	}
 	pt, err := siv.Decrypt([]byte(cr.key.Key[:32]), ct, nil)
+	if err != nil {
+		return "", err
+	}
 	return string(pt), nil
 }
 
