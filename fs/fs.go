@@ -102,7 +102,7 @@ func (cfs *FS) Open(name string) (fs.File, error) {
 	f := &File{
 		info: &FileInfo{},
 	}
-	ep, err := cfs.encryptPath(name)
+	ep, err := cfs.EncryptPath(name)
 	if err != nil {
 		return nil, pathError(name, err)
 	}
@@ -220,7 +220,7 @@ func (cfs *FS) WriteFile(name string, src fs.File) error {
 		return err
 	}
 	w.Close()
-	ep, err := cfs.encryptPath(name)
+	ep, err := cfs.EncryptPath(name)
 	if err != nil {
 		return err
 	}
@@ -234,7 +234,7 @@ func (cfs *FS) WriteFile(name string, src fs.File) error {
 
 // Remove deletes a file from the Charm Cloud server.
 func (cfs *FS) Remove(name string) error {
-	ep, err := cfs.encryptPath(name)
+	ep, err := cfs.EncryptPath(name)
 	if err != nil {
 		return err
 	}
@@ -354,7 +354,7 @@ func (fi *FileInfo) Info() (fs.FileInfo, error) {
 	return fi, nil
 }
 
-func (cfs *FS) encryptPath(path string) (string, error) {
+func (cfs *FS) EncryptPath(path string) (string, error) {
 	eps := make([]string, 0)
 	ps := strings.Split(path, "/")
 	for _, p := range ps {
@@ -367,7 +367,7 @@ func (cfs *FS) encryptPath(path string) (string, error) {
 	return strings.Join(eps, "/"), nil
 }
 
-func (cfs *FS) decryptPath(path string) (string, error) {
+func (cfs *FS) DecryptPath(path string) (string, error) {
 	dps := make([]string, 0)
 	ps := strings.Split(path, "/")
 	for _, p := range ps {
