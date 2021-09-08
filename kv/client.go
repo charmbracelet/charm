@@ -106,7 +106,11 @@ func (kv *KV) restoreSeq(seq uint64) error {
 
 func (kv *KV) getSeq(name string) (uint64, error) {
 	var sm *charm.SeqMsg
-	err := kv.cc.AuthedJSONRequest("GET", fmt.Sprintf("/v1/seq/%s", name), nil, &sm)
+	name, err := kv.fs.EncryptPath(name)
+	if err != nil {
+		return 0, err
+	}
+	err = kv.cc.AuthedJSONRequest("GET", fmt.Sprintf("/v1/seq/%s", name), nil, &sm)
 	if err != nil {
 		return 0, err
 	}
@@ -115,7 +119,11 @@ func (kv *KV) getSeq(name string) (uint64, error) {
 
 func (kv *KV) nextSeq(name string) (uint64, error) {
 	var sm *charm.SeqMsg
-	err := kv.cc.AuthedJSONRequest("POST", fmt.Sprintf("/v1/seq/%s", name), nil, &sm)
+	name, err := kv.fs.EncryptPath(name)
+	if err != nil {
+		return 0, err
+	}
+	err = kv.cc.AuthedJSONRequest("POST", fmt.Sprintf("/v1/seq/%s", name), nil, &sm)
 	if err != nil {
 		return 0, err
 	}
