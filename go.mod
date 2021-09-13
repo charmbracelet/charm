@@ -8,7 +8,8 @@ require (
 	github.com/auth0/go-jwt-middleware v1.0.0
 	github.com/calmh/randomart v1.1.0
 	github.com/charmbracelet/bubbles v0.8.0
-	github.com/charmbracelet/bubbletea v0.14.1
+	github.com/charmbracelet/bubbletea v0.15.0
+	github.com/charmbracelet/keygen v0.1.2
 	github.com/charmbracelet/lipgloss v0.3.0
 	github.com/charmbracelet/wish v0.0.0-00010101000000-000000000000
 	github.com/dgraph-io/badger/v3 v3.2011.1
@@ -26,7 +27,6 @@ require (
 	github.com/mattn/go-isatty v0.0.14-0.20210829144114-504425e14f74
 	github.com/meowgorithm/babyenv v1.3.1
 	github.com/meowgorithm/babylogger v1.2.0
-	github.com/mikesmitty/edkey v0.0.0-20170222072505-3356ea4e686a
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/muesli/go-app-paths v0.2.1
 	github.com/muesli/reflow v0.3.0
@@ -35,7 +35,7 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/stretchr/testify v1.6.1 // indirect
 	goji.io v2.0.2+incompatible
-	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
+	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 	google.golang.org/protobuf v1.25.0 // indirect
 	modernc.org/sqlite v1.10.8
 )
@@ -54,6 +54,7 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
+	github.com/mikesmitty/edkey v0.0.0-20170222072505-3356ea4e686a // indirect
 	github.com/muesli/termenv v0.9.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect

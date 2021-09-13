@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/charmbracelet/charm/keygen"
 	"github.com/charmbracelet/charm/server"
+	"github.com/charmbracelet/keygen"
 	"github.com/spf13/cobra"
 )
 
@@ -33,7 +33,7 @@ var (
 				cfg.DataDir = serverDataDir
 			}
 			sp := fmt.Sprintf("%s/.ssh", cfg.DataDir)
-			kp, err := keygen.NewSSHKeyPair(sp, "charm_server", []byte(""), "rsa")
+			kp, err := keygen.NewWithWrite(sp, "charm_server", []byte(""), keygen.RSA)
 			if err != nil {
 				return err
 			}
