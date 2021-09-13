@@ -12,8 +12,8 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/charmbracelet/charm/keygen"
 	charm "github.com/charmbracelet/charm/proto"
+	"github.com/charmbracelet/keygen"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/meowgorithm/babyenv"
 	"github.com/mitchellh/go-homedir"
@@ -98,7 +98,7 @@ func NewClientWithDefaults() (*Client, error) {
 		if err != nil {
 			return nil, err
 		}
-		_, err = keygen.NewSSHKeyPair(dp, "charm", []byte(""), "rsa")
+		_, err = keygen.NewWithWrite(dp, "charm", []byte(""), keygen.RSA)
 		if err != nil {
 			return nil, err
 		}

@@ -7,10 +7,10 @@ import (
 	"os"
 
 	"github.com/charmbracelet/charm/client"
-	"github.com/charmbracelet/charm/keygen"
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/ui/common"
 	keygenTUI "github.com/charmbracelet/charm/ui/keygen"
+	"github.com/charmbracelet/keygen"
 	"github.com/mattn/go-isatty"
 )
 
@@ -65,7 +65,7 @@ func initCharmClient(kg keygenSetting) *client.Client {
 					printFormatted(keygenError + err.Error())
 					os.Exit(1)
 				}
-				_, err = keygen.NewSSHKeyPair(dp, "charm", []byte(""), "rsa")
+				_, err = keygen.NewWithWrite(dp, "charm", []byte(""), keygen.RSA)
 				if err != nil {
 					printFormatted(keygenError + err.Error())
 					os.Exit(1)

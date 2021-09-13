@@ -7,8 +7,8 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm/client"
-	"github.com/charmbracelet/charm/keygen"
 	"github.com/charmbracelet/charm/ui/common"
+	"github.com/charmbracelet/keygen"
 	"github.com/muesli/reflow/indent"
 )
 
@@ -147,7 +147,7 @@ func GenerateKeys(host string) tea.Cmd {
 		if err != nil {
 			return FailedMsg{err}
 		}
-		_, err = keygen.NewSSHKeyPair(dp, "charm", nil, "rsa")
+		_, err = keygen.NewWithWrite(dp, "charm", nil, keygen.RSA)
 		if err != nil {
 			return FailedMsg{err}
 		}
