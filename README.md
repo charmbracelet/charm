@@ -20,11 +20,11 @@ running `charm serve`.
 
 ## Charm KV
 
-A powerful embeddable key-value store built on [BadgerDB][badger]. Store user
+A powerful, embeddable key-value store built on [BadgerDB][badger]. Store user
 data, configuration, create a cache or even store large files as values.
 
-When you use Charm KV, your users get cloud backup, the ability to self-host,
-multi-machine syncing, and encryption for free.
+When you use Charm KV your users automatically get cloud backup, multi-machine
+syncing, end-to-end encryption, and the option to self-host.
 
 ```go
 import "github.com/charmbracelet/charm/kv"
