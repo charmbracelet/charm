@@ -55,7 +55,7 @@ func NewSSHServer(cfg *Config) (*SSHServer, error) {
 		wish.WithAddress(addr),
 		wish.WithHostKeyPEM(cfg.PrivateKey),
 		wish.WithPublicKeyAuth(s.authHandler),
-		wish.WithMiddlewares(
+		wish.WithMiddleware(
 			s.sshMiddleware(),
 		),
 	)
