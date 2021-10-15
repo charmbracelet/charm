@@ -1,7 +1,6 @@
 package server
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -31,8 +30,6 @@ type HTTPServer struct {
 	fstore  storage.FileStore
 	cfg     *Config
 	handler http.Handler
-	tlsKey  []byte
-	tlsCert []byte
 }
 
 // NewHTTPServer returns a new *HTTPServer with the specified Config.
@@ -46,8 +43,6 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 	s := &HTTPServer{
 		cfg:     cfg,
 		handler: mux,
-		tlsKey:  cfg.TLSKey,
-		tlsCert: cfg.TLSCert,
 	}
 
 	var jwtMiddleware func(http.Handler) http.Handler
@@ -78,28 +73,11 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 // Start starts the HTTP server on the port specified in the Config.
 func (s *HTTPServer) Start() {
 	useTls := s.cfg.HTTPScheme == "https"
-	tlsCfg := &tls.Config{}
 	listenAddr := fmt.Sprintf(":%d", s.cfg.HTTPPort)
 	server := &http.Server{
 		Addr:      listenAddr,
 		Handler:   s.handler,
-		TLSConfig: tlsCfg,
-	}
-
-	// TLS key and cert files take precedence over passing them as environment variables.
-	if useTls {
-		if len(s.cfg.TLSKey) > 0 && len(s.cfg.TLSCert) > 0 {
-			cert, err := tls.X509KeyPair(s.tlsCert, s.tlsKey)
-			if err != nil {
-				log.Fatalf("couldn't load TLS key pair: %s", err)
-			}
-			tlsCfg.Certificates = []tls.Certificate{cert}
-		} else if s.cfg.TLSKeyFile == "" || s.cfg.TLSCertFile == "" {
-			log.Fatal("TLS key and cert files must be specified if using TLS")
-		}
-		if s.cfg.TLSGetCertFn != nil {
-			tlsCfg.GetCertificate = s.cfg.TLSGetCertFn
-		}
+		TLSConfig: s.cfg.TLSConfig,
 	}
 
 	go func() {
