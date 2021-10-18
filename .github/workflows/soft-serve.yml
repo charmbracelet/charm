@@ -14,10 +14,23 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Clone internal repositories
+        run: |
+          git clone -b main https://${{ secrets.ACCESS_TOKEN }}@github.com/charmbracelet/wish ../wish
+
       - name: Push to Soft-Serve
         uses: charmbracelet/soft-serve-action@v1
         with:
-          server: "beta.charm.sh"
+          server: "git.charm.sh"
           ssh-key: "${{ secrets.CHARM_SOFT_SERVE_KEY }}"
           name: "charm"
 
+      - name: Push vendor to Soft-Serve
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        run: |
+          git checkout -b vendor
+          go mod vendor
+          git add vendor
+          git commit -m 'vendor'
+          git push -f soft-serve vendor

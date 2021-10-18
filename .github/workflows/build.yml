@@ -20,7 +20,7 @@ jobs:
 
       - name: Clone internal repositories
         run: |
-          git clone -b master https://${{ secrets.ACCESS_TOKEN }}@github.com/charmbracelet/wish ../wish
+          git clone -b main https://${{ secrets.ACCESS_TOKEN }}@github.com/charmbracelet/wish ../wish
 
       - name: Download Go modules
         run: go mod download
