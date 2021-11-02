@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime/debug"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm/client"
@@ -54,7 +55,11 @@ func init() {
 		rootCmd.SetVersionTemplate(vt[:len(vt)-1] + " (" + CommitSHA[0:7] + ")\n")
 	}
 	if Version == "" {
-		Version = "unknown (built from source)"
+		if info, ok := debug.ReadBuildInfo(); ok && info.Main.Sum != "" {
+			Version = info.Main.Version
+		} else {
+			Version = "unknown (built from source)"
+		}
 	}
 	rootCmd.Version = Version
 
