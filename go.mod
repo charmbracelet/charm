@@ -8,9 +8,9 @@ require (
 	github.com/auth0/go-jwt-middleware v1.0.0
 	github.com/calmh/randomart v1.1.0
 	github.com/charmbracelet/bubbles v0.8.0
-	github.com/charmbracelet/bubbletea v0.15.0
+	github.com/charmbracelet/bubbletea v0.19.0
 	github.com/charmbracelet/keygen v0.1.2
-	github.com/charmbracelet/lipgloss v0.3.0
+	github.com/charmbracelet/lipgloss v0.4.0
 	github.com/charmbracelet/wish v0.0.0-00010101000000-000000000000
 	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -54,6 +54,7 @@ require (
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/mikesmitty/edkey v0.0.0-20170222072505-3356ea4e686a // indirect
+	github.com/muesli/ansi v0.0.0-20211018074035-2e021307bc4b // indirect
 	github.com/muesli/termenv v0.9.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
