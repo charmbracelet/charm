@@ -170,7 +170,7 @@ go install
 ## Self-Hosting
 
 Charm libraries point at our Charmbracelet, Inc. servers by default (that’s
-api.charm.sh), however it's very easy for users to host their own Charm
+cloud.charm.sh), however it's very easy for users to host their own Charm
 instances. The `charm` binary is a single, statically-linked executable capable
 of serving an entire Charm instance:
 
@@ -184,6 +184,30 @@ choosing:
 ```bash
 export CHARM_HOST=burrito.example.com
 ```
+
+### Systemd
+
+Create a file called `/etc/systemd/system/charm.service`:
+
+```config
+[Unit]
+Description=The mystical Charm Cloud 🌟
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+Environment=CHARM_SERVER_DATA_DIR=/var/lib/charm
+ExecStart=/usr/bin/charm serve
+
+[Install]
+WantedBy=multi-user.target
+```
+
+* Set the proper `charm` binary path in `ExecStart=`
+* Set where the data should be stored at in `CHARM_SERVER_DATA_DIR` 
 
 ### Docker
 
