@@ -11,7 +11,7 @@ before:
 builds:
   - id: "charm"
     binary: "charm"
-    ldflags: -s -w -X main.Version={{ .Version }} -X main.CommitSHA={{ .Commit }}
+    ldflags: -s -w -X main.Version=v{{ .Version }} -X main.CommitSHA={{ .Commit }}
     goos:
       - linux
       # - freebsd
@@ -29,10 +29,12 @@ builds:
 
 dockers:
   - image_templates:
-      - "charmbracelet/charm:latest-amd64"
-      - "charmbracelet/charm:{{ .Tag }}-amd64"
-      - "ghcr.io/charmbracelet/charm:latest-amd64"
-      - "ghcr.io/charmbracelet/charm:{{ .Tag }}-amd64"
+      - charmcli/charm:latest-amd64
+      - charmcli/charm:{{ .Tag }}-amd64
+      - charmcli/charm:v{{ .Major }}.{{ .Minor }}-amd64
+      - ghcr.io/charmbracelet/charm:latest-amd64
+      - ghcr.io/charmbracelet/charm:{{ .Tag }}-amd64
+      - ghcr.io/charmbracelet/charm:v{{ .Major }}.{{ .Minor }}-amd64
     ids: [charm]
     goarch: amd64
     build_flag_templates:
@@ -48,10 +50,12 @@ dockers:
     dockerfile: Dockerfile
     use: buildx
   - image_templates:
-      - "charmbracelet/charm:latest-arm64"
-      - "charmbracelet/charm:{{ .Tag }}-arm64"
-      - "ghcr.io/charmbracelet/charm:latest-arm64"
-      - "ghcr.io/charmbracelet/charm:{{ .Tag }}-arm64"
+      - charmcli/charm:latest-arm64
+      - charmcli/charm:{{ .Tag }}-arm64
+      - charmcli/charm:v{{ .Major }}.{{ .Minor }}-arm64
+      - ghcr.io/charmbracelet/charm:latest-arm64
+      - ghcr.io/charmbracelet/charm:{{ .Tag }}-arm64
+      - ghcr.io/charmbracelet/charm:v{{ .Major }}.{{ .Minor }}-arm64
     ids: [charm]
     goarch: arm64
     goarm: ''
@@ -68,10 +72,12 @@ dockers:
     dockerfile: Dockerfile
     use: buildx
   - image_templates:
-      - "charmbracelet/charm:latest-armhf"
-      - "charmbracelet/charm:{{ .Tag }}-armhf"
-      - "ghcr.io/charmbracelet/charm:latest-armhf"
-      - "ghcr.io/charmbracelet/charm:{{ .Tag }}-armhf"
+      - charmcli/charm:latest-armv7
+      - charmcli/charm:{{ .Tag }}-armv7
+      - charmcli/charm:v{{ .Major }}.{{ .Minor }}-armv7
+      - ghcr.io/charmbracelet/charm:latest-armv7
+      - ghcr.io/charmbracelet/charm:{{ .Tag }}-armv7
+      - ghcr.io/charmbracelet/charm:v{{ .Major }}.{{ .Minor }}-armv7
     ids: [charm]
     goarch: arm
     goarm: 7
@@ -89,29 +95,36 @@ dockers:
     use: buildx
 
 docker_manifests:
-  - name_template: charmbracelet/charm:{{ .Tag }}
+  - name_template: charmcli/charm:{{ .Tag }}
     image_templates:
-      - charmbracelet/charm:{{ .Tag }}-amd64
-      - charmbracelet/charm:{{ .Tag }}-arm64
-      - charmbracelet/charm:{{ .Tag }}-armhf
-    skip_push: true
+      - charmcli/charm:{{ .Tag }}-amd64
+      - charmcli/charm:{{ .Tag }}-arm64
+      - charmcli/charm:{{ .Tag }}-armv7
   - name_template: ghcr.io/charmbracelet/charm:{{ .Tag }}
     image_templates:
       - ghcr.io/charmbracelet/charm:{{ .Tag }}-amd64
       - ghcr.io/charmbracelet/charm:{{ .Tag }}-arm64
-      - ghcr.io/charmbracelet/charm:{{ .Tag }}-armhf
-    skip_push: true
-  - name_template: charmbracelet/charm:latest
+      - ghcr.io/charmbracelet/charm:{{ .Tag }}-armv7
+  - name_template: charmcli/charm:v{{ .Major }}.{{ .Minor }}
     image_templates:
-      - charmbracelet/charm:latest-amd64
-      - charmbracelet/charm:latest-arm64
-      - charmbracelet/charm:latest-armhf
-    skip_push: true
+      - charmcli/charm:v{{ .Major }}.{{ .Minor }}-amd64
+      - charmcli/charm:v{{ .Major }}.{{ .Minor }}-arm64
+      - charmcli/charm:v{{ .Major }}.{{ .Minor }}-armv7
+  - name_template: ghcr.io/charmbracelet/charm:v{{ .Major }}.{{ .Minor }}
+    image_templates:
+      - ghcr.io/charmbracelet/charm:v{{ .Major }}.{{ .Minor }}-amd64
+      - ghcr.io/charmbracelet/charm:v{{ .Major }}.{{ .Minor }}-arm64
+      - ghcr.io/charmbracelet/charm:v{{ .Major }}.{{ .Minor }}-armv7
+  - name_template: charmcli/charm:latest
+    image_templates:
+      - charmcli/charm:latest-amd64
+      - charmcli/charm:latest-arm64
+      - charmcli/charm:latest-armv7
   - name_template: ghcr.io/charmbracelet/charm:latest
     image_templates:
       - ghcr.io/charmbracelet/charm:latest-amd64
       - ghcr.io/charmbracelet/charm:latest-arm64
-      - ghcr.io/charmbracelet/charm:latest-armhf
+      - ghcr.io/charmbracelet/charm:latest-armv7
 
 archives:
   - id: default
