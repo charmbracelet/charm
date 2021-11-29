@@ -178,19 +178,46 @@ of serving an entire Charm instance:
 charm serve
 ```
 
-You can also use the Docker image, which has the benefit of putting the server
-behind HTTPS:
-
-```bash
-docker pull charm:latest
-docker run charm
-```
-
 To change hosts users can set `CHARM_HOST` to the domain or IP or their
 choosing:
 
 ```bash
 export CHARM_HOST=burrito.example.com
+```
+
+### Docker
+
+Here are some example snippets to help you run `charm` as a container.
+
+```sh
+docker run -d \
+  --name=charm \
+  -v /path/to/data:/data \
+  -p 35353:35353 \ # SSH
+  -p 35354:35354 \ # HTTP
+  -p 35355:35355 \ # Stats
+  -p 35356:35356 \ # Health check
+  --restart unless-stopped \
+  charmcli/charm:latest
+```
+
+or by using docker-compose:
+
+```yaml
+---
+version: "3.1"
+services:
+  soft-serve:
+    image: charmcli/charm:latest
+    container_name: charm
+    volumes:
+      - /path/to/data:/data
+    ports:
+      - 35353:35353
+      - 35354:35354
+      - 35355:35355
+      - 35356:35356
+    restart: unless-stopped
 ```
 
 ## Projects using Charm
