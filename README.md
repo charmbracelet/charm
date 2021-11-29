@@ -185,7 +185,15 @@ choosing:
 export CHARM_HOST=burrito.example.com
 ```
 
+### TLS
+
+To set up TLS, you should set `CHARM_SERVER_HTTP_SCHEME` environment variable to
+`https` and specify `CHARM_SERVER_HOST`, `CHARM_SERVER_TLS_KEY_FILE`, and
+`CHARM_SERVER_TLS_CERT_FILE` file paths.
+
 ### Systemd
+
+Here's an example to help you run `charm` as a systemd service:
 
 Create a file called `/etc/systemd/system/charm.service`:
 
@@ -208,6 +216,9 @@ WantedBy=multi-user.target
 
 * Set the proper `charm` binary path in `ExecStart=`
 * Set where the data should be stored at in `CHARM_SERVER_DATA_DIR` 
+
+If you're using TLS, don't forget to set the appropriate environment variables
+in the systemd service file as mentioned above.
 
 ### Docker
 
@@ -243,6 +254,10 @@ services:
       - 35356:35356
     restart: unless-stopped
 ```
+
+To set up TLS under Docker, consider using a reverse proxy such as
+[traefik](https://doc.traefik.io/traefik/https/overview/) or a web server with
+automatic HTTPS like [caddy](https://caddyserver.com/docs/automatic-https).
 
 ## Projects using Charm
 
