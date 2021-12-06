@@ -9,19 +9,13 @@ require (
 	github.com/charmbracelet/bubbletea v0.19.0
 	github.com/charmbracelet/keygen v0.1.2
 	github.com/charmbracelet/lipgloss v0.4.0
-	github.com/charmbracelet/wish v0.0.0-00010101000000-000000000000
+	github.com/charmbracelet/wish v0.1.0
 	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/form3tech-oss/jwt-go v3.2.2+incompatible
 	github.com/gliderlabs/ssh v0.3.3
-	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
-	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/jacobsa/crypto v0.0.0-20190317225127-9f44e2d11115
-	github.com/jacobsa/oglematchers v0.0.0-20150720000706-141901ea67cd // indirect
-	github.com/jacobsa/oglemock v0.0.0-20150831005832-e94d794d06ff // indirect
-	github.com/jacobsa/ogletest v0.0.0-20170503003838-80d50a735a11 // indirect
-	github.com/jacobsa/reqtrace v0.0.0-20150505043853-245c9e0234cb // indirect
 	github.com/mattn/go-isatty v0.0.14-0.20210829144114-504425e14f74
 	github.com/meowgorithm/babyenv v1.3.1
 	github.com/meowgorithm/babylogger v1.2.0
@@ -33,7 +27,6 @@ require (
 	github.com/spf13/cobra v1.0.0
 	goji.io v2.0.2+incompatible
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
-	google.golang.org/protobuf v1.25.0 // indirect
 	modernc.org/sqlite v1.10.8
 )
 
@@ -45,9 +38,15 @@ require (
 	github.com/containerd/console v1.0.2 // indirect
 	github.com/dgraph-io/ristretto v0.0.4-0.20210122082011-bb5d392ed82d // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
+	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
+	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/flatbuffers v1.12.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/jacobsa/oglematchers v0.0.0-20150720000706-141901ea67cd // indirect
+	github.com/jacobsa/oglemock v0.0.0-20150831005832-e94d794d06ff // indirect
+	github.com/jacobsa/ogletest v0.0.0-20170503003838-80d50a735a11 // indirect
+	github.com/jacobsa/reqtrace v0.0.0-20150505043853-245c9e0234cb // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
@@ -67,6 +66,7 @@ require (
 	golang.org/x/term v0.0.0-20210422114643-f5beecf764ed // indirect
 	golang.org/x/tools v0.0.0-20201124115921-2c860bdd6e78 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	google.golang.org/protobuf v1.25.0 // indirect
 	modernc.org/cc/v3 v3.33.5 // indirect
 	modernc.org/ccgo/v3 v3.9.4 // indirect
 	modernc.org/libc v1.9.5 // indirect
