@@ -225,13 +225,13 @@ in the systemd service file as mentioned above.
 Here are some example snippets to help you run `charm` as a container.
 
 ```sh
-docker run -d \
+docker run \
   --name=charm \
   -v /path/to/data:/data \
-  -p 35353:35353 \ # SSH
-  -p 35354:35354 \ # HTTP
-  -p 35355:35355 \ # Stats
-  -p 35356:35356 \ # Health check
+  -p 35353:35353 \
+  -p 35354:35354 \
+  -p 35355:35355 \
+  -p 35356:35356 \
   --restart unless-stopped \
   charmcli/charm:latest
 ```
