@@ -56,9 +56,9 @@ Charm热爱开源 • Charm loves open source
 
 [releases]: https://github.com/charmbracelet/charm/releases
 [docs]: https://pkg.go.dev/github.com/charmbracelet/charm?tab=doc
-[kv]: https://github.com/charmbracelet/charm/tree/master/kv
-[fs]: https://github.com/charmbracelet/charm/tree/master/fs
-[crypt]: https://github.com/charmbracelet/charm/tree/master/crypt
+[kv]: https://github.com/charmbracelet/charm/tree/main/kv
+[fs]: https://github.com/charmbracelet/charm/tree/main/fs
+[crypt]: https://github.com/charmbracelet/charm/tree/main/crypt
 [glow]: https://github.com/charmbracelet/glow
 [skate]: https://github.com/charmbracelet/skate
 [badger]: https://github.com/dgraph-io/badger
