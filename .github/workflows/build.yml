@@ -18,10 +18,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Clone internal repositories
-        run: |
-          git clone -b main https://${{ secrets.ACCESS_TOKEN }}@github.com/charmbracelet/wish ../wish
-
       - name: Download Go modules
         run: go mod download
 
