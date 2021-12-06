@@ -159,6 +159,7 @@ brews:
     tap:
       owner: charmbracelet
       name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     commit_author:
       name: "Christian Rocha"
       email: "christian@charm.sh"
