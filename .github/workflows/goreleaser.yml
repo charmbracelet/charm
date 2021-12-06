@@ -46,12 +46,11 @@ jobs:
         uses: docker/setup-buildx-action@v1
 
       - name: Run GoReleaser
-        env:
-          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         uses: goreleaser/goreleaser-action@v2
         with:
           distribution: goreleaser
           version: latest
           args: release --rm-dist --skip-sign
         env:
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
