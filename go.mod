@@ -2,8 +2,6 @@ module github.com/charmbracelet/charm
 
 go 1.17
 
-replace github.com/charmbracelet/wish => ../wish
-
 require (
 	github.com/auth0/go-jwt-middleware v1.0.0
 	github.com/calmh/randomart v1.1.0
