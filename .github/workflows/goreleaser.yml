@@ -5,6 +5,8 @@ on:
     tags:
       - v*.*.*
 
+concurrency: goreleaser
+
 permissions:
   contents: write
   packages: write
