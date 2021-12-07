@@ -14,18 +14,21 @@ builds:
     ldflags: -s -w -X main.Version=v{{ .Version }} -X main.CommitSHA={{ .Commit }}
     goos:
       - linux
-      # - freebsd
-      # - openbsd
+      - freebsd
+      - openbsd
       - darwin
-      # - windows
+      - windows
     goarch:
       - amd64
       - arm64
-      - 386
+      - '386'
       - arm
     goarm:
-      - 6
-      - 7
+      - '6'
+      - '7'
+    ignore:
+      - goos: windows
+        goarch: arm64
 
 dockers:
   - image_templates:
@@ -80,7 +83,7 @@ dockers:
       - ghcr.io/charmbracelet/charm:v{{ .Major }}.{{ .Minor }}-armv7
     ids: [charm]
     goarch: arm
-    goarm: 7
+    goarm: '7'
     build_flag_templates:
       - --platform=linux/arm32/v7
       - --label=org.opencontainers.image.title={{ .ProjectName }}
@@ -155,7 +158,7 @@ nfpms:
     bindir: /usr/bin
 
 brews:
-  - goarm: 6
+  - goarm: '6'
     tap:
       owner: charmbracelet
       name: homebrew-tap
