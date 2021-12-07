@@ -17,15 +17,22 @@ builds:
       # - freebsd
       # - openbsd
       - darwin
-      # - windows
+      - windows
     goarch:
       - amd64
       - arm64
-      - 386
+      - "386"
       - arm
     goarm:
-      - 6
-      - 7
+      - "6"
+      - "7"
+    ignore:
+      - goos: windows
+        goarch: arm64
+      - goos: windows
+        goarm: "6"
+      - goos: windows
+        goarm: "7"
 
 dockers:
   - image_templates:
@@ -58,7 +65,7 @@ dockers:
       - ghcr.io/charmbracelet/charm:v{{ .Major }}.{{ .Minor }}-arm64
     ids: [charm]
     goarch: arm64
-    goarm: ''
+    goarm: ""
     build_flag_templates:
       - --platform=linux/arm64/v8
       - --label=org.opencontainers.image.title={{ .ProjectName }}
@@ -80,7 +87,7 @@ dockers:
       - ghcr.io/charmbracelet/charm:v{{ .Major }}.{{ .Minor }}-armv7
     ids: [charm]
     goarch: arm
-    goarm: 7
+    goarm: "7"
     build_flag_templates:
       - --platform=linux/arm32/v7
       - --label=org.opencontainers.image.title={{ .ProjectName }}
@@ -155,7 +162,7 @@ nfpms:
     bindir: /usr/bin
 
 brews:
-  - goarm: 6
+  - goarm: "6"
     tap:
       owner: charmbracelet
       name: homebrew-tap
