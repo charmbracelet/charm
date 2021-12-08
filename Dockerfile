@@ -1,4 +1,7 @@
-FROM scratch
+FROM alpine:latest
+
+RUN apk update && apk add --update tzdata && rm -rf /var/cache/apk/*
+
 COPY charm /usr/local/bin/charm
 
 # Create /data directory

@@ -18,6 +18,7 @@ docker run \
   -p 35354:35354 \
   -p 35355:35355 \
   -p 35356:35356 \
+  -e TZ=America/New_York \
   --restart unless-stopped \
   charmcli/charm:latest
 ```
@@ -38,6 +39,8 @@ services:
       - 35354:35354
       - 35355:35355
       - 35356:35356
+    environment:
+      - TZ=America/New_York
     restart: unless-stopped
 ```
 
