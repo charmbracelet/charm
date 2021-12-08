@@ -102,14 +102,12 @@ func (cc *Client) cryptCheck() error {
 		if err != nil {
 			return err
 		}
-		now := time.Now()
 		k := base64.StdEncoding.EncodeToString(b)
 		ek := &charm.EncryptKey{}
 		ek.PublicKey = auth.PublicKey
 		ek.ID = uuid.New().String()
 		ek.Key = k
-		ek.CreatedAt = &now
-		err = cc.addEncryptKey(ek.PublicKey, ek.ID, ek.Key, ek.CreatedAt)
+		err = cc.addEncryptKey(ek.PublicKey, ek.ID, ek.Key, nil)
 		if err != nil {
 			return err
 		}
