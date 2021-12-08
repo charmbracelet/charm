@@ -9,7 +9,7 @@ require (
 	github.com/charmbracelet/bubbletea v0.19.0
 	github.com/charmbracelet/keygen v0.1.2
 	github.com/charmbracelet/lipgloss v0.4.0
-	github.com/charmbracelet/wish v0.1.0
+	github.com/charmbracelet/wish v0.1.1
 	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/form3tech-oss/jwt-go v3.2.2+incompatible
