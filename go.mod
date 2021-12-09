@@ -6,7 +6,7 @@ require (
 	github.com/auth0/go-jwt-middleware v1.0.0
 	github.com/calmh/randomart v1.1.0
 	github.com/charmbracelet/bubbles v0.8.0
-	github.com/charmbracelet/bubbletea v0.19.0
+	github.com/charmbracelet/bubbletea v0.19.1
 	github.com/charmbracelet/keygen v0.1.2
 	github.com/charmbracelet/lipgloss v0.4.0
 	github.com/charmbracelet/wish v0.1.1
