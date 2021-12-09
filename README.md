@@ -163,7 +163,7 @@ nix-env -iA nixpkgs.charm
 ```
 
 Or download a package or binary from the [releases][releases] page. All
-major platforms and architectures are supported, including ARM.
+major platforms and architectures are supported, including FreeBSD and ARM.
 
 You can also just build and install it yourself:
 

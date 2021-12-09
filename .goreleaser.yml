@@ -14,7 +14,7 @@ builds:
     ldflags: -s -w -X main.Version=v{{ .Version }} -X main.CommitSHA={{ .Commit }}
     goos:
       - linux
-      # - freebsd
+      - freebsd
       # - openbsd
       - darwin
       - windows
@@ -32,6 +32,14 @@ builds:
       - goos: windows
         goarm: "6"
       - goos: windows
+        goarm: "7"
+      - goos: freebsd
+        goarch: arm64
+      - goos: freebsd
+        goarch: "386"
+      - goos: freebsd
+        goarm: "6"
+      - goos: freebsd
         goarm: "7"
 
 dockers:
