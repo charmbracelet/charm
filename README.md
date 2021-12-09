@@ -191,7 +191,7 @@ choosing:
 export CHARM_HOST=burrito.example.com
 ```
 
-See instructions for [Systemd](https://github.com/charmbracelet/charm/blob/main/SYSTEMD.md) and [Docker](https://github.com/charmbracelet/charm/blob/main/DOCKER.md).
+See instructions for [Systemd](https://github.com/charmbracelet/charm/blob/main/systemd.md) and [Docker](https://github.com/charmbracelet/charm/blob/main/docker.md).
 
 ### TLS
 
