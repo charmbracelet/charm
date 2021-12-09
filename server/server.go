@@ -49,21 +49,8 @@ func DefaultConfig() *Config {
 	if err != nil {
 		log.Fatalf("could not read environment: %s", err)
 	}
-	dp := fmt.Sprintf("%s/db", cfg.DataDir)
-	err = storage.EnsureDir(dp, 0700)
-	if err != nil {
-		log.Fatalf("could not init sqlite path: %s", err)
-	}
-	db := sqlite.NewDB(dp)
-	fs, err := lfs.NewLocalFileStore(fmt.Sprintf("%s/files", cfg.DataDir))
-	if err != nil {
-		log.Fatalf("could not init file path: %s", err)
-	}
-	sts, err := sls.NewStats(fmt.Sprintf("%s/stats", cfg.DataDir))
-	if err != nil {
-		log.Fatalf("could not init stats db: %s", err)
-	}
-	return cfg.WithDB(db).WithFileStore(fs).WithStats(sts)
+
+	return cfg
 }
 
 // WithDB returns a Config with the provided DB interface implementation.
@@ -94,7 +81,8 @@ func (cfg *Config) WithKeys(publicKey []byte, privateKey []byte) *Config {
 
 // NewServer returns a *Server with the specified Config.
 func NewServer(cfg *Config) (*Server, error) {
-	s := &Server{Config: cfg}
+	s := &Server{}
+	s.init(cfg)
 	ss, err := NewSSHServer(cfg)
 	if err != nil {
 		return nil, err
@@ -114,4 +102,22 @@ func (srv *Server) Start() {
 		srv.http.Start()
 	}()
 	srv.ssh.Start()
+}
+
+func (srv *Server) init(cfg *Config) {
+	dp := fmt.Sprintf("%s/db", cfg.DataDir)
+	err := storage.EnsureDir(dp, 0700)
+	if err != nil {
+		log.Fatalf("could not init sqlite path: %s", err)
+	}
+	db := sqlite.NewDB(dp)
+	fs, err := lfs.NewLocalFileStore(fmt.Sprintf("%s/files", cfg.DataDir))
+	if err != nil {
+		log.Fatalf("could not init file path: %s", err)
+	}
+	sts, err := sls.NewStats(fmt.Sprintf("%s/stats", cfg.DataDir))
+	if err != nil {
+		log.Fatalf("could not init stats db: %s", err)
+	}
+	srv.Config = cfg.WithDB(db).WithFileStore(fs).WithStats(sts)
 }
