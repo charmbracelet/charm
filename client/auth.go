@@ -13,6 +13,7 @@ func (cc *Client) Auth() (*charm.Auth, error) {
 	cc.authLock.Lock()
 	defer cc.authLock.Unlock()
 
+	cfg := cc.Config
 	if cc.claims == nil || cc.claims.Valid() != nil {
 		auth := &charm.Auth{}
 		s, err := cc.sshSession()
@@ -29,7 +30,10 @@ func (cc *Client) Auth() (*charm.Auth, error) {
 		if err != nil {
 			return nil, charm.ErrAuthFailed{Err: err}
 		}
-		cc.httpScheme = auth.HTTPScheme
+		// Set HTTP scheme from the server if it's not set.
+		if cfg.HTTPScheme == "" {
+			cfg.HTTPScheme = auth.HTTPScheme
+		}
 		p := &jwt.Parser{}
 		token, _, err := p.ParseUnverified(auth.JWT, &jwt.StandardClaims{})
 		if err != nil {

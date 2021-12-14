@@ -24,11 +24,12 @@ var nameValidator = regexp.MustCompile("^[a-zA-Z0-9]{1,50}$")
 
 // Config contains the Charm client configuration.
 type Config struct {
-	Host     string `env:"CHARM_HOST" default:"cloud.charm.sh"`
-	SSHPort  int    `env:"CHARM_SSH_PORT" default:"35353"`
-	HTTPPort int    `env:"CHARM_HTTP_PORT" default:"35354"`
-	Debug    bool   `env:"CHARM_DEBUG" default:"false"`
-	Logfile  string `env:"CHARM_LOGFILE" default:""`
+	Host       string `env:"CHARM_HOST" default:"cloud.charm.sh"`
+	SSHPort    int    `env:"CHARM_SSH_PORT" default:"35353"`
+	HTTPPort   int    `env:"CHARM_HTTP_PORT" default:"35354"`
+	HTTPScheme string `env:"CHARM_HTTP_SCHEME"`
+	Debug      bool   `env:"CHARM_DEBUG" default:"false"`
+	Logfile    string `env:"CHARM_LOGFILE" default:""`
 }
 
 // Client is the Charm client.
@@ -38,7 +39,6 @@ type Client struct {
 	claims               *jwt.StandardClaims
 	authLock             *sync.Mutex
 	sshConfig            *ssh.ClientConfig
-	httpScheme           string
 	plainTextEncryptKeys []*charm.EncryptKey
 	authKeyPaths         []string
 	encryptKeyLock       *sync.Mutex

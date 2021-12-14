@@ -56,7 +56,7 @@ func (cc *Client) AuthedRequest(method string, path string, headers http.Header,
 		return nil, err
 	}
 	jwt := auth.JWT
-	req, err := http.NewRequest(method, fmt.Sprintf("%s://%s:%d%s", cc.httpScheme, cfg.Host, cfg.HTTPPort, path), reqBody)
+	req, err := http.NewRequest(method, fmt.Sprintf("%s://%s:%d%s", cfg.HTTPScheme, cfg.Host, cfg.HTTPPort, path), reqBody)
 	if err != nil {
 		return nil, err
 	}
