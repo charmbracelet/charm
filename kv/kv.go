@@ -56,9 +56,16 @@ func OpenWithDefaults(name string) (*KV, error) {
 	}
 	pn := filepath.Join(fmt.Sprintf("%s/kv/", dd), name)
 	opts := badger.DefaultOptions(pn).WithLoggingLevel(badger.ERROR)
+
 	// By default we have no logger as it will interfere with Bubble Tea
 	// rendering. Use Open with custom options to specify one.
 	opts.Logger = nil
+
+	// We default to a 10MB vlog max size (which BadgerDB turns into 20MB vlog
+	// files). The Badger default results in 2GB vlog files, which is quite
+	// large. This will limit the values to 10MB maximum size. If you need more,
+	// please use Open with custom options.
+	opts = opts.WithValueLogFileSize(10000000)
 	return Open(cc, name, opts)
 }
 
