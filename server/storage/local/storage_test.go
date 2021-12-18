@@ -2,7 +2,6 @@ package localstorage
 
 import (
 	"bytes"
-	"fmt"
 	"io/fs"
 	"io/ioutil"
 	"os"
@@ -53,7 +52,6 @@ func TestPut(t *testing.T) {
 		t.Fatalf("expected file %s to be a regular file", path)
 	}
 
-	fmt.Println(file.Name())
 	read, err := ioutil.ReadAll(file)
 	if string(read) != "hello world" {
 		t.Fatalf("expected content to be %s, got %s", content, string(read))
