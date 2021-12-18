@@ -31,65 +31,69 @@ func TestPut(t *testing.T) {
 
 	content := "hello world"
 	path := "/hello.txt"
-	buf = bytes.NewBufferString(content)
-	err = lfs.Put(charmID, path, buf, fs.FileMode(0644))
-	if err != nil {
-		t.Fatalf("expected no error when file path is %s, %v", path, err)
-	}
+	t.Run(path, func(t *testing.T) {
+		buf = bytes.NewBufferString(content)
+		err = lfs.Put(charmID, path, buf, fs.FileMode(0644))
+		if err != nil {
+			t.Fatalf("expected no error when file path is %s, %v", path, err)
+		}
 
-	file, err := os.Open(filepath.Join(tdir, charmID, path))
-	if err != nil {
-		t.Fatalf("expected no error when opening file %s", path)
-	}
+		file, err := os.Open(filepath.Join(tdir, charmID, path))
+		if err != nil {
+			t.Fatalf("expected no error when opening file %s", path)
+		}
+		defer file.Close()
 
-	fileInfo, err := file.Stat()
-	if err != nil {
-		t.Fatalf("expected no error when getting file info for %s", path)
-	}
+		fileInfo, err := file.Stat()
+		if err != nil {
+			t.Fatalf("expected no error when getting file info for %s", path)
+		}
 
-	if fileInfo.IsDir() {
-		t.Fatalf("expected file %s to be a regular file", path)
-	}
+		if fileInfo.IsDir() {
+			t.Fatalf("expected file %s to be a regular file", path)
+		}
 
-	read, err := ioutil.ReadAll(file)
-	if err != nil {
-		t.Fatalf("expected no error when reading file %s", path)
+		read, err := ioutil.ReadAll(file)
+		if err != nil {
+			t.Fatalf("expected no error when reading file %s", path)
 
-	}
-	if string(read) != content {
-		t.Fatalf("expected content to be %s, got %s", content, string(read))
-	}
-	file.Close()
+		}
+		if string(read) != content {
+			t.Fatalf("expected content to be %s, got %s", content, string(read))
+		}
+	})
 
 	content = "bar"
 	path = "/foo/hello.txt"
-	buf = bytes.NewBufferString(content)
-	err = lfs.Put(charmID, path, buf, fs.FileMode(0644))
-	if err != nil {
-		t.Fatalf("expected no error when file path is %s, %v", path, err)
-	}
+	t.Run(path, func(t *testing.T) {
+		buf = bytes.NewBufferString(content)
+		err = lfs.Put(charmID, path, buf, fs.FileMode(0644))
+		if err != nil {
+			t.Fatalf("expected no error when file path is %s, %v", path, err)
+		}
 
-	file, err = os.Open(filepath.Join(tdir, charmID, path))
-	if err != nil {
-		t.Fatalf("expected no error when opening file %s", path)
-	}
+		file, err := os.Open(filepath.Join(tdir, charmID, path))
+		if err != nil {
+			t.Fatalf("expected no error when opening file %s", path)
+		}
+		defer file.Close()
 
-	fileInfo, err = file.Stat()
-	if err != nil {
-		t.Fatalf("expected no error when getting file info for %s", path)
-	}
+		fileInfo, err := file.Stat()
+		if err != nil {
+			t.Fatalf("expected no error when getting file info for %s", path)
+		}
 
-	if fileInfo.IsDir() {
-		t.Fatalf("expected file %s to be a regular file", path)
-	}
+		if fileInfo.IsDir() {
+			t.Fatalf("expected file %s to be a regular file", path)
+		}
 
-	read, err = ioutil.ReadAll(file)
-	if err != nil {
-		t.Fatalf("expected no error when reading file %s", path)
+		read, err := ioutil.ReadAll(file)
+		if err != nil {
+			t.Fatalf("expected no error when reading file %s", path)
 
-	}
-	if string(read) != content {
-		t.Fatalf("expected content to be %s, got %s", content, string(read))
-	}
-	file.Close()
+		}
+		if string(read) != content {
+			t.Fatalf("expected content to be %s, got %s", content, string(read))
+		}
+	})
 }
