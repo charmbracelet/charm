@@ -91,8 +91,7 @@ func (lfs *LocalFileStore) Get(charmID string, path string) (fs.File, error) {
 // Put reads from the provided io.Reader and stores the data with the Charm ID
 // and path.
 func (lfs *LocalFileStore) Put(charmID string, path string, r io.Reader, mode fs.FileMode) error {
-	cpath := filepath.Clean(path)
-	if cpath == "/" {
+	if cpath := filepath.Clean(path); cpath == "/" {
 		return fmt.Errorf("invalid path specified: %s", cpath)
 	}
 
