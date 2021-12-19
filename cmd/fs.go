@@ -47,7 +47,7 @@ var (
 	}
 
 	fsCatCmd = &cobra.Command{
-		Use:    "cat PATH",
+		Use:    "cat [charm:]PATH",
 		Hidden: false,
 		Short:  "Output the content of the file at path.",
 		Args:   cobra.ExactArgs(1),
@@ -63,7 +63,7 @@ var (
 	}
 
 	fsRemoveCmd = &cobra.Command{
-		Use:    "rm PATH",
+		Use:    "rm [charm:]PATH",
 		Hidden: false,
 		Short:  "Remove file or directory at path",
 		Args:   cobra.ExactArgs(1),
@@ -71,7 +71,7 @@ var (
 	}
 
 	fsListCmd = &cobra.Command{
-		Use:    "ls PATH",
+		Use:    "ls [charm:]PATH",
 		Hidden: false,
 		Short:  "List file or directory at path",
 		Args:   cobra.ExactArgs(1),
@@ -79,7 +79,7 @@ var (
 	}
 
 	fsTreeCmd = &cobra.Command{
-		Use:    "tree PATH",
+		Use:    "tree [charm:]PATH",
 		Hidden: false,
 		Short:  "Print a file system tree from path.",
 		Args:   cobra.ExactArgs(1),
@@ -223,7 +223,7 @@ func fsCat(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	f, err := lsfs.Open(args[0])
+	f, err := lsfs.Open(normalizeRemotePath(args[0]))
 	if err != nil {
 		return err
 	}
@@ -245,7 +245,8 @@ func fsRemove(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	return lsfs.Remove(args[0])
+
+	return lsfs.Remove(normalizeRemotePath(args[0]))
 }
 
 func fsCopy(cmd *cobra.Command, args []string) error {
@@ -261,7 +262,7 @@ func fsList(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	f, err := lsfs.Open(args[0])
+	f, err := lsfs.Open(normalizeRemotePath(args[0]))
 	if err != nil {
 		return err
 	}
@@ -286,7 +287,7 @@ func fsTree(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	err = fs.WalkDir(lsfs, args[0], func(path string, d fs.DirEntry, err error) error {
+	err = fs.WalkDir(lsfs, normalizeRemotePath(args[0]), func(path string, d fs.DirEntry, err error) error {
 		fmt.Println(path)
 		return nil
 	})
@@ -330,4 +331,12 @@ func init() {
 	FSCmd.AddCommand(fsRemoveCmd)
 	FSCmd.AddCommand(fsListCmd)
 	FSCmd.AddCommand(fsTreeCmd)
+}
+
+func normalizeRemotePath(path string) string {
+	if strings.HasPrefix(path, "charm:") {
+		return path[6:]
+	}
+
+	return path
 }
