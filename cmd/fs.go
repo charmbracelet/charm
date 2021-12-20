@@ -253,7 +253,24 @@ func fsCopy(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	return lrfs.copy(args[0], args[1], isRecursive)
+
+	src := args[0]
+	dst := args[1]
+	if strings.HasPrefix(src, "charm:") {
+		return lrfs.copy(src, dst, isRecursive)
+	}
+
+	// `charm fs cp foo charm:` will copy foo to charm:/foo
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+
+	if !srcInfo.IsDir() && (dst == "charm:" || dst == "charm:/") {
+		dst = "charm:/" + filepath.Base(src)
+	}
+
+	return lrfs.copy(src, dst, isRecursive)
 }
 
 func fsList(cmd *cobra.Command, args []string) error {
