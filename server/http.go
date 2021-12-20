@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -71,7 +72,7 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 }
 
 // Start starts the HTTP server on the port specified in the Config.
-func (s *HTTPServer) Start() {
+func (s *HTTPServer) Start(ctx context.Context) {
 	useTls := s.cfg.HTTPScheme == "https"
 	listenAddr := fmt.Sprintf(":%d", s.cfg.HTTPPort)
 	server := &http.Server{
@@ -80,19 +81,46 @@ func (s *HTTPServer) Start() {
 		TLSConfig: s.cfg.TLSConfig,
 	}
 
+	healthServer := &http.Server{
+		Addr: fmt.Sprintf(":%s", s.cfg.HealthPort),
+	}
+
 	go func() {
-		err := http.ListenAndServe(fmt.Sprintf(":%d", s.cfg.HealthPort), nil)
-		if err != nil {
+		err := healthServer.ListenAndServe()
+		if err != nil && err != context.Canceled && err != http.ErrServerClosed {
 			log.Fatalf("http health endpoint server exited with error: %s", err)
 		}
 	}()
 
-	log.Printf("%s server listening on: %s", strings.ToUpper(s.cfg.HTTPScheme), listenAddr)
-	if useTls {
-		log.Fatalf("Server crashed: %s", server.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile))
-	} else {
-		log.Fatalf("Server crashed: %s", server.ListenAndServe())
+	go func() {
+		var err error
+		log.Printf("%s server listening on: %s", strings.ToUpper(s.cfg.HTTPScheme), listenAddr)
+		if useTls {
+			err = server.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile)
+		} else {
+			err = server.ListenAndServe()
+		}
+		if err != nil && err != http.ErrServerClosed && err != context.Canceled {
+			log.Fatalf("server crashed: %s", err)
+		}
+	}()
+
+	<-ctx.Done()
+
+	err := s.db.Close()
+	if err != nil {
+		log.Printf("unexpected error closing the database: %s", err)
 	}
+
+	err = healthServer.Shutdown(ctx)
+	if err != context.Canceled {
+		log.Printf("unexpected error shutting down health server: %s", err)
+	}
+	err = server.Shutdown(ctx)
+	if err != context.Canceled {
+		log.Printf("unexpected error shutting down http server: %s", err)
+	}
+	log.Println("http servers stopped")
 }
 
 func (s *HTTPServer) renderError(w http.ResponseWriter) {

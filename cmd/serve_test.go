@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -59,6 +60,8 @@ func TestServe(t *testing.T) {
 
 	assert.DirExists(t, filepath.Join(tempDir, "db"))
 	assert.Regexp(t, regexp.MustCompile("HTTP server listening on: :35354"), buf.String())
+	// helps with debugging if test fails
+	fmt.Println(buf.String())
 }
 
 func waitForServer(addr string) bool {

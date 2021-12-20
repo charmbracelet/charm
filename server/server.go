@@ -2,6 +2,7 @@
 package server
 
 import (
+	"context"
 	"crypto/tls"
 	"log"
 	"path/filepath"
@@ -97,11 +98,17 @@ func NewServer(cfg *Config) (*Server, error) {
 }
 
 // Start starts the HTTP, SSH and stats HTTP servers for the Charm Cloud.
-func (srv *Server) Start() {
+func (srv *Server) Start(ctx context.Context) {
 	go func() {
-		srv.http.Start()
+		srv.http.Start(ctx)
 	}()
-	srv.ssh.Start()
+	srv.ssh.Start(ctx)
+
+	// close the stats database when we're done
+	err := srv.Config.Stats.Close()
+	if err != nil {
+		log.Printf("could not close stats database: %s", err)
+	}
 }
 
 func (srv *Server) init(cfg *Config) {

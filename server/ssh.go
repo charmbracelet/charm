@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
@@ -67,9 +68,22 @@ func NewSSHServer(cfg *Config) (*SSHServer, error) {
 }
 
 // Start serves the SSH protocol on the configured port.
-func (me *SSHServer) Start() {
+func (me *SSHServer) Start(ctx context.Context) {
 	log.Printf("Starting SSH server on %s", me.server.Addr)
-	log.Fatal(me.server.ListenAndServe())
+	go func() {
+		err := me.server.ListenAndServe()
+		if err != nil && err != context.Canceled && err != ssh.ErrServerClosed {
+			log.Fatalf("ssh server crashed: %s", err)
+		}
+	}()
+
+	<-ctx.Done()
+	err := me.server.Shutdown(ctx)
+	if err != context.Canceled {
+		log.Printf("unexpected error shutting down ssh server: %s", err)
+	}
+
+	log.Println("SSH server stopped")
 }
 
 func (me *SSHServer) sendAPIMessage(s ssh.Session, msg string) error {
