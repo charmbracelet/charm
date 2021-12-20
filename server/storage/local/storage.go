@@ -3,6 +3,7 @@ package localstorage
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -90,6 +91,10 @@ func (lfs *LocalFileStore) Get(charmID string, path string) (fs.File, error) {
 // Put reads from the provided io.Reader and stores the data with the Charm ID
 // and path.
 func (lfs *LocalFileStore) Put(charmID string, path string, r io.Reader, mode fs.FileMode) error {
+	if cpath := filepath.Clean(path); cpath == string(os.PathSeparator) {
+		return fmt.Errorf("invalid path specified: %s", cpath)
+	}
+
 	fp := filepath.Join(lfs.Path, charmID, path)
 	if mode.IsDir() {
 		return storage.EnsureDir(fp, mode)
