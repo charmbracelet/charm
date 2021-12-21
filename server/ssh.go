@@ -78,8 +78,7 @@ func (me *SSHServer) Start(ctx context.Context) {
 	}()
 
 	<-ctx.Done()
-	err := me.server.Shutdown(ctx)
-	if err != context.Canceled {
+	if err := me.server.Shutdown(ctx); err != context.Canceled {
 		log.Printf("unexpected error shutting down ssh server: %s", err)
 	}
 
