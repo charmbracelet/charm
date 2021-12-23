@@ -19,7 +19,7 @@ func (cc *Client) KeyForID(gid string) (*charm.EncryptKey, error) {
 	if len(cc.plainTextEncryptKeys) == 0 {
 		err := cc.cryptCheck()
 		if err != nil {
-			return nil, fmt.Errorf("failed crypt check")
+			return nil, fmt.Errorf("failed crypt check: %w", err)
 		}
 	}
 	if gid == "" {
