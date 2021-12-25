@@ -23,6 +23,7 @@ type Config struct {
 	HTTPScheme  string `env:"CHARM_SERVER_HTTP_SCHEME" default:"http"`
 	StatsPort   int    `env:"CHARM_SERVER_STATS_PORT" default:"35355"`
 	HealthPort  string `env:"CHARM_SERVER_HEALTH_PORT" default:"35356"`
+	TavernPort  string `env:"CHARM_SERVER_HEALTH_PORT" default:"35357"`
 	DataDir     string `env:"CHARM_SERVER_DATA_DIR" default:"./data"`
 	TLSKeyFile  string `env:"CHARM_SERVER_TLS_KEY_FILE" default:""`
 	TLSCertFile string `env:"CHARM_SERVER_TLS_CERT_FILE" default:""`
@@ -39,6 +40,7 @@ type Server struct {
 	Config *Config
 	ssh    *SSHServer
 	http   *HTTPServer
+	tavern *TavernServer
 }
 
 // DefaultConfig returns a Config with the values populated with the defaults
@@ -93,6 +95,10 @@ func NewServer(cfg *Config) (*Server, error) {
 		return nil, err
 	}
 	s.http = hs
+
+	ts := NewTavernServer(cfg)
+	s.tavern = ts
+
 	return s, nil
 }
 
@@ -101,6 +107,9 @@ func (srv *Server) Start() {
 	go func() {
 		srv.http.Start()
 	}()
+
+	go srv.tavern.Start()
+
 	srv.ssh.Start()
 }
 

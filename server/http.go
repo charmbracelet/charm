@@ -9,6 +9,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -65,6 +67,7 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 	mux.HandleFunc(pat.Post("/v1/seq/:name"), s.handlePostSeq)
 	mux.HandleFunc(pat.Get("/v1/news"), s.handleGetNewsList)
 	mux.HandleFunc(pat.Get("/v1/news/:id"), s.handleGetNews)
+	mux.HandleFunc(pat.Post("/v1/tavern/upload"), s.handleTavernUploads)
 	s.db = cfg.DB
 	s.fstore = cfg.FileStore
 	return s, nil
@@ -323,4 +326,61 @@ func (s *HTTPServer) charmUserFromRequest(w http.ResponseWriter, r *http.Request
 		s.renderError(w)
 	}
 	return u.(*charm.User)
+}
+
+func (s *HTTPServer) handleTavernUploads(w http.ResponseWriter, r *http.Request) {
+	u := s.charmUserFromRequest(w, r)
+	udir := filepath.Join(s.cfg.DataDir, "tavern", u.CharmID)
+	log.Printf("upload request received, saving to %s", s.cfg.DataDir)
+
+	r.ParseMultipartForm(32 << 20)
+	if r.MultipartForm == nil || r.MultipartForm.File["upload[]"] == nil {
+		log.Print("no files found")
+		s.renderError(w)
+		return
+	}
+
+	files := r.MultipartForm.File["upload[]"]
+	for _, fileHeader := range files {
+		dfile := filepath.Join(udir, fileHeader.Filename)
+		ddir := filepath.Dir(dfile)
+		file, err := fileHeader.Open()
+		if err != nil {
+			s.renderError(w)
+			return
+		}
+		defer file.Close()
+
+		buff := make([]byte, 512)
+		_, err = file.Read(buff)
+		if err != nil {
+			s.renderError(w)
+			return
+		}
+
+		_, err = file.Seek(0, io.SeekStart)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		err = os.MkdirAll(ddir, os.ModePerm)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		f, err := os.Create(dfile)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		defer f.Close()
+
+		_, err = io.Copy(f, file)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
 }

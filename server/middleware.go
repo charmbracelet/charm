@@ -22,7 +22,7 @@ func RequestLimitMiddleware() func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var maxRequestSize int64
-			if strings.HasPrefix(r.URL.Path, "/v1/fs") {
+			if strings.HasPrefix(r.URL.Path, "/v1/fs") || strings.HasPrefix(r.URL.Path, "/v1/tavern/") {
 				maxRequestSize = 1 << 30 // limit request size to 1GB for fs endpoints
 			} else {
 				maxRequestSize = 1 << 20 // limit request size to 1MB for other endpoints
