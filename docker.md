@@ -1,6 +1,6 @@
 # Running Charm with Docker
 
-The official Charm images are available at [charmcli/charm](https://hub.docker.com/r/charmcli/charm).
+The official Charm images are available at [charmcli/charm](https://hub.docker.com/r/charmcli/charm). Development and nightly builds are available at [ghcr.io/charmbracelet/charm](https://ghcr.io/charmbracelet/charm).
 
 ```sh
 docker pull charmcli/charm:latest

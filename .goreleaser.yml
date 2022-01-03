@@ -45,10 +45,10 @@ builds:
 dockers:
   - image_templates:
       - charmcli/charm:latest-amd64
-      - charmcli/charm:{{ .Tag }}-amd64
+      - charmcli/charm:v{{ .Version }}-amd64
       - charmcli/charm:v{{ .Major }}.{{ .Minor }}-amd64
       - ghcr.io/charmbracelet/charm:latest-amd64
-      - ghcr.io/charmbracelet/charm:{{ .Tag }}-amd64
+      - ghcr.io/charmbracelet/charm:v{{ .Version }}-amd64
       - ghcr.io/charmbracelet/charm:v{{ .Major }}.{{ .Minor }}-amd64
     ids: [charm]
     goarch: amd64
@@ -58,7 +58,7 @@ dockers:
       - --label=org.opencontainers.image.description={{ .ProjectName }}
       - --label=org.opencontainers.image.url=https://github.com/charmbracelet/charm
       - --label=org.opencontainers.image.source=https://github.com/charmbracelet/charm
-      - --label=org.opencontainers.image.version={{ .Tag }}
+      - --label=org.opencontainers.image.version=v{{ .Version }}
       - --label=org.opencontainers.image.created={{ .Date }}
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
       - --label=org.opencontainers.image.licenses=MIT
@@ -66,10 +66,10 @@ dockers:
     use: buildx
   - image_templates:
       - charmcli/charm:latest-arm64
-      - charmcli/charm:{{ .Tag }}-arm64
+      - charmcli/charm:v{{ .Version }}-arm64
       - charmcli/charm:v{{ .Major }}.{{ .Minor }}-arm64
       - ghcr.io/charmbracelet/charm:latest-arm64
-      - ghcr.io/charmbracelet/charm:{{ .Tag }}-arm64
+      - ghcr.io/charmbracelet/charm:v{{ .Version }}-arm64
       - ghcr.io/charmbracelet/charm:v{{ .Major }}.{{ .Minor }}-arm64
     ids: [charm]
     goarch: arm64
@@ -80,7 +80,7 @@ dockers:
       - --label=org.opencontainers.image.description={{ .ProjectName }}
       - --label=org.opencontainers.image.url=https://github.com/charmbracelet/charm
       - --label=org.opencontainers.image.source=https://github.com/charmbracelet/charm
-      - --label=org.opencontainers.image.version={{ .Tag }}
+      - --label=org.opencontainers.image.version=v{{ .Version }}
       - --label=org.opencontainers.image.created={{ .Date }}
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
       - --label=org.opencontainers.image.licenses=MIT
@@ -88,10 +88,10 @@ dockers:
     use: buildx
   - image_templates:
       - charmcli/charm:latest-armv7
-      - charmcli/charm:{{ .Tag }}-armv7
+      - charmcli/charm:v{{ .Version }}-armv7
       - charmcli/charm:v{{ .Major }}.{{ .Minor }}-armv7
       - ghcr.io/charmbracelet/charm:latest-armv7
-      - ghcr.io/charmbracelet/charm:{{ .Tag }}-armv7
+      - ghcr.io/charmbracelet/charm:v{{ .Version }}-armv7
       - ghcr.io/charmbracelet/charm:v{{ .Major }}.{{ .Minor }}-armv7
     ids: [charm]
     goarch: arm
@@ -102,7 +102,7 @@ dockers:
       - --label=org.opencontainers.image.description={{ .ProjectName }}
       - --label=org.opencontainers.image.url=https://github.com/charmbracelet/charm
       - --label=org.opencontainers.image.source=https://github.com/charmbracelet/charm
-      - --label=org.opencontainers.image.version={{ .Tag }}
+      - --label=org.opencontainers.image.version=v{{ .Version }}
       - --label=org.opencontainers.image.created={{ .Date }}
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
       - --label=org.opencontainers.image.licenses=MIT
@@ -110,16 +110,16 @@ dockers:
     use: buildx
 
 docker_manifests:
-  - name_template: charmcli/charm:{{ .Tag }}
+  - name_template: charmcli/charm:v{{ .Version }}
     image_templates:
-      - charmcli/charm:{{ .Tag }}-amd64
-      - charmcli/charm:{{ .Tag }}-arm64
-      - charmcli/charm:{{ .Tag }}-armv7
-  - name_template: ghcr.io/charmbracelet/charm:{{ .Tag }}
+      - charmcli/charm:v{{ .Version }}-amd64
+      - charmcli/charm:v{{ .Version }}-arm64
+      - charmcli/charm:v{{ .Version }}-armv7
+  - name_template: ghcr.io/charmbracelet/charm:v{{ .Version }}
     image_templates:
-      - ghcr.io/charmbracelet/charm:{{ .Tag }}-amd64
-      - ghcr.io/charmbracelet/charm:{{ .Tag }}-arm64
-      - ghcr.io/charmbracelet/charm:{{ .Tag }}-armv7
+      - ghcr.io/charmbracelet/charm:v{{ .Version }}-amd64
+      - ghcr.io/charmbracelet/charm:v{{ .Version }}-arm64
+      - ghcr.io/charmbracelet/charm:v{{ .Version }}-armv7
   - name_template: charmcli/charm:v{{ .Major }}.{{ .Minor }}
     image_templates:
       - charmcli/charm:v{{ .Major }}.{{ .Minor }}-amd64
@@ -187,7 +187,7 @@ signs:
 checksum:
   name_template: "checksums.txt"
 snapshot:
-  name_template: "{{ .Tag }}-next"
+  name_template: "{{ incpatch .Version }}-devel"
 changelog:
   sort: asc
   filters:

@@ -6,6 +6,7 @@ Charm
   <a href="https://github.com/charmbracelet/charm/releases"><img src="https://img.shields.io/github/release/charmbracelet/charm.svg" alt="Latest Release"></a>
   <a href="https://pkg.go.dev/github.com/charmbracelet/charm?tab=doc"><img src="https://godoc.org/github.com/golang/gddo?status.svg" alt="GoDoc"></a>
   <a href="https://github.com/charmbracelet/charm/actions"><img src="https://github.com/charmbracelet/charm/workflows/build/badge.svg" alt="Build Status"></a>
+  <a href="https://nightly.link/charmbracelet/charm/workflows/build/main"><img src="https://shields.io/badge/-Nightly%20Builds-orange?logo=hackthebox&logoColor=fff&style=appveyor"/></a>
 </p>
 
 Charm is a set of tools that makes adding a backend to your terminal-based
