@@ -1,7 +1,7 @@
 name: Comment on pull request
 on:
   workflow_run:
-    workflows: ['build']
+    workflows: [build]
     types: [completed]
 jobs:
   pr_comment:
@@ -48,7 +48,7 @@ jobs:
             if (!artifacts.length) {
               return core.error(`No artifacts found`);
             }
-            const sha = ${{github.event.workflow_run.head_sha}};
+            const sha = "${{github.event.workflow_run.head_sha}}";
             let body = `Download the artifacts for this pull request:\n`;
             for (const art of artifacts) {
               body += `\n* [${art.name}.zip](https://nightly.link/${owner}/${repo}/actions/artifacts/${art.id}.zip)`;
