@@ -48,12 +48,12 @@ jobs:
             if (!artifacts.length) {
               return core.error(`No artifacts found`);
             }
-            const sha = ${{github.sha}};
-            let body = `Docker image: \`docker pull ghcr.io/${owner}/${repo}:devel-${sha.substr(0,7)}\``;
-            body += `\n\nDownload the artifacts for this pull request:\n`;
+            const sha = ${{github.event.workflow_run.head_sha}};
+            let body = `Download the artifacts for this pull request:\n`;
             for (const art of artifacts) {
               body += `\n* [${art.name}.zip](https://nightly.link/${owner}/${repo}/actions/artifacts/${art.id}.zip)`;
             }
+            body += `\n\nOr use the following Docker image \`ghcr.io/${owner}/${repo}:devel-${sha.substr(0,7)}\``;
 
             core.info("Review thread message body:", body);
 
