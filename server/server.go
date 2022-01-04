@@ -2,7 +2,9 @@
 package server
 
 import (
+	"crypto/ed25519"
 	"crypto/tls"
+	"fmt"
 	"log"
 	"path/filepath"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/charmbracelet/charm/server/storage"
 	lfs "github.com/charmbracelet/charm/server/storage/local"
 	"github.com/meowgorithm/babyenv"
+	gossh "golang.org/x/crypto/ssh"
 )
 
 // Config is the configuration for the Charm server.
@@ -32,6 +35,7 @@ type Config struct {
 	DB          db.DB
 	FileStore   storage.FileStore
 	Stats       stats.Stats
+	jwtKeyPair  JSONWebKeyPair
 }
 
 // Server contains the SSH and HTTP servers required to host the Charm Cloud.
@@ -79,10 +83,21 @@ func (cfg *Config) WithKeys(publicKey []byte, privateKey []byte) *Config {
 	return cfg
 }
 
+func (cfg *Config) httpURL() string {
+	return fmt.Sprintf("%s://%s:%d", cfg.HTTPScheme, cfg.Host, cfg.HTTPPort)
+}
+
 // NewServer returns a *Server with the specified Config.
 func NewServer(cfg *Config) (*Server, error) {
 	s := &Server{}
 	s.init(cfg)
+
+	pk, err := gossh.ParseRawPrivateKey(cfg.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+	cfg.jwtKeyPair = NewJSONWebKeyPair(pk.(*ed25519.PrivateKey))
+
 	ss, err := NewSSHServer(cfg)
 	if err != nil {
 		return nil, err

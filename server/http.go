@@ -20,6 +20,7 @@ import (
 	"goji.io"
 	"goji.io/pat"
 	"goji.io/pattern"
+	"gopkg.in/square/go-jose.v2"
 )
 
 const resultsPerPage = 50
@@ -32,25 +33,36 @@ type HTTPServer struct {
 	handler http.Handler
 }
 
+type providerJSON struct {
+	Issuer      string   `json:"issuer"`
+	AuthURL     string   `json:"authorization_endpoint"`
+	TokenURL    string   `json:"token_endpoint"`
+	JWKSURL     string   `json:"jwks_uri"`
+	UserInfoURL string   `json:"userinfo_endpoint"`
+	Algorithms  []string `json:"id_token_signing_alg_values_supported"`
+}
+
 // NewHTTPServer returns a new *HTTPServer with the specified Config.
 func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 	// No auth health check endpoint
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "We live!")
 	})
-
 	mux := goji.NewMux()
 	s := &HTTPServer{
 		cfg:     cfg,
 		handler: mux,
 	}
-
-	var jwtMiddleware func(http.Handler) http.Handler
-	jwtMiddleware, err := JWTMiddleware(cfg.PublicKey)
+	jwtMiddleware, err := JWTMiddleware(
+		cfg.jwtKeyPair.JWK.Public(),
+		cfg.httpURL(),
+		[]string{"charm"},
+	)
 	if err != nil {
 		return nil, err
 	}
 	mux.Use(babylogger.Middleware)
+	mux.Use(PublicPrefixesMiddleware([]string{"/v1/public/", "/.well-known/"}))
 	mux.Use(jwtMiddleware)
 	mux.Use(CharmUserMiddleware(s))
 	mux.Use(RequestLimitMiddleware())
@@ -65,6 +77,8 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 	mux.HandleFunc(pat.Post("/v1/seq/:name"), s.handlePostSeq)
 	mux.HandleFunc(pat.Get("/v1/news"), s.handleGetNewsList)
 	mux.HandleFunc(pat.Get("/v1/news/:id"), s.handleGetNews)
+	mux.HandleFunc(pat.Get("/v1/public/jwks"), s.handleJWKS)
+	mux.HandleFunc(pat.Get("/.well-known/openid-configuration"), s.handleOpenIDConfig)
 	s.db = cfg.DB
 	s.fstore = cfg.FileStore
 	return s, nil
@@ -103,6 +117,20 @@ func (s *HTTPServer) renderCustomError(w http.ResponseWriter, msg string, status
 	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(charm.Message{Message: msg})
+}
+
+func (s *HTTPServer) handleJWKS(w http.ResponseWriter, r *http.Request) {
+	jwks := jose.JSONWebKeySet{Keys: []jose.JSONWebKey{s.cfg.jwtKeyPair.JWK.Public()}}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	_ = json.NewEncoder(w).Encode(jwks)
+}
+
+func (s *HTTPServer) handleOpenIDConfig(w http.ResponseWriter, r *http.Request) {
+	pj := providerJSON{JWKSURL: fmt.Sprintf("%s/v1/public/jwks", s.cfg.httpURL())}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	_ = json.NewEncoder(w).Encode(pj)
 }
 
 // TODO do we need this since you can only get the authed user?
@@ -316,6 +344,7 @@ func (s *HTTPServer) handleGetNews(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(news)
 	s.cfg.Stats.GetNews()
 }
+
 func (s *HTTPServer) charmUserFromRequest(w http.ResponseWriter, r *http.Request) *charm.User {
 	u := r.Context().Value(ctxUserKey)
 	if u == nil {

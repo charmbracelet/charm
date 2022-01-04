@@ -1,18 +1,18 @@
 package server
 
 import (
-	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/server/db"
 	"github.com/charmbracelet/wish"
 	"github.com/gliderlabs/ssh"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/muesli/toktok"
-	gossh "golang.org/x/crypto/ssh"
 )
 
 // Session represents a Charm User's SSH session.
@@ -27,23 +27,17 @@ type SessionHandler func(s Session)
 // SSHServer serves the SSH protocol and handles requests to authenticate and
 // link Charm user accounts.
 type SSHServer struct {
-	config        *Config
-	db            db.DB
-	tokenBucket   *toktok.Bucket
-	linkRequests  map[charm.Token]chan *charm.Link
-	jwtPrivateKey *rsa.PrivateKey
-	server        *ssh.Server
+	config       *Config
+	db           db.DB
+	tokenBucket  *toktok.Bucket
+	linkRequests map[charm.Token]chan *charm.Link
+	server       *ssh.Server
 }
 
 // NewSSHServer creates a new SSHServer from the provided Config.
 func NewSSHServer(cfg *Config) (*SSHServer, error) {
 	s := &SSHServer{config: cfg}
 	addr := fmt.Sprintf(":%d", cfg.SSHPort)
-	pk, err := gossh.ParseRawPrivateKey(cfg.PrivateKey)
-	if err != nil {
-		return nil, err
-	}
-	s.jwtPrivateKey = pk.(*rsa.PrivateKey)
 	b, err := toktok.NewBucket(6)
 	if err != nil {
 		return nil, err
@@ -82,6 +76,46 @@ func (me *SSHServer) sendJSON(s ssh.Session, o interface{}) error {
 
 func (me *SSHServer) authHandler(ctx ssh.Context, key ssh.PublicKey) bool {
 	return true
+}
+
+func (me *SSHServer) handleJWT(s ssh.Session) {
+	var aud []string
+	cmd := s.Command()
+	if len(cmd) > 1 {
+		aud = cmd[1:]
+	} else {
+		aud = []string{"charm"}
+	}
+	key, err := keyText(s)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	u, err := me.db.UserForKey(key, true)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	log.Printf("JWT for user %s\n", u.CharmID)
+	j, err := me.newJWT(u.CharmID, aud...)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	_, _ = s.Write([]byte(j))
+	me.config.Stats.JWT()
+}
+
+func (me *SSHServer) newJWT(charmID string, audience ...string) (string, error) {
+	claims := &jwt.RegisteredClaims{
+		Subject:   charmID,
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+		Issuer:    me.config.httpURL(),
+		Audience:  audience,
+	}
+	token := jwt.NewWithClaims(&jwt.SigningMethodEd25519{}, claims)
+	token.Header["kid"] = me.config.jwtKeyPair.JWK.KeyID
+	return token.SignedString(me.config.jwtKeyPair.PrivateKey)
 }
 
 // keyText is the base64 encoded public key for the glider.Session.

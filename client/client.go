@@ -10,11 +10,12 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
 
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/keygen"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/meowgorithm/babyenv"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/ssh"
@@ -35,7 +36,7 @@ type Config struct {
 type Client struct {
 	Config               *Config
 	auth                 *charm.Auth
-	claims               *jwt.StandardClaims
+	claims               *jwt.RegisteredClaims
 	authLock             *sync.Mutex
 	sshConfig            *ssh.ClientConfig
 	httpScheme           string
@@ -110,13 +111,13 @@ func NewClientWithDefaults() (*Client, error) {
 }
 
 // JWT returns a JSON web token for the user.
-func (cc *Client) JWT() (string, error) {
+func (cc *Client) JWT(aud ...string) (string, error) {
 	s, err := cc.sshSession()
 	if err != nil {
 		return "", err
 	}
 	defer s.Close()
-	jwt, err := s.Output("jwt")
+	jwt, err := s.Output(strings.Join(append([]string{"jwt"}, aud...), " "))
 	if err != nil {
 		return "", err
 	}

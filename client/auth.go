@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	charm "github.com/charmbracelet/charm/proto"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 // Auth will authenticate a client and cache the result. It will return a
@@ -31,11 +31,11 @@ func (cc *Client) Auth() (*charm.Auth, error) {
 		}
 		cc.httpScheme = auth.HTTPScheme
 		p := &jwt.Parser{}
-		token, _, err := p.ParseUnverified(auth.JWT, &jwt.StandardClaims{})
+		token, _, err := p.ParseUnverified(auth.JWT, &jwt.RegisteredClaims{})
 		if err != nil {
 			return nil, charm.ErrAuthFailed{Err: err}
 		}
-		cc.claims = token.Claims.(*jwt.StandardClaims)
+		cc.claims = token.Claims.(*jwt.RegisteredClaims)
 		cc.auth = auth
 		if err != nil {
 			return nil, charm.ErrAuthFailed{Err: err}

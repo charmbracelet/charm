@@ -2,16 +2,15 @@ package server
 
 import (
 	"context"
-	"crypto/rsa"
+	"crypto"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
 
-	jwtmiddleware "github.com/auth0/go-jwt-middleware"
+	jwtmiddleware "github.com/auth0/go-jwt-middleware/v2"
+	"github.com/auth0/go-jwt-middleware/v2/validator"
 	charm "github.com/charmbracelet/charm/proto"
-	"github.com/form3tech-oss/jwt-go"
-	"golang.org/x/crypto/ssh"
 )
 
 type contextKey string
@@ -38,23 +37,39 @@ func RequestLimitMiddleware() func(http.Handler) http.Handler {
 	}
 }
 
+// PublicPrefixesMiddleware allows for the specification of non-authed URL
+// prefixes. These won't be checked for JWT bearers or Charm user accounts.
+func PublicPrefixesMiddleware(prefixes []string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			public := false
+			for _, p := range prefixes {
+				if strings.HasPrefix(r.URL.Path, p) {
+					public = true
+				}
+			}
+			ctx := context.WithValue(r.Context(), "public", public)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
 // JWTMiddleware creates a new middleware function that will validate JWT
-// tokesn based on the supplied public key.
-func JWTMiddleware(publicKey []byte) (func(http.Handler) http.Handler, error) {
-	parsed, _, _, _, err := ssh.ParseAuthorizedKey(publicKey)
+// tokens based on the supplied public key.
+func JWTMiddleware(pk crypto.PublicKey, iss string, aud []string) (func(http.Handler) http.Handler, error) {
+	jm, err := jwtMiddlewareImpl(pk, iss, aud)
 	if err != nil {
 		return nil, err
 	}
-	parsedCryptoKey := parsed.(ssh.CryptoPublicKey)
-	pubCrypto := parsedCryptoKey.CryptoPublicKey()
-	pk, ok := pubCrypto.(*rsa.PublicKey)
-	if !ok {
-		return nil, fmt.Errorf("Invalid key")
-	}
-	return jwtmiddleware.New(jwtmiddleware.Options{
-		ValidationKeyGetter: signRSA(pk),
-		SigningMethod:       jwt.SigningMethodRS512,
-	}).Handler, nil
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if isPublic(r) {
+				next.ServeHTTP(w, r)
+			} else {
+				jm(next).ServeHTTP(w, r)
+			}
+		})
+	}, nil
 }
 
 // CharmUserMiddleware looks up and authenticates a Charm user based on the
@@ -62,42 +77,61 @@ func JWTMiddleware(publicKey []byte) (func(http.Handler) http.Handler, error) {
 func CharmUserMiddleware(s *HTTPServer) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			id, err := charmIDFromRequest(r)
-			if err != nil {
-				log.Printf("cannot get charm id from request: %s", err)
-				s.renderError(w)
-				return
+			if isPublic(r) {
+				h.ServeHTTP(w, r)
+			} else {
+				id, err := charmIDFromRequest(r)
+				if err != nil {
+					log.Printf("cannot get charm id from request: %s", err)
+					s.renderError(w)
+					return
+				}
+				u, err := s.db.GetUserWithID(id)
+				if err == charm.ErrMissingUser {
+					s.renderCustomError(w, fmt.Sprintf("missing user for id '%s'", id), http.StatusNotFound)
+					return
+				} else if err != nil {
+					log.Printf("cannot read request body: %s", err)
+					s.renderError(w)
+					return
+				}
+				ctx := context.WithValue(r.Context(), ctxUserKey, u)
+				h.ServeHTTP(w, r.WithContext(ctx))
 			}
-			u, err := s.db.GetUserWithID(id)
-			if err == charm.ErrMissingUser {
-				s.renderCustomError(w, fmt.Sprintf("missing user for id '%s'", id), http.StatusNotFound)
-				return
-			} else if err != nil {
-				log.Printf("cannot read request body: %s", err)
-				s.renderError(w)
-				return
-			}
-			ctx := context.WithValue(r.Context(), ctxUserKey, u)
-			h.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
-func charmIDFromRequest(r *http.Request) (string, error) {
-	user := r.Context().Value("user")
-	if user == "" {
-		return "", fmt.Errorf("missing user key in context")
-	}
-	cl := user.(*jwt.Token).Claims.(jwt.MapClaims)
-	id, ok := cl["sub"]
-	if !ok {
-		return "", fmt.Errorf("missing user key in claims map")
-	}
-	return id.(string), nil
+func isPublic(r *http.Request) bool {
+	return r.Context().Value("public") == true
 }
 
-func signRSA(pk *rsa.PublicKey) jwt.Keyfunc {
-	return func(token *jwt.Token) (interface{}, error) {
+func charmIDFromRequest(r *http.Request) (string, error) {
+	claims := r.Context().Value(jwtmiddleware.ContextKey{})
+	if claims == "" {
+		return "", fmt.Errorf("missing jwt claims key in context")
+	}
+	cl := claims.(*validator.ValidatedClaims).RegisteredClaims
+	sub := cl.Subject
+	if sub == "" {
+		return "", fmt.Errorf("missing subject key in claims map")
+	}
+	return sub, nil
+}
+
+func jwtMiddlewareImpl(pk crypto.PublicKey, iss string, aud []string) (func(http.Handler) http.Handler, error) {
+	kf := func(ctx context.Context) (interface{}, error) {
 		return pk, nil
 	}
+	v, err := validator.New(
+		kf,
+		validator.EdDSA,
+		iss,
+		aud,
+	)
+	if err != nil {
+		return nil, err
+	}
+	mw := jwtmiddleware.New(v.ValidateToken)
+	return mw.CheckJWT, nil
 }

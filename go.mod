@@ -3,7 +3,7 @@ module github.com/charmbracelet/charm
 go 1.17
 
 require (
-	github.com/auth0/go-jwt-middleware v1.0.0
+	github.com/auth0/go-jwt-middleware/v2 v2.0.0-beta
 	github.com/calmh/randomart v1.1.0
 	github.com/charmbracelet/bubbles v0.8.0
 	github.com/charmbracelet/bubbletea v0.19.1
@@ -11,9 +11,9 @@ require (
 	github.com/charmbracelet/lipgloss v0.4.0
 	github.com/charmbracelet/wish v0.1.1
 	github.com/dgraph-io/badger/v3 v3.2011.1
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/form3tech-oss/jwt-go v3.2.2+incompatible
 	github.com/gliderlabs/ssh v0.3.3
+	github.com/golang-jwt/jwt/v4 v4.2.0
 	github.com/google/uuid v1.3.0
 	github.com/jacobsa/crypto v0.0.0-20190317225127-9f44e2d11115
 	github.com/mattn/go-isatty v0.0.14-0.20210829144114-504425e14f74
@@ -26,7 +26,8 @@ require (
 	github.com/muesli/toktok v0.0.0-20201007181047-c74187025f3f
 	github.com/spf13/cobra v1.0.0
 	goji.io v2.0.2+incompatible
-	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
+	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e
+	gopkg.in/square/go-jose.v2 v2.6.0
 	modernc.org/sqlite v1.14.2
 )
 
@@ -57,11 +58,10 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/xrash/smetrics v0.0.0-20200730060457-89a2a8a1fb0b // indirect
 	go.opencensus.io v0.22.5 // indirect
 	golang.org/x/mod v0.3.0 // indirect
-	golang.org/x/net v0.0.0-20210326060303-6b1517762897 // indirect
+	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
 	golang.org/x/sys v0.0.0-20211007075335-d3039528d8ac // indirect
 	golang.org/x/term v0.0.0-20210422114643-f5beecf764ed // indirect
 	golang.org/x/tools v0.0.0-20201124115921-2c860bdd6e78 // indirect

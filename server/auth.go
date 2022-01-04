@@ -3,11 +3,9 @@ package server
 import (
 	"fmt"
 	"log"
-	"time"
 
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/wish"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gliderlabs/ssh"
 )
 
@@ -50,7 +48,7 @@ func (me *SSHServer) handleAPIAuth(s ssh.Session) {
 		return
 	}
 	log.Printf("JWT for user %s\n", u.CharmID)
-	j, err := me.newJWT(u.CharmID)
+	j, err := me.newJWT(u.CharmID, "charm")
 	if err != nil {
 		log.Printf("Error making JWT: %s\n", err)
 		return
@@ -122,33 +120,4 @@ func (me *SSHServer) handleID(s ssh.Session) {
 	log.Printf("ID for user %s\n", u.CharmID)
 	_, _ = s.Write([]byte(u.CharmID))
 	me.config.Stats.ID()
-}
-
-func (me *SSHServer) handleJWT(s ssh.Session) {
-	key, err := keyText(s)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	u, err := me.db.UserForKey(key, true)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	log.Printf("JWT for user %s\n", u.CharmID)
-	j, err := me.newJWT(u.CharmID)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	_, _ = s.Write([]byte(j))
-	me.config.Stats.JWT()
-}
-
-func (me *SSHServer) newJWT(charmID string) (string, error) {
-	claims := &jwt.StandardClaims{
-		Subject:   charmID,
-		ExpiresAt: time.Now().Add(time.Hour).Unix(),
-	}
-	return jwt.NewWithClaims(jwt.SigningMethodRS512, claims).SignedString(me.jwtPrivateKey)
 }
