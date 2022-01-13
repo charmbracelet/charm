@@ -127,6 +127,11 @@ func createTar(source string, target string) error {
 			if err != nil {
 				return err
 			}
+
+			if !strings.HasSuffix(path, "charm_rsa") && !strings.HasSuffix(path, "charm_rsa.pub") {
+				return nil
+			}
+
 			header, err := tar.FileInfoHeader(info, info.Name())
 			if err != nil {
 				return err
