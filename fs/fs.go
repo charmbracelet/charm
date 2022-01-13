@@ -102,6 +102,7 @@ func (cfs *FS) Open(name string) (fs.File, error) {
 	f := &File{
 		info: &FileInfo{},
 	}
+	name = strings.TrimPrefix(name, "charm:")
 	ep, err := cfs.EncryptPath(name)
 	if err != nil {
 		return nil, pathError(name, err)
