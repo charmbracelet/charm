@@ -47,7 +47,7 @@ var (
 	}
 
 	fsCatCmd = &cobra.Command{
-		Use:    "cat PATH",
+		Use:    "cat [charm:]PATH",
 		Hidden: false,
 		Short:  "Output the content of the file at path.",
 		Args:   cobra.ExactArgs(1),
@@ -63,7 +63,7 @@ var (
 	}
 
 	fsRemoveCmd = &cobra.Command{
-		Use:    "rm PATH",
+		Use:    "rm [charm:]PATH",
 		Hidden: false,
 		Short:  "Remove file or directory at path",
 		Args:   cobra.ExactArgs(1),
@@ -71,7 +71,7 @@ var (
 	}
 
 	fsListCmd = &cobra.Command{
-		Use:    "ls PATH",
+		Use:    "ls [charm:]PATH",
 		Hidden: false,
 		Short:  "List file or directory at path",
 		Args:   cobra.ExactArgs(1),
@@ -79,7 +79,7 @@ var (
 	}
 
 	fsTreeCmd = &cobra.Command{
-		Use:    "tree PATH",
+		Use:    "tree [charm:]PATH",
 		Hidden: false,
 		Short:  "Print a file system tree from path.",
 		Args:   cobra.ExactArgs(1),
