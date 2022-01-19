@@ -54,7 +54,7 @@ func OpenWithDefaults(name string) (*KV, error) {
 	if err != nil {
 		return nil, err
 	}
-	pn := filepath.Join(fmt.Sprintf("%s/kv/", dd), name)
+	pn := filepath.Join(dd, "/kv/", name)
 	opts := badger.DefaultOptions(pn).WithLoggingLevel(badger.ERROR)
 
 	// By default we have no logger as it will interfere with Bubble Tea
