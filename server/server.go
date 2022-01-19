@@ -105,19 +105,27 @@ func (srv *Server) Start() {
 }
 
 func (srv *Server) init(cfg *Config) {
-	dp := fmt.Sprintf("%s/db", cfg.DataDir)
-	err := storage.EnsureDir(dp, 0700)
-	if err != nil {
-		log.Fatalf("could not init sqlite path: %s", err)
+	if cfg.DB == nil {
+		dp := fmt.Sprintf("%s/db", cfg.DataDir)
+		err := storage.EnsureDir(dp, 0700)
+		if err != nil {
+			log.Fatalf("could not init sqlite path: %s", err)
+		}
+		db := sqlite.NewDB(dp)
+		srv.Config = cfg.WithDB(db)
 	}
-	db := sqlite.NewDB(dp)
-	fs, err := lfs.NewLocalFileStore(fmt.Sprintf("%s/files", cfg.DataDir))
-	if err != nil {
-		log.Fatalf("could not init file path: %s", err)
+	if cfg.FileStore == nil {
+		fs, err := lfs.NewLocalFileStore(fmt.Sprintf("%s/files", cfg.DataDir))
+		if err != nil {
+			log.Fatalf("could not init file path: %s", err)
+		}
+		srv.Config = cfg.WithFileStore(fs)
 	}
-	sts, err := sls.NewStats(fmt.Sprintf("%s/stats", cfg.DataDir))
-	if err != nil {
-		log.Fatalf("could not init stats db: %s", err)
+	if cfg.Stats == nil {
+		sts, err := sls.NewStats(fmt.Sprintf("%s/stats", cfg.DataDir))
+		if err != nil {
+			log.Fatalf("could not init stats db: %s", err)
+		}
+		srv.Config = cfg.WithStats(sts)
 	}
-	srv.Config = cfg.WithDB(db).WithFileStore(fs).WithStats(sts)
 }
