@@ -9,9 +9,10 @@ import (
 )
 
 var (
-	serverHTTPPort int
-	serverSSHPort  int
-	serverDataDir  string
+	serverHTTPPort   int
+	serverSSHPort    int
+	serverHealthPort int
+	serverDataDir    string
 
 	//ServeCmd is the cobra.Command to self-host the Charm Cloud.
 	ServeCmd = &cobra.Command{
@@ -28,6 +29,9 @@ var (
 			}
 			if serverSSHPort != 0 {
 				cfg.SSHPort = serverSSHPort
+			}
+			if serverHealthPort != 0 {
+				cfg.HealthPort = serverHealthPort
 			}
 			if serverDataDir != "" {
 				cfg.DataDir = serverDataDir
@@ -51,5 +55,6 @@ var (
 func init() {
 	ServeCmd.Flags().IntVar(&serverHTTPPort, "http-port", 0, "HTTP port to listen on")
 	ServeCmd.Flags().IntVar(&serverSSHPort, "ssh-port", 0, "SSH port to listen on")
+	ServeCmd.Flags().IntVar(&serverHealthPort, "health-port", 0, "Health port to listen on")
 	ServeCmd.Flags().StringVar(&serverDataDir, "data-dir", "", "Directory to store SQLite db, SSH keys and file data")
 }

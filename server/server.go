@@ -22,7 +22,7 @@ type Config struct {
 	HTTPPort    int    `env:"CHARM_SERVER_HTTP_PORT" default:"35354"`
 	HTTPScheme  string `env:"CHARM_SERVER_HTTP_SCHEME" default:"http"`
 	StatsPort   int    `env:"CHARM_SERVER_STATS_PORT" default:"35355"`
-	HealthPort  string `env:"CHARM_SERVER_HEALTH_PORT" default:"35356"`
+	HealthPort  int    `env:"CHARM_SERVER_HEALTH_PORT" default:"35356"`
 	DataDir     string `env:"CHARM_SERVER_DATA_DIR" default:"./data"`
 	TLSKeyFile  string `env:"CHARM_SERVER_TLS_KEY_FILE" default:""`
 	TLSCertFile string `env:"CHARM_SERVER_TLS_CERT_FILE" default:""`

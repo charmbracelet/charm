@@ -81,7 +81,7 @@ func (s *HTTPServer) Start() {
 	}
 
 	go func() {
-		err := http.ListenAndServe(fmt.Sprintf(":%s", s.cfg.HealthPort), nil)
+		err := http.ListenAndServe(fmt.Sprintf(":%d", s.cfg.HealthPort), nil)
 		if err != nil {
 			log.Fatalf("http health endpoint server exited with error: %s", err)
 		}
