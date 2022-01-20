@@ -356,7 +356,7 @@ func printDir(f fs.ReadDirFile) error {
 
 func init() {
 	fsCopyCmd.Flags().BoolVarP(&isRecursive, "recursive", "r", false, "copy directories recursively")
-	fsMoveCmd.Flags().BoolVarP(&isRecursive, "recursive", "r", false, "copy directories recursively")
+	fsMoveCmd.Flags().BoolVarP(&isRecursive, "recursive", "r", false, "move directories recursively")
 
 	FSCmd.AddCommand(fsCatCmd)
 	FSCmd.AddCommand(fsCopyCmd)
