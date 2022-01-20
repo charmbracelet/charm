@@ -3,8 +3,8 @@ package server
 
 import (
 	"crypto/tls"
-	"fmt"
 	"log"
+	"path/filepath"
 
 	"github.com/charmbracelet/charm/server/db"
 	"github.com/charmbracelet/charm/server/db/sqlite"
@@ -106,7 +106,7 @@ func (srv *Server) Start() {
 
 func (srv *Server) init(cfg *Config) {
 	if cfg.DB == nil {
-		dp := fmt.Sprintf("%s/db", cfg.DataDir)
+		dp := filepath.Join(cfg.DataDir, "db")
 		err := storage.EnsureDir(dp, 0700)
 		if err != nil {
 			log.Fatalf("could not init sqlite path: %s", err)
@@ -115,14 +115,14 @@ func (srv *Server) init(cfg *Config) {
 		srv.Config = cfg.WithDB(db)
 	}
 	if cfg.FileStore == nil {
-		fs, err := lfs.NewLocalFileStore(fmt.Sprintf("%s/files", cfg.DataDir))
+		fs, err := lfs.NewLocalFileStore(filepath.Join(cfg.DataDir, "files"))
 		if err != nil {
 			log.Fatalf("could not init file path: %s", err)
 		}
 		srv.Config = cfg.WithFileStore(fs)
 	}
 	if cfg.Stats == nil {
-		sts, err := sls.NewStats(fmt.Sprintf("%s/stats", cfg.DataDir))
+		sts, err := sls.NewStats(filepath.Join(cfg.DataDir, "stats"))
 		if err != nil {
 			log.Fatalf("could not init stats db: %s", err)
 		}

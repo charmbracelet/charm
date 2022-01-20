@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"fmt"
+	"path/filepath"
 
 	"github.com/charmbracelet/charm/server"
 	"github.com/charmbracelet/keygen"
@@ -36,7 +36,7 @@ var (
 			if serverDataDir != "" {
 				cfg.DataDir = serverDataDir
 			}
-			sp := fmt.Sprintf("%s/.ssh", cfg.DataDir)
+			sp := filepath.Join(cfg.DataDir, ".ssh")
 			kp, err := keygen.NewWithWrite(sp, "charm_server", []byte(""), keygen.RSA)
 			if err != nil {
 				return err
