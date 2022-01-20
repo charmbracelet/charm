@@ -235,6 +235,7 @@ func (cfs *FS) WriteFile(name string, src fs.File) error {
 
 // Remove deletes a file from the Charm Cloud server.
 func (cfs *FS) Remove(name string) error {
+	name = strings.TrimPrefix(name, "charm:")
 	ep, err := cfs.EncryptPath(name)
 	if err != nil {
 		return err
