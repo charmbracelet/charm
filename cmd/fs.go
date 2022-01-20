@@ -70,6 +70,14 @@ var (
 		RunE:   fsRemove,
 	}
 
+	fsMoveCmd = &cobra.Command{
+		Use:    "mv [charm:]PATH [charm:]PATH",
+		Hidden: false,
+		Short:  "Move a file, preface source or destination with \"charm:\" to specify a remote path.",
+		Args:   cobra.ExactArgs(2),
+		RunE:   fsMove,
+	}
+
 	fsListCmd = &cobra.Command{
 		Use:    "ls [charm:]PATH",
 		Hidden: false,
@@ -240,6 +248,13 @@ func fsCat(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func fsMove(cmd *cobra.Command, args []string) error {
+	if err := fsCopy(cmd, args); err != nil {
+		return err
+	}
+	return fsRemove(cmd, args[:1])
+}
+
 func fsRemove(cmd *cobra.Command, args []string) error {
 	lsfs, err := cfs.NewFS()
 	if err != nil {
@@ -341,10 +356,12 @@ func printDir(f fs.ReadDirFile) error {
 
 func init() {
 	fsCopyCmd.Flags().BoolVarP(&isRecursive, "recursive", "r", false, "copy directories recursively")
+	fsMoveCmd.Flags().BoolVarP(&isRecursive, "recursive", "r", false, "move directories recursively")
 
 	FSCmd.AddCommand(fsCatCmd)
 	FSCmd.AddCommand(fsCopyCmd)
 	FSCmd.AddCommand(fsRemoveCmd)
+	FSCmd.AddCommand(fsMoveCmd)
 	FSCmd.AddCommand(fsListCmd)
 	FSCmd.AddCommand(fsTreeCmd)
 }
