@@ -82,7 +82,7 @@ func (s *HTTPServer) Start(ctx context.Context) {
 	}
 
 	healthServer := &http.Server{
-		Addr: fmt.Sprintf(":%s", s.cfg.HealthPort),
+		Addr: fmt.Sprintf(":%d", s.cfg.HealthPort),
 	}
 
 	go func() {
