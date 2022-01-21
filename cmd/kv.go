@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/charmbracelet/charm/kv"
+	"github.com/charmbracelet/charm/ui/common"
 	"github.com/dgraph-io/badger/v3"
 	"github.com/spf13/cobra"
 )
@@ -14,6 +16,7 @@ var (
 	reverseIterate   bool
 	keysIterate      bool
 	valuesIterate    bool
+	showBinary       bool
 	delimiterIterate string
 
 	// KVCmd is the cobra.Command for a user to use the Charm key value store.
@@ -105,7 +108,7 @@ func kvGet(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(v))
+	printFromKV("%s", v)
 	return nil
 }
 
@@ -154,14 +157,14 @@ func kvList(cmd *cobra.Command, args []string) error {
 			item := it.Item()
 			k := item.Key()
 			if keysIterate {
-				fmt.Printf(pf, k)
+				printFromKV(pf, k)
 				continue
 			}
 			err := item.Value(func(v []byte) error {
 				if valuesIterate {
-					fmt.Printf(pf, v)
+					printFromKV(pf, v)
 				} else {
-					fmt.Printf(pf, k, v)
+					printFromKV(pf, k, v)
 				}
 				return nil
 			})
@@ -208,6 +211,22 @@ func nameFromArgs(args []string) (string, error) {
 	return n, nil
 }
 
+func printFromKV(pf string, vs ...[]byte) {
+	nb := "(omitted binary data)"
+	fvs := make([]interface{}, 0)
+	for _, v := range vs {
+		if common.IsTTY() && !showBinary && !utf8.Valid(v) {
+			fvs = append(fvs, nb)
+		} else {
+			fvs = append(fvs, string(v))
+		}
+	}
+	fmt.Printf(pf, fvs...)
+	if common.IsTTY() && !strings.HasSuffix(pf, "\n") {
+		fmt.Println()
+	}
+}
+
 func keyParser(k string) ([]byte, string, error) {
 	var key, db string
 	ps := strings.Split(k, "@")
@@ -234,6 +253,8 @@ func init() {
 	kvListCmd.Flags().BoolVarP(&reverseIterate, "reverse", "r", false, "list in reverse lexicographic order")
 	kvListCmd.Flags().BoolVarP(&keysIterate, "keys-only", "k", false, "only print keys and don't fetch values from the db")
 	kvListCmd.Flags().BoolVarP(&valuesIterate, "values-only", "v", false, "only print values")
+	kvListCmd.Flags().BoolVarP(&showBinary, "show-binary", "b", false, "print binary values")
+	kvGetCmd.Flags().BoolVarP(&showBinary, "show-binary", "b", false, "print binary values")
 	kvListCmd.Flags().StringVarP(&delimiterIterate, "delimiter", "d", "\t", "delimiter to separate keys and values")
 
 	KVCmd.AddCommand(kvGetCmd)
