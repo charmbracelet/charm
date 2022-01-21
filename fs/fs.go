@@ -102,7 +102,6 @@ func (cfs *FS) Open(name string) (fs.File, error) {
 	f := &File{
 		info: &FileInfo{},
 	}
-	name = strings.TrimPrefix(name, "charm:")
 	ep, err := cfs.EncryptPath(name)
 	if err != nil {
 		return nil, pathError(name, err)
@@ -357,6 +356,7 @@ func (fi *FileInfo) Info() (fs.FileInfo, error) {
 
 func (cfs *FS) EncryptPath(path string) (string, error) {
 	eps := make([]string, 0)
+	path = strings.TrimPrefix(path, "charm:")
 	ps := strings.Split(path, "/")
 	for _, p := range ps {
 		ep, err := cfs.crypt.EncryptLookupField(p)
