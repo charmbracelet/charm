@@ -157,7 +157,7 @@ Use a package manager:
 brew tap charmbracelet/tap && brew install charmbracelet/tap/charm
 
 # Arch Linux (btw)
-yay -S charm-tool
+pacman -S charm
 
 # Nix
 nix-env -iA nixpkgs.charm
