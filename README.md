@@ -206,6 +206,14 @@ To set up TLS, you should set `CHARM_SERVER_HTTP_SCHEME` environment variable to
 * [Skate][skate]: A personal key-value store 🛼
 * Your app here! Let us know what you build: [vt100@charm.sh](mailto:vt100@charm.sh)
 
+## Feedback
+
+We’d love to hear your thoughts on this project. Feel free to drop us a note!
+
+* [Twitter](https://twitter.com/charmcli)
+* [The Fediverse](https://mastodon.technology/@charm)
+* [Slack](https://charm.sh/slack)
+
 ## License
 
 [MIT](https://github.com/charmbracelet/charm/raw/main/LICENSE)
@@ -214,7 +222,7 @@ To set up TLS, you should set `CHARM_SERVER_HTTP_SCHEME` environment variable to
 
 Part of [Charm](https://charm.sh).
 
-<a href="https://charm.sh/"><img alt="the Charm logo" src="https://stuff.charm.sh/charm-badge-unrounded.jpg" width="400"></a>
+<a href="https://charm.sh/"><img alt="the Charm logo" src="https://stuff.charm.sh/charm-badge.jpg" width="400"></a>
 
 Charm热爱开源 • Charm loves open source
 
