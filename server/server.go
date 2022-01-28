@@ -90,8 +90,8 @@ func (cfg *Config) WithTLSConfig(c *tls.Config) *Config {
 	return cfg
 }
 
-// WithErrorLog returns a Config with the provided error log for the server.
-func (cfg *Config) WithErrorLog(l *log.Logger) *Config {
+// WithErrorLogger returns a Config with the provided error log for the server.
+func (cfg *Config) WithErrorLogger(l *log.Logger) *Config {
 	cfg.errorLog = l
 	return cfg
 }
