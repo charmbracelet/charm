@@ -62,7 +62,7 @@ func (me *SSHServer) handleAPIAuth(s ssh.Session) {
 	_ = me.sendJSON(s, charm.Auth{
 		JWT:         j,
 		ID:          u.CharmID,
-		HTTPScheme:  me.config.HTTPScheme,
+		HTTPScheme:  me.config.httpScheme,
 		PublicKey:   u.PublicKey.Key,
 		EncryptKeys: eks,
 	})

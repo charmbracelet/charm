@@ -20,22 +20,22 @@ import (
 
 // Config is the configuration for the Charm server.
 type Config struct {
-	Host        string `env:"CHARM_SERVER_HOST" default:"localhost"`
+	Host        string `env:"CHARM_SERVER_HOST"`
 	SSHPort     int    `env:"CHARM_SERVER_SSH_PORT" default:"35353"`
 	HTTPPort    int    `env:"CHARM_SERVER_HTTP_PORT" default:"35354"`
-	HTTPScheme  string `env:"CHARM_SERVER_HTTP_SCHEME" default:"http"`
 	StatsPort   int    `env:"CHARM_SERVER_STATS_PORT" default:"35355"`
 	HealthPort  int    `env:"CHARM_SERVER_HEALTH_PORT" default:"35356"`
 	DataDir     string `env:"CHARM_SERVER_DATA_DIR" default:"./data"`
-	TLSKeyFile  string `env:"CHARM_SERVER_TLS_KEY_FILE" default:""`
-	TLSCertFile string `env:"CHARM_SERVER_TLS_CERT_FILE" default:""`
-	TLSConfig   *tls.Config
+	TLSKeyFile  string `env:"CHARM_SERVER_TLS_KEY_FILE"`
+	TLSCertFile string `env:"CHARM_SERVER_TLS_CERT_FILE"`
 	PublicKey   []byte
 	PrivateKey  []byte
 	DB          db.DB
 	FileStore   storage.FileStore
 	Stats       stats.Stats
+	tlsConfig   *tls.Config
 	jwtKeyPair  JSONWebKeyPair
+	httpScheme  string
 }
 
 // Server contains the SSH and HTTP servers required to host the Charm Cloud.
@@ -48,9 +48,8 @@ type Server struct {
 // DefaultConfig returns a Config with the values populated with the defaults
 // or specified environment variables.
 func DefaultConfig() *Config {
-	cfg := &Config{}
-	err := babyenv.Parse(cfg)
-	if err != nil {
+	cfg := &Config{httpScheme: "http"}
+	if err := babyenv.Parse(cfg); err != nil {
 		log.Fatalf("could not read environment: %s", err)
 	}
 
@@ -83,13 +82,19 @@ func (cfg *Config) WithKeys(publicKey []byte, privateKey []byte) *Config {
 	return cfg
 }
 
+// WithTLSConfig returns a Config with the provided TLS configuration.
+func (cfg *Config) WithTLSConfig(c *tls.Config) *Config {
+	cfg.tlsConfig = c
+	return cfg
+}
+
 func (cfg *Config) httpURL() string {
-	return fmt.Sprintf("%s://%s:%d", cfg.HTTPScheme, cfg.Host, cfg.HTTPPort)
+	return fmt.Sprintf("%s://%s:%d", cfg.httpScheme, cfg.Host, cfg.HTTPPort)
 }
 
 // NewServer returns a *Server with the specified Config.
 func NewServer(cfg *Config) (*Server, error) {
-	s := &Server{}
+	s := &Server{Config: cfg}
 	s.init(cfg)
 
 	pk, err := gossh.ParseRawPrivateKey(cfg.PrivateKey)
@@ -97,6 +102,11 @@ func NewServer(cfg *Config) (*Server, error) {
 		return nil, err
 	}
 	cfg.jwtKeyPair = NewJSONWebKeyPair(pk.(*ed25519.PrivateKey))
+
+	// Use HTTPS when TLS is configured.
+	if cfg.tlsConfig != nil || (cfg.TLSCertFile != "" && cfg.TLSKeyFile != "") {
+		cfg.httpScheme = "https"
+	}
 
 	ss, err := NewSSHServer(cfg)
 	if err != nil {
