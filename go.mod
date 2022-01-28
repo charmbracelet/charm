@@ -11,7 +11,6 @@ require (
 	github.com/charmbracelet/lipgloss v0.4.0
 	github.com/charmbracelet/wish v0.1.1
 	github.com/dgraph-io/badger/v3 v3.2011.1
-	github.com/form3tech-oss/jwt-go v3.2.2+incompatible
 	github.com/gliderlabs/ssh v0.3.3
 	github.com/golang-jwt/jwt/v4 v4.2.0
 	github.com/google/uuid v1.3.0
