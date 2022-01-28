@@ -56,6 +56,7 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 		Addr:      fmt.Sprintf("%s:%d", cfg.Host, cfg.HealthPort),
 		Handler:   healthMux,
 		TLSConfig: cfg.tlsConfig,
+		ErrorLog:  cfg.errorLog,
 	}
 	mux := goji.NewMux()
 	s := &HTTPServer{
@@ -103,6 +104,7 @@ func (s *HTTPServer) Start() {
 		Addr:      listenAddr,
 		Handler:   s.handler,
 		TLSConfig: s.cfg.tlsConfig,
+		ErrorLog:  s.cfg.errorLog,
 	}
 
 	go func() {

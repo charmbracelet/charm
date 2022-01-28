@@ -29,6 +29,7 @@ type Config struct {
 	DataDir     string `env:"CHARM_SERVER_DATA_DIR" default:"./data"`
 	TLSKeyFile  string `env:"CHARM_SERVER_TLS_KEY_FILE"`
 	TLSCertFile string `env:"CHARM_SERVER_TLS_CERT_FILE"`
+	errorLog    *log.Logger
 	PublicKey   []byte
 	PrivateKey  []byte
 	DB          db.DB
@@ -86,6 +87,12 @@ func (cfg *Config) WithKeys(publicKey []byte, privateKey []byte) *Config {
 // WithTLSConfig returns a Config with the provided TLS configuration.
 func (cfg *Config) WithTLSConfig(c *tls.Config) *Config {
 	cfg.tlsConfig = c
+	return cfg
+}
+
+// WithErrorLog returns a Config with the provided error log for the server.
+func (cfg *Config) WithErrorLog(l *log.Logger) *Config {
+	cfg.errorLog = l
 	return cfg
 }
 
