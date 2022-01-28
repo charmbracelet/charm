@@ -31,6 +31,8 @@ type HTTPServer struct {
 	fstore  storage.FileStore
 	cfg     *Config
 	handler http.Handler
+	server  *http.Server
+	health  *http.Server
 }
 
 type providerJSON struct {
@@ -44,14 +46,21 @@ type providerJSON struct {
 
 // NewHTTPServer returns a new *HTTPServer with the specified Config.
 func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
+	healthMux := http.NewServeMux()
 	// No auth health check endpoint
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	healthMux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "We live!")
-	})
+	}))
+	health := &http.Server{
+		Addr:      fmt.Sprintf("%s:%d", cfg.Host, cfg.HealthPort),
+		Handler:   healthMux,
+		TLSConfig: cfg.tlsConfig,
+	}
 	mux := goji.NewMux()
 	s := &HTTPServer{
 		cfg:     cfg,
 		handler: mux,
+		health:  health,
 	}
 	jwtMiddleware, err := JWTMiddleware(
 		cfg.jwtKeyPair.JWK.Public(),
@@ -61,6 +70,7 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	mux.Use(babylogger.Middleware)
 	mux.Use(PublicPrefixesMiddleware([]string{"/v1/public/", "/.well-known/"}))
 	mux.Use(jwtMiddleware)
@@ -86,26 +96,29 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 
 // Start starts the HTTP server on the port specified in the Config.
 func (s *HTTPServer) Start() {
-	useTls := s.cfg.HTTPScheme == "https"
-	listenAddr := fmt.Sprintf(":%d", s.cfg.HTTPPort)
-	server := &http.Server{
+	useTLS := s.cfg.httpScheme == "https"
+	listenAddr := fmt.Sprintf("%s:%d", s.cfg.Host, s.cfg.HTTPPort)
+	s.server = &http.Server{
 		Addr:      listenAddr,
 		Handler:   s.handler,
-		TLSConfig: s.cfg.TLSConfig,
+		TLSConfig: s.cfg.tlsConfig,
 	}
 
 	go func() {
-		err := http.ListenAndServe(fmt.Sprintf(":%d", s.cfg.HealthPort), nil)
-		if err != nil {
-			log.Fatalf("http health endpoint server exited with error: %s", err)
+		log.Printf("Starting %s health server on: %s", strings.ToUpper(s.cfg.httpScheme), s.health.Addr)
+		f := "http health endpoint server exited with error: %s"
+		if useTLS {
+			log.Fatalf(f, s.health.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile))
+		} else {
+			log.Fatal(f, s.health.ListenAndServe())
 		}
 	}()
 
-	log.Printf("%s server listening on: %s", strings.ToUpper(s.cfg.HTTPScheme), listenAddr)
-	if useTls {
-		log.Fatalf("Server crashed: %s", server.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile))
+	log.Printf("Starting %s server on: %s", strings.ToUpper(s.cfg.httpScheme), listenAddr)
+	if useTLS {
+		log.Fatalf("Server crashed: %s", s.server.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile))
 	} else {
-		log.Fatalf("Server crashed: %s", server.ListenAndServe())
+		log.Fatalf("Server crashed: %s", s.server.ListenAndServe())
 	}
 }
 

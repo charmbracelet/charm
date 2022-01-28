@@ -37,7 +37,7 @@ type SSHServer struct {
 // NewSSHServer creates a new SSHServer from the provided Config.
 func NewSSHServer(cfg *Config) (*SSHServer, error) {
 	s := &SSHServer{config: cfg}
-	addr := fmt.Sprintf(":%d", cfg.SSHPort)
+	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.SSHPort)
 	b, err := toktok.NewBucket(6)
 	if err != nil {
 		return nil, err

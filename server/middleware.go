@@ -17,6 +17,7 @@ type contextKey string
 
 var ctxUserKey contextKey = "charmUser"
 
+// RequestLimitMiddleware limits the request body size to the specified limit.
 func RequestLimitMiddleware() func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
