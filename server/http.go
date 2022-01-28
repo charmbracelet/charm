@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -94,7 +95,7 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 	return s, nil
 }
 
-// Start starts the HTTP server on the port specified in the Config.
+// Start start the HTTP and health servers on the ports specified in the Config.
 func (s *HTTPServer) Start() {
 	useTLS := s.cfg.httpScheme == "https"
 	listenAddr := fmt.Sprintf("%s:%d", s.cfg.Host, s.cfg.HTTPPort)
@@ -120,6 +121,15 @@ func (s *HTTPServer) Start() {
 	} else {
 		log.Fatalf("Server crashed: %s", s.server.ListenAndServe())
 	}
+}
+
+// Shutdown gracefully shut down the HTTP and health servers.
+func (s *HTTPServer) Shutdown(ctx context.Context) error {
+	log.Printf("Stopping %s server on %s", strings.ToUpper(s.cfg.httpScheme), s.server.Addr)
+	if err := s.health.Shutdown(ctx); err != nil {
+		return err
+	}
+	return s.server.Shutdown(ctx)
 }
 
 func (s *HTTPServer) renderError(w http.ResponseWriter) {

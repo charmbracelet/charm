@@ -1,7 +1,12 @@
 package cmd
 
 import (
+	"context"
+	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
+	"time"
 
 	"github.com/charmbracelet/charm/server"
 	"github.com/charmbracelet/keygen"
@@ -46,8 +51,19 @@ var (
 			if err != nil {
 				return err
 			}
-			s.Start()
-			return nil
+
+			done := make(chan os.Signal, 1)
+			signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+			go func() {
+				s.Start()
+			}()
+
+			<-done
+
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer func() { cancel() }()
+
+			return s.Shutdown(ctx)
 		},
 	}
 )

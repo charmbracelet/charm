@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -64,6 +65,12 @@ func NewSSHServer(cfg *Config) (*SSHServer, error) {
 func (me *SSHServer) Start() {
 	log.Printf("Starting SSH server on %s", me.server.Addr)
 	log.Fatal(me.server.ListenAndServe())
+}
+
+// Shutdown gracefully shuts down the SSH server.
+func (me *SSHServer) Shutdown(ctx context.Context) error {
+	log.Printf("Stopping SSH server on %s", me.server.Addr)
+	return me.server.Shutdown(ctx)
 }
 
 func (me *SSHServer) sendAPIMessage(s ssh.Session, msg string) error {
