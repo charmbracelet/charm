@@ -2,6 +2,7 @@
 package server
 
 import (
+	"context"
 	"crypto/ed25519"
 	"crypto/tls"
 	"fmt"
@@ -121,12 +122,20 @@ func NewServer(cfg *Config) (*Server, error) {
 	return s, nil
 }
 
-// Start starts the HTTP, SSH and stats HTTP servers for the Charm Cloud.
+// Start starts the HTTP, SSH and health HTTP servers for the Charm Cloud.
 func (srv *Server) Start() {
 	go func() {
 		srv.http.Start()
 	}()
 	srv.ssh.Start()
+}
+
+// Shutdown shuts down the HTTP, and SSH and health HTTP servers for the Charm Cloud.
+func (srv *Server) Shutdown(ctx context.Context) error {
+	if err := srv.ssh.Shutdown(ctx); err != nil {
+		return err
+	}
+	return srv.http.Shutdown(ctx)
 }
 
 func (srv *Server) init(cfg *Config) {
