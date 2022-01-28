@@ -33,11 +33,18 @@ type SSHServer struct {
 	tokenBucket  *toktok.Bucket
 	linkRequests map[charm.Token]chan *charm.Link
 	server       *ssh.Server
+	errorLog     *log.Logger
 }
 
 // NewSSHServer creates a new SSHServer from the provided Config.
 func NewSSHServer(cfg *Config) (*SSHServer, error) {
-	s := &SSHServer{config: cfg}
+	s := &SSHServer{
+		config:   cfg,
+		errorLog: cfg.errorLog,
+	}
+	if s.errorLog == nil {
+		s.errorLog = log.Default()
+	}
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.SSHPort)
 	b, err := toktok.NewBucket(6)
 	if err != nil {
