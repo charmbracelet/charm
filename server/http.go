@@ -53,10 +53,9 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 		fmt.Fprintf(w, "We live!")
 	}))
 	health := &http.Server{
-		Addr:      fmt.Sprintf("%s:%d", cfg.Host, cfg.HealthPort),
-		Handler:   healthMux,
-		TLSConfig: cfg.tlsConfig,
-		ErrorLog:  cfg.errorLog,
+		Addr:     fmt.Sprintf("%s:%d", cfg.Host, cfg.HealthPort),
+		Handler:  healthMux,
+		ErrorLog: cfg.errorLog,
 	}
 	mux := goji.NewMux()
 	s := &HTTPServer{
@@ -108,12 +107,9 @@ func (s *HTTPServer) Start() {
 	}
 
 	go func() {
-		log.Printf("Starting %s health server on: %s", strings.ToUpper(s.cfg.httpScheme), s.health.Addr)
-		f := "http health endpoint server exited with error: %s"
-		if useTLS {
-			log.Fatalf(f, s.health.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile))
-		} else {
-			log.Fatal(f, s.health.ListenAndServe())
+		log.Printf("Starting HTTP health server on: %s", s.health.Addr)
+		if err := s.health.ListenAndServe(); err != nil {
+			log.Fatalf("http health endpoint server exited with error: %s", err)
 		}
 	}()
 
@@ -128,6 +124,7 @@ func (s *HTTPServer) Start() {
 // Shutdown gracefully shut down the HTTP and health servers.
 func (s *HTTPServer) Shutdown(ctx context.Context) error {
 	log.Printf("Stopping %s server on %s", strings.ToUpper(s.cfg.httpScheme), s.server.Addr)
+	log.Printf("Stopping HTTP health server on %s", s.health.Addr)
 	if err := s.health.Shutdown(ctx); err != nil {
 		return err
 	}
