@@ -152,7 +152,7 @@ func (me *SSHServer) LinkGen(lt charm.LinkTransport) error {
 			if u.CharmID == "" {
 				// Create account for the link generator public key if it doesn't exist
 				log.Printf("Creating account for token: %s", tok)
-				u, err = me.db.UserForKey(u.PublicKey.Key, true)
+				u, err = me.db.UserForKey(u.PublicKey.Key, me.config.AutoAccounts)
 				if err != nil {
 					log.Printf("Create account error: %s", err)
 					l.Status = charm.LinkStatusError
@@ -272,7 +272,7 @@ func (me *SSHServer) handleLinkGenAPI(s ssh.Session) {
 		_ = me.sendAPIMessage(s, fmt.Sprintf("Missing public key %s", err))
 		return
 	}
-	u, err := me.db.UserForKey(key, true)
+	u, err := me.db.UserForKey(key, me.config.AutoAccounts)
 	if err != nil {
 		_ = me.sendAPIMessage(s, fmt.Sprintf("Storage key lookup error: %s", err))
 		return

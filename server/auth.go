@@ -51,7 +51,7 @@ func (me *SSHServer) handleAPIAuth(s ssh.Session) {
 		me.errorLog.Println(err)
 		return
 	}
-	u, err := me.db.UserForKey(key, true)
+	u, err := me.db.UserForKey(key, me.config.AutoAccounts)
 	if err != nil {
 		me.errorLog.Println(err)
 		return
@@ -85,7 +85,7 @@ func (me *SSHServer) handleAPIKeys(s ssh.Session) {
 		_ = me.sendAPIMessage(s, "Missing key")
 		return
 	}
-	u, err := me.db.UserForKey(key, true)
+	u, err := me.db.UserForKey(key, me.config.AutoAccounts)
 	if err != nil {
 		me.errorLog.Println(err)
 		_ = me.sendAPIMessage(s, fmt.Sprintf("API keys error: %s", err))
@@ -121,7 +121,7 @@ func (me *SSHServer) handleID(s ssh.Session) {
 		me.errorLog.Println(err)
 		return
 	}
-	u, err := me.db.UserForKey(key, true)
+	u, err := me.db.UserForKey(key, me.config.AutoAccounts)
 	if err != nil {
 		me.errorLog.Println(err)
 		return

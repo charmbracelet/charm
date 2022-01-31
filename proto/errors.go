@@ -2,6 +2,7 @@ package proto
 
 import (
 	"errors"
+	"fmt"
 )
 
 // ErrMalformedKey parsing error for bad ssh key.
@@ -37,7 +38,7 @@ type ErrAuthFailed struct {
 }
 
 // Error returns the boxed error string.
-func (e ErrAuthFailed) Error() string { return e.Err.Error() }
+func (e ErrAuthFailed) Error() string { return fmt.Sprintf("authentication failed: %s", e.Err.Error()) }
 
 // Unwrap returns the boxed error.
 func (e ErrAuthFailed) Unwrap() error { return e.Err }
