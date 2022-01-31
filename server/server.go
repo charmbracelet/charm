@@ -38,7 +38,7 @@ type Config struct {
 	tlsConfig    *tls.Config
 	jwtKeyPair   JSONWebKeyPair
 	httpScheme   string
-	AutoAccounts bool
+	AutoAccounts bool `env:"CHARM_SERVER_AUTO_ACCOUNTS" default:"true"`
 }
 
 // Server contains the SSH and HTTP servers required to host the Charm Cloud.
