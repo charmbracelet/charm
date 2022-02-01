@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/auth0/go-jwt-middleware/v2 v2.0.0-beta
+	github.com/caarlos0/env/v6 v6.9.1
 	github.com/calmh/randomart v1.1.0
 	github.com/charmbracelet/bubbles v0.8.0
 	github.com/charmbracelet/bubbletea v0.19.1
@@ -15,8 +16,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.2.0
 	github.com/google/uuid v1.3.0
 	github.com/jacobsa/crypto v0.0.0-20190317225127-9f44e2d11115
-	github.com/mattn/go-isatty v0.0.14-0.20210829144114-504425e14f74
-	github.com/meowgorithm/babyenv v1.3.1
+	github.com/mattn/go-isatty v0.0.14
 	github.com/meowgorithm/babylogger v1.2.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/muesli/go-app-paths v0.2.1

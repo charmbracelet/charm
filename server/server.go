@@ -9,24 +9,24 @@ import (
 	"log"
 	"path/filepath"
 
+	"github.com/caarlos0/env/v6"
 	"github.com/charmbracelet/charm/server/db"
 	"github.com/charmbracelet/charm/server/db/sqlite"
 	"github.com/charmbracelet/charm/server/stats"
 	sls "github.com/charmbracelet/charm/server/stats/sqlite"
 	"github.com/charmbracelet/charm/server/storage"
 	lfs "github.com/charmbracelet/charm/server/storage/local"
-	"github.com/meowgorithm/babyenv"
 	gossh "golang.org/x/crypto/ssh"
 )
 
 // Config is the configuration for the Charm server.
 type Config struct {
-	Host        string `env:"CHARM_SERVER_HOST"`
-	SSHPort     int    `env:"CHARM_SERVER_SSH_PORT" default:"35353"`
-	HTTPPort    int    `env:"CHARM_SERVER_HTTP_PORT" default:"35354"`
-	StatsPort   int    `env:"CHARM_SERVER_STATS_PORT" default:"35355"`
-	HealthPort  int    `env:"CHARM_SERVER_HEALTH_PORT" default:"35356"`
-	DataDir     string `env:"CHARM_SERVER_DATA_DIR" default:"./data"`
+	Host        string `env:"CHARM_SERVER_HOST" envDefault:"localhost"`
+	SSHPort     int    `env:"CHARM_SERVER_SSH_PORT" envDefault:"35353"`
+	HTTPPort    int    `env:"CHARM_SERVER_HTTP_PORT" envDefault:"35354"`
+	StatsPort   int    `env:"CHARM_SERVER_STATS_PORT" envDefault:"35355"`
+	HealthPort  int    `env:"CHARM_SERVER_HEALTH_PORT" envDefault:"35356"`
+	DataDir     string `env:"CHARM_SERVER_DATA_DIR" envDefault:"./data"`
 	TLSKeyFile  string `env:"CHARM_SERVER_TLS_KEY_FILE"`
 	TLSCertFile string `env:"CHARM_SERVER_TLS_CERT_FILE"`
 	errorLog    *log.Logger
@@ -51,7 +51,7 @@ type Server struct {
 // or specified environment variables.
 func DefaultConfig() *Config {
 	cfg := &Config{httpScheme: "http"}
-	if err := babyenv.Parse(cfg); err != nil {
+	if err := env.Parse(cfg); err != nil {
 		log.Fatalf("could not read environment: %s", err)
 	}
 
