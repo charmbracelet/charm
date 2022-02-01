@@ -243,15 +243,3 @@ func (kv *KV) Reset() error {
 	kv.DB = db
 	return kv.Sync()
 }
-
-func openDB(cc *client.Client, name string, opt badger.Options) (*badger.DB, error) {
-	ek, err := encryptKeyFromCharmClient(cc)
-	if err != nil {
-		return nil, err
-	}
-	opt, err = OptionsWithEncryption(opt, ek, 32768)
-	if err != nil {
-		return nil, err
-	}
-	return badger.OpenManaged(opt)
-}

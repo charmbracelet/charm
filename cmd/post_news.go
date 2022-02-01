@@ -26,7 +26,7 @@ var (
 				cfg.DataDir = serverDataDir
 			}
 			sp := filepath.Join(cfg.DataDir, ".ssh")
-			kp, err := keygen.NewWithWrite(sp, "charm_server", []byte(""), keygen.RSA)
+			kp, err := keygen.NewWithWrite(sp, "charm_server", []byte(""), keygen.Ed25519)
 			if err != nil {
 				return err
 			}

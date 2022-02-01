@@ -11,6 +11,7 @@ import (
 
 	"github.com/charmbracelet/charm/client"
 	charm "github.com/charmbracelet/charm/proto"
+	badger "github.com/dgraph-io/badger/v3"
 )
 
 type kvFile struct {
@@ -95,10 +96,10 @@ func (kv *KV) restoreSeq(seq uint64) error {
 		return nil
 	}
 	r, err := kv.fs.Open(kv.seqStorageKey(seq))
-	defer r.Close()
 	if err != nil {
 		return err
 	}
+	defer r.Close()
 	// TODO DB.Load() should be called on a database that is not running any
 	// other concurrent transactions while it is running.
 	return kv.DB.Load(r, 1)
@@ -151,14 +152,35 @@ func (kv *KV) syncFrom(mv uint64) error {
 	return nil
 }
 
-func encryptKeyFromCharmClient(cc *client.Client) ([]byte, error) {
-	k, err := cc.DefaultEncryptKey()
-	if err != nil {
-		return nil, err
-	}
+func encryptKeyToBadgerKey(k *charm.EncryptKey) ([]byte, error) {
 	ek := []byte(k.Key)
 	if len(ek) < 32 {
 		return nil, fmt.Errorf("Encryption key is too short")
 	}
 	return []byte(ek)[0:32], nil
+}
+
+func openDB(cc *client.Client, name string, opt badger.Options) (*badger.DB, error) {
+	var db *badger.DB
+	eks, err := cc.EncryptKeys()
+	if err != nil {
+		return nil, err
+	}
+	for _, k := range eks {
+		ek, err := encryptKeyToBadgerKey(k)
+		if err == nil {
+			opt, err = OptionsWithEncryption(opt, ek, 32768)
+			if err != nil {
+				continue
+			}
+			db, err = badger.OpenManaged(opt)
+			if err == nil {
+				break
+			}
+		}
+	}
+	if db == nil {
+		return nil, fmt.Errorf("could not open BadgerDB, bad encrypt keys")
+	}
+	return db, nil
 }

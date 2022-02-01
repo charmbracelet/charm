@@ -30,6 +30,7 @@ type Config struct {
 	HTTPPort int    `env:"CHARM_HTTP_PORT" envDefault:"35354"`
 	Debug    bool   `env:"CHARM_DEBUG" envDefault:"false"`
 	Logfile  string `env:"CHARM_LOGFILE" envDefault:""`
+	KeyType  string `env:"CHARM_KEY_TYPE" envDefault:"ed25519"`
 }
 
 // Client is the Charm client.
@@ -62,7 +63,7 @@ func NewClient(cfg *Config) (*Client, error) {
 		authLock:       &sync.Mutex{},
 		encryptKeyLock: &sync.Mutex{},
 	}
-	sshKeys, err := FindAuthKeys(cfg.Host)
+	sshKeys, err := FindAuthKeys(cfg.Host, cfg.KeyType)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +100,7 @@ func NewClientWithDefaults() (*Client, error) {
 		if err != nil {
 			return nil, err
 		}
-		_, err = keygen.NewWithWrite(dp, "charm", []byte(""), keygen.RSA)
+		_, err = keygen.NewWithWrite(dp, "charm", []byte(""), cfg.KeygenType())
 		if err != nil {
 			return nil, err
 		}
@@ -204,6 +205,17 @@ func (cc *Client) UnlinkAuthorizedKey(key string) error {
 	return nil
 }
 
+func (cfg *Config) KeygenType() keygen.KeyType {
+	switch cfg.KeyType {
+	case "Ed25519", "ed25519":
+		return keygen.Ed25519
+	case "RSA", "rsa":
+		return keygen.RSA
+	default:
+		return keygen.Ed25519
+	}
+}
+
 // SetName sets the account's username.
 func (cc *Client) SetName(name string) (*charm.User, error) {
 	if !ValidateName(name) {
@@ -271,7 +283,7 @@ func publicKeyAuthMethod(kp string) (ssh.AuthMethod, error) {
 
 // FindAuthKeys looks in a user's XDG charm-dir for possible auth keys.
 // If no keys are found we return an empty slice.
-func FindAuthKeys(host string) (pathsToKeys []string, err error) {
+func FindAuthKeys(host string, keyType string) (pathsToKeys []string, err error) {
 	keyPath, err := DataPath(host)
 	if err != nil {
 		return nil, err
@@ -287,12 +299,7 @@ func FindAuthKeys(host string) (pathsToKeys []string, err error) {
 
 	var found []string
 	for _, f := range m {
-		switch filepath.Base(f) {
-		case "charm_rsa":
-			fallthrough
-		case "charm_ecdsa":
-			fallthrough
-		case "charm_ed25519":
+		if filepath.Base(f) == fmt.Sprintf("charm_%s", keyType) {
 			found = append(found, f)
 		}
 	}

@@ -89,11 +89,10 @@ func NewFS() (*FS, error) {
 
 // NewFSWithClient returns an FS with a custom *client.Client.
 func NewFSWithClient(cc *client.Client) (*FS, error) {
-	k, err := cc.DefaultEncryptKey()
+	crypt, err := crypt.NewCrypt()
 	if err != nil {
 		return nil, err
 	}
-	crypt := crypt.NewCryptWithKey(k)
 	return &FS{cc: cc, crypt: crypt, maxFileSize: 1 << 30}, nil
 }
 
