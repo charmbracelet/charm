@@ -80,6 +80,7 @@ func init() {
 		cmd.KVCmd,
 		cmd.FSCmd,
 		cmd.CryptCmd,
+		cmd.MigrateAccountCmd,
 	)
 }
 

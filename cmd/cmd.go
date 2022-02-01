@@ -65,7 +65,7 @@ func initCharmClient(kg keygenSetting) *client.Client {
 					printFormatted(keygenError + err.Error())
 					os.Exit(1)
 				}
-				_, err = keygen.NewWithWrite(dp, "charm", []byte(""), keygen.RSA)
+				_, err = keygen.NewWithWrite(dp, "charm", []byte(""), cfg.KeygenType())
 				if err != nil {
 					printFormatted(keygenError + err.Error())
 					os.Exit(1)

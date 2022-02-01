@@ -42,7 +42,7 @@ func (cc *Client) DefaultEncryptKey() (*charm.EncryptKey, error) {
 }
 
 func (cc *Client) findIdentities() ([]sasquatch.Identity, error) {
-	keys, err := FindAuthKeys(cc.Config.Host)
+	keys, err := FindAuthKeys(cc.Config.Host, cc.Config.KeyType)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,8 @@ func (cc *Client) findIdentities() ([]sasquatch.Identity, error) {
 	return ids, nil
 }
 
-func (cc *Client) encryptKeys() ([]*charm.EncryptKey, error) {
+// EncryptKeys returns all of the symmetric encrypt keys for the authed user.
+func (cc *Client) EncryptKeys() ([]*charm.EncryptKey, error) {
 	err := cc.cryptCheck()
 	if err != nil {
 		return nil, err

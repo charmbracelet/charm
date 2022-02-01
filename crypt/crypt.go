@@ -3,6 +3,7 @@ package crypt
 
 import (
 	"encoding/hex"
+	"fmt"
 	"io"
 
 	"github.com/charmbracelet/charm/client"
@@ -11,10 +12,14 @@ import (
 	"github.com/muesli/sasquatch"
 )
 
+// ErrIncorrectEncryptKeys is returned when the encrypt keys are missing or
+// incorrect for the encrypted data.
+var ErrIncorrectEncryptKeys error = fmt.Errorf("incorrect or missing encrypt keys")
+
 // Crypt manages the account and encryption keys used for encrypting and
 // decrypting.
 type Crypt struct {
-	key *charm.EncryptKey
+	keys []*charm.EncryptKey
 }
 
 // EncryptedWriter is an io.WriteCloser. All data written to this writer is
@@ -36,29 +41,33 @@ func NewCrypt() (*Crypt, error) {
 	if err != nil {
 		return nil, err
 	}
-	ek, err := cc.DefaultEncryptKey()
+	eks, err := cc.EncryptKeys()
 	if err != nil {
 		return nil, err
 	}
-	return NewCryptWithKey(ek), nil
-}
-
-// NewCryptWithKey creates a new Crypt with a specific EncryptKey.
-func NewCryptWithKey(ek *charm.EncryptKey) *Crypt {
-	return &Crypt{key: ek}
+	if len(eks) == 0 {
+		return nil, ErrIncorrectEncryptKeys
+	}
+	return &Crypt{keys: eks}, nil
 }
 
 // NewDecryptedReader creates a new Reader that will read from and decrypt the
 // passed in io.Reader of encrypted data.
 func (cr *Crypt) NewDecryptedReader(r io.Reader) (*DecryptedReader, error) {
+	var sdr io.Reader
 	dr := &DecryptedReader{}
-	id, err := sasquatch.NewScryptIdentity(cr.key.Key)
-	if err != nil {
-		return nil, err
+	for _, k := range cr.keys {
+		id, err := sasquatch.NewScryptIdentity(k.Key)
+		if err != nil {
+			return nil, err
+		}
+		sdr, err = sasquatch.Decrypt(r, id)
+		if err == nil {
+			break
+		}
 	}
-	sdr, err := sasquatch.Decrypt(r, id)
-	if err != nil {
-		return nil, err
+	if sdr == nil {
+		return nil, ErrIncorrectEncryptKeys
 	}
 	dr.r = sdr
 	return dr, nil
@@ -68,7 +77,7 @@ func (cr *Crypt) NewDecryptedReader(r io.Reader) (*DecryptedReader, error) {
 // the encrypted data to the supplied io.Writer.
 func (cr *Crypt) NewEncryptedWriter(w io.Writer) (*EncryptedWriter, error) {
 	ew := &EncryptedWriter{}
-	rec, err := sasquatch.NewScryptRecipient(cr.key.Key)
+	rec, err := sasquatch.NewScryptRecipient(cr.keys[0].Key)
 	if err != nil {
 		return ew, err
 	}
@@ -80,9 +89,9 @@ func (cr *Crypt) NewEncryptedWriter(w io.Writer) (*EncryptedWriter, error) {
 	return ew, nil
 }
 
-// Key returns the EncryptKey this Crypt is using.
-func (cr *Crypt) Key() *charm.EncryptKey {
-	return cr.key
+// Keys returns the EncryptKeys this Crypt is using.
+func (cr *Crypt) Keys() []*charm.EncryptKey {
+	return cr.keys
 }
 
 // EncryptLookupField will deterministically encrypt a string and the same
@@ -94,7 +103,7 @@ func (cr *Crypt) EncryptLookupField(field string) (string, error) {
 	if field == "" {
 		return "", nil
 	}
-	ct, err := siv.Encrypt(nil, []byte(cr.key.Key[:32]), []byte(field), nil)
+	ct, err := siv.Encrypt(nil, []byte(cr.keys[0].Key[:32]), []byte(field), nil)
 	if err != nil {
 		return "", err
 	}
@@ -110,9 +119,15 @@ func (cr *Crypt) DecryptLookupField(field string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	pt, err := siv.Decrypt([]byte(cr.key.Key[:32]), ct, nil)
-	if err != nil {
-		return "", err
+	var pt []byte
+	for _, k := range cr.keys {
+		pt, err = siv.Decrypt([]byte(k.Key[:32]), ct, nil)
+		if err == nil {
+			break
+		}
+	}
+	if len(pt) == 0 {
+		return "", ErrIncorrectEncryptKeys
 	}
 	return string(pt), nil
 }

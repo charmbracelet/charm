@@ -126,7 +126,7 @@ func (cc *Client) Link(lh charm.LinkHandler, code string) error {
 // public key with all other linked public keys.
 func (cc *Client) SyncEncryptKeys() error {
 	cc.InvalidateAuth()
-	eks, err := cc.encryptKeys()
+	eks, err := cc.EncryptKeys()
 	if err != nil {
 		return err
 	}

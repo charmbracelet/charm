@@ -147,7 +147,7 @@ func GenerateKeys(host string) tea.Cmd {
 		if err != nil {
 			return FailedMsg{err}
 		}
-		_, err = keygen.NewWithWrite(dp, "charm", nil, keygen.RSA)
+		_, err = keygen.NewWithWrite(dp, "charm", nil, keygen.Ed25519)
 		if err != nil {
 			return FailedMsg{err}
 		}
