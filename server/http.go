@@ -53,7 +53,7 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 		fmt.Fprintf(w, "We live!")
 	}))
 	health := &http.Server{
-		Addr:     fmt.Sprintf(":%d", cfg.HealthPort),
+		Addr:     fmt.Sprintf("%s:%d", cfg.BindAddr, cfg.HealthPort),
 		Handler:  healthMux,
 		ErrorLog: cfg.errorLog,
 	}
@@ -98,7 +98,7 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 // Start start the HTTP and health servers on the ports specified in the Config.
 func (s *HTTPServer) Start() {
 	useTLS := s.cfg.httpScheme == "https"
-	listenAddr := fmt.Sprintf(":%d", s.cfg.HTTPPort)
+	listenAddr := fmt.Sprintf("%s:%d", s.cfg.BindAddr, s.cfg.HTTPPort)
 	s.server = &http.Server{
 		Addr:      listenAddr,
 		Handler:   s.handler,

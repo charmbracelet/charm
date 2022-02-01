@@ -45,7 +45,7 @@ func NewSSHServer(cfg *Config) (*SSHServer, error) {
 	if s.errorLog == nil {
 		s.errorLog = log.Default()
 	}
-	addr := fmt.Sprintf(":%d", cfg.SSHPort)
+	addr := fmt.Sprintf("%s:%d", cfg.BindAddr, cfg.SSHPort)
 	b, err := toktok.NewBucket(6)
 	if err != nil {
 		return nil, err
