@@ -21,6 +21,7 @@ import (
 
 // Config is the configuration for the Charm server.
 type Config struct {
+	BindAddr    string `env:"CHARM_SERVER_BIND_ADDRESS" envDefault:""`
 	Host        string `env:"CHARM_SERVER_HOST" envDefault:"localhost"`
 	SSHPort     int    `env:"CHARM_SERVER_SSH_PORT" envDefault:"35353"`
 	HTTPPort    int    `env:"CHARM_SERVER_HTTP_PORT" envDefault:"35354"`
