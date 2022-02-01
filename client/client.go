@@ -13,10 +13,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/caarlos0/env/v6"
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/keygen"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/meowgorithm/babyenv"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/ssh"
 )
@@ -25,11 +25,11 @@ var nameValidator = regexp.MustCompile("^[a-zA-Z0-9]{1,50}$")
 
 // Config contains the Charm client configuration.
 type Config struct {
-	Host     string `env:"CHARM_HOST" default:"cloud.charm.sh"`
-	SSHPort  int    `env:"CHARM_SSH_PORT" default:"35353"`
-	HTTPPort int    `env:"CHARM_HTTP_PORT" default:"35354"`
-	Debug    bool   `env:"CHARM_DEBUG" default:"false"`
-	Logfile  string `env:"CHARM_LOGFILE" default:""`
+	Host     string `env:"CHARM_HOST" envDefault:"cloud.charm.sh"`
+	SSHPort  int    `env:"CHARM_SSH_PORT" envDefault:"35353"`
+	HTTPPort int    `env:"CHARM_HTTP_PORT" envDefault:"35354"`
+	Debug    bool   `env:"CHARM_DEBUG" envDefault:"false"`
+	Logfile  string `env:"CHARM_LOGFILE" envDefault:""`
 }
 
 // Client is the Charm client.
@@ -48,7 +48,7 @@ type Client struct {
 // ConfigFromEnv loads the configuration from the environment.
 func ConfigFromEnv() (*Config, error) {
 	var cfg Config
-	if err := babyenv.Parse(&cfg); err != nil {
+	if err := env.Parse(&cfg); err != nil {
 		return nil, err
 	}
 	return &cfg, nil
