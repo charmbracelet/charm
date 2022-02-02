@@ -41,6 +41,10 @@ const (
                            tag varchar(250),
                            news_id integer REFERENCES news (id) NOT NULL)`
 
+	sqlCreateTokenTable = `CREATE TABLE IF NOT EXISTS token(
+                           id INTEGER NOT NULL PRIMARY KEY,
+                           token text UNIQUE NOT NULL)`
+
 	sqlSelectUserWithName         = `SELECT id, charm_id, name, email, bio, created_at FROM charm_user WHERE name like ?`
 	sqlSelectUserWithCharmID      = `SELECT id, charm_id, name, email, bio, created_at FROM charm_user WHERE charm_id = ?`
 	sqlSelectUserWithID           = `SELECT id, charm_id, name, email, bio, created_at FROM charm_user WHERE id = ?`
@@ -50,6 +54,7 @@ const (
 	sqlSelectEncryptKey           = `SELECT global_id, encrypted_key, created_at FROM encrypt_key WHERE public_key_id = ? AND global_id = ?`
 	sqlSelectEncryptKeys          = `SELECT global_id, encrypted_key, created_at FROM encrypt_key WHERE public_key_id = ? ORDER BY created_at ASC`
 	sqlSelectNamedSeq             = `SELECT seq FROM named_seq WHERE user_id = ? AND name = ?`
+	sqlSelectTokens               = `SELECT token FROM token`
 
 	sqlInsertUser         = `INSERT INTO charm_user (charm_id) VALUES (?)`
 	sqlInsertUserWithName = `INSERT INTO charm_user (charm_id, name) VALUES (?, ?)`
@@ -71,11 +76,15 @@ const (
 	sqlInsertEncryptKey         = `INSERT INTO encrypt_key (encrypted_key, global_id, public_key_id) VALUES (?, ?, ?)`
 	sqlInsertEncryptKeyWithDate = `INSERT INTO encrypt_key (encrypted_key, global_id, public_key_id, created_at) VALUES (?, ?, ?, ?)`
 
+	sqlInsertToken = `INSERT INTO token (token) VALUES (?)`
+
 	sqlUpdateUser            = `UPDATE charm_user SET name = ? WHERE charm_id = ?`
 	sqlUpdateMergePublicKeys = `UPDATE public_key SET user_id = ? WHERE user_id = ?`
 
 	sqlDeleteUserPublicKey = `DELETE FROM public_key WHERE user_id = ? AND public_key = ?`
 	sqlDeleteUser          = `DELETE FROM charm_user WHERE id = ?`
+
+	sqlDeleteToken = `DELETE FROM token WHERE token = ?`
 
 	sqlCountUsers     = `SELECT COUNT(*) FROM charm_user`
 	sqlCountUserNames = `SELECT COUNT(*) FROM charm_user WHERE name <> ''`

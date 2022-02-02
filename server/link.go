@@ -113,6 +113,7 @@ func (sl *SSHLinker) User() *charm.User {
 // DeleteLinkRequest implements the proto.LinkTransport interface for the SSHLinker.
 func (me *SSHServer) DeleteLinkRequest(tok charm.Token) {
 	delete(me.linkRequests, tok)
+	me.db.DeleteToken(tok)
 }
 
 // LinkGen implements the proto.LinkTransport interface for the SSHLinker.
@@ -263,7 +264,12 @@ func (me *SSHServer) NewToken() charm.Token {
 	if err != nil {
 		panic(err)
 	}
-	return charm.Token(t)
+	tok := charm.Token(t)
+	err = me.db.SetToken(tok)
+	if err != nil {
+		panic(err)
+	}
+	return tok
 }
 
 func (me *SSHServer) handleLinkGenAPI(s ssh.Session) {
@@ -315,6 +321,10 @@ func (me *SSHServer) handleLinkRequestAPI(s ssh.Session) {
 }
 
 func (me *SSHServer) handleAPILink(s ssh.Session) {
+	if err := me.syncTokens(); err != nil {
+		log.Printf("Error syncing tokens: %s", err)
+		return
+	}
 	args := s.Command()[1:]
 	if len(args) == 0 {
 		me.handleLinkGenAPI(s)
@@ -368,4 +378,18 @@ func (me *SSHServer) sendLink(lt charm.LinkTransport, lc chan *charm.Link, l *ch
 			lt.TimedOut(l)
 		}
 	}()
+}
+
+func (me *SSHServer) syncTokens() error {
+	ts, err := me.db.GetTokens()
+	if err != nil {
+		return err
+	}
+	for _, t := range ts {
+		_, ok := me.linkRequests[t]
+		if !ok {
+			me.linkRequests[t] = make(chan *charm.Link)
+		}
+	}
+	return nil
 }

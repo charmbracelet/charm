@@ -355,6 +355,38 @@ func (me *DB) MergeUsers(userID1 int, userID2 int) error {
 	})
 }
 
+func (me *DB) SetToken(t charm.Token) error {
+	return me.wrapTransaction(func(tx *sql.Tx) error {
+		return me.insertToken(tx, string(t))
+	})
+}
+
+func (me *DB) DeleteToken(t charm.Token) error {
+	return me.wrapTransaction(func(tx *sql.Tx) error {
+		return me.deleteToken(tx, string(t))
+	})
+}
+
+func (me *DB) GetTokens() ([]charm.Token, error) {
+	ts := []charm.Token{}
+	err := me.wrapTransaction(func(tx *sql.Tx) error {
+		rs, err := me.selectTokens(tx)
+		if err != nil {
+			return err
+		}
+		for rs.Next() {
+			var t string
+			rs.Scan(&t)
+			ts = append(ts, charm.Token(t))
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return ts, nil
+}
+
 func (me *DB) CreateDB() error {
 	return me.wrapTransaction(func(tx *sql.Tx) error {
 		err := me.createUserTable(tx)
@@ -378,6 +410,10 @@ func (me *DB) CreateDB() error {
 			return err
 		}
 		err = me.createNewsTagTable(tx)
+		if err != nil {
+			return err
+		}
+		err = me.createTokenTable(tx)
 		if err != nil {
 			return err
 		}
@@ -437,6 +473,11 @@ func (me *DB) insertNews(tx *sql.Tx, subject string, body string, tags []string)
 		}
 	}
 	return nil
+}
+
+func (me *DB) insertToken(tx *sql.Tx, token string) error {
+	_, err := tx.Exec(sqlInsertToken, token)
+	return err
 }
 
 func (me *DB) selectNamedSeq(tx *sql.Tx, userID int, name string) (uint64, error) {
@@ -502,6 +543,10 @@ func (me *DB) selectNewsList(tx *sql.Tx, tag string, offset int) (*sql.Rows, err
 	return tx.Query(sqlSelectNewsList, tag, offset)
 }
 
+func (me *DB) selectTokens(tx *sql.Tx) (*sql.Rows, error) {
+	return tx.Query(sqlSelectTokens)
+}
+
 func (me *DB) deleteUserPublicKey(tx *sql.Tx, userID int, publicKey string) error {
 	_, err := tx.Exec(sqlDeleteUserPublicKey, userID, publicKey)
 	return err
@@ -509,6 +554,11 @@ func (me *DB) deleteUserPublicKey(tx *sql.Tx, userID int, publicKey string) erro
 
 func (me *DB) deleteUser(tx *sql.Tx, userID int) error {
 	_, err := tx.Exec(sqlDeleteUser, userID)
+	return err
+}
+
+func (me *DB) deleteToken(tx *sql.Tx, token string) error {
+	_, err := tx.Exec(sqlDeleteToken, token)
 	return err
 }
 
@@ -544,6 +594,11 @@ func (me *DB) createNewsTable(tx *sql.Tx) error {
 
 func (me *DB) createNewsTagTable(tx *sql.Tx) error {
 	_, err := tx.Exec(sqlCreateNewsTagTable)
+	return err
+}
+
+func (me *DB) createTokenTable(tx *sql.Tx) error {
+	_, err := tx.Exec(sqlCreateTokenTable)
 	return err
 }
 
