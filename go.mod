@@ -22,7 +22,7 @@ require (
 	github.com/muesli/go-app-paths v0.2.1
 	github.com/muesli/reflow v0.3.0
 	github.com/muesli/sasquatch v0.0.0-20200811221207-66979d92330a
-	github.com/muesli/toktok v0.0.0-20201007181047-c74187025f3f
+	github.com/muesli/toktok v0.1.0
 	github.com/spf13/cobra v1.0.0
 	goji.io v2.0.2+incompatible
 	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e
@@ -57,7 +57,7 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/xrash/smetrics v0.0.0-20200730060457-89a2a8a1fb0b // indirect
+	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	go.opencensus.io v0.22.5 // indirect
 	golang.org/x/mod v0.3.0 // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
