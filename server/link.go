@@ -32,6 +32,7 @@ func (sl *SSHLinker) TokenCreated(token charm.Token) {
 // TokenSent implements the proto.LinkTransport interface for the SSHLinker.
 func (sl *SSHLinker) TokenSent(l *charm.Link) {
 	log.Println("Token sent")
+	_ = sl.server.sendJSON(sl.session, l)
 }
 
 // Requested implements the proto.LinkTransport interface for the SSHLinker.
@@ -112,149 +113,180 @@ func (sl *SSHLinker) User() *charm.User {
 
 // DeleteLinkRequest implements the proto.LinkTransport interface for the SSHLinker.
 func (me *SSHServer) DeleteLinkRequest(tok charm.Token) {
-	delete(me.linkRequests, tok)
+	_ = me.db.DeleteLink(tok)
 }
 
 // LinkGen implements the proto.LinkTransport interface for the SSHLinker.
 func (me *SSHServer) LinkGen(lt charm.LinkTransport) error {
+	timedOut := make(chan bool, 1)
 	u := lt.User()
 	tok := me.NewToken()
-	linkRequest, ok := me.linkRequests[tok]
-	defer me.DeleteLinkRequest(tok)
-	if !ok {
-		log.Printf("Making new link for token: %s\n", tok)
-		linkRequest = make(chan *charm.Link)
-		me.linkRequests[tok] = linkRequest
+	l, err := me.db.LinkForToken(tok, true)
+	if err != nil {
+		return err
 	}
 	log.Printf("Token created %s", tok)
 	lt.TokenCreated(tok)
-	select {
-	case l := <-linkRequest:
-		log.Printf("Link request received %v", l)
-		var err error
-		var approved bool
-		ch := make(chan bool, 1)
-		go func() {
-			approved, err = lt.Requested(l)
-			ch <- approved
-		}()
-		select {
-		case <-ch:
-		case <-time.After(charm.LinkTimeout):
-			log.Printf("Link %s timed out", tok)
-			lt.TimedOut(&charm.Link{Status: charm.LinkStatusTimedOut})
-			return nil
-		}
+	go func() {
+		<-time.After(charm.LinkTimeout * 2)
+		me.DeleteLinkRequest(tok)
+	}()
+	go func() {
+		<-time.After(charm.LinkTimeout)
+		log.Printf("Link %s timed out", tok)
+		l.Status = charm.LinkStatusTimedOut
+		_ = me.db.UpdateLink(tok, l)
+		lt.TimedOut(&charm.Link{Status: charm.LinkStatusTimedOut})
+		timedOut <- true
+	}()
+	for {
+		<-time.After(time.Second)
+		l, err = me.db.LinkForToken(tok, false)
 		if err != nil {
+			log.Printf("Ling gen error: %s", err)
 			return err
 		}
-		if approved {
-			if u.CharmID == "" {
-				// Create account for the link generator public key if it doesn't exist
-				log.Printf("Creating account for token: %s", tok)
-				u, err = me.db.UserForKey(u.PublicKey.Key, true)
+		if l != nil && l.Status == charm.LinkStatusValidTokenRequest {
+			log.Printf("Link request received %v", l)
+			var approved bool
+			ch := make(chan bool, 1)
+			go func() {
+				approved, err = lt.Requested(l)
+				ch <- approved
+			}()
+			select {
+			case <-timedOut:
+			case <-ch:
 				if err != nil {
-					log.Printf("Create account error: %s", err)
-					l.Status = charm.LinkStatusError
-					me.sendLink(lt, linkRequest, l)
 					return err
 				}
-			}
-			log.Printf("Found account %s\n", u.CharmID)
-			// Look up account for the link requester public key
-			lu, err := me.db.UserForKey(l.RequestPubKey, false)
-			if err != nil && err != charm.ErrMissingUser {
-				log.Printf("Storage key lookup error: %s", err)
-				l.Status = charm.LinkStatusError
-				me.sendLink(lt, linkRequest, l)
-				return err
-			}
-			if err == charm.ErrMissingUser {
-				// Add the link requester's key to the link generator's account if one does not exist
-				log.Printf("Link account key to account %s", u.CharmID)
-				err = me.db.LinkUserKey(u, l.RequestPubKey)
-				if err != nil {
-					l.Status = charm.LinkStatusError
-					me.sendLink(lt, linkRequest, l)
-					return err
+				if approved {
+					if u.CharmID == "" {
+						// Create account for the link generator public key if it doesn't exist
+						log.Printf("Creating account for token: %s", tok)
+						u, err = me.db.UserForKey(u.PublicKey.Key, true)
+						if err != nil {
+							log.Printf("Create account error: %s", err)
+							l.Status = charm.LinkStatusError
+							_ = me.db.UpdateLink(tok, l)
+							return err
+						}
+					}
+					log.Printf("Found account %s\n", u.CharmID)
+					// Look up account for the link requester public key
+					lu, err := me.db.UserForKey(l.RequestPubKey, false)
+					if err != nil && err != charm.ErrMissingUser {
+						log.Printf("Storage key lookup error: %s", err)
+						l.Status = charm.LinkStatusError
+						_ = me.db.UpdateLink(tok, l)
+						return err
+					}
+					if err == charm.ErrMissingUser {
+						// Add the link requester's key to the link generator's account if one does not exist
+						log.Printf("Link account key to account %s", u.CharmID)
+						err = me.db.LinkUserKey(u, l.RequestPubKey)
+						if err != nil {
+							l.Status = charm.LinkStatusError
+							_ = me.db.UpdateLink(tok, l)
+							return err
+						}
+						l.Status = charm.LinkStatusSuccess
+					} else if lu.ID == u.ID {
+						// Maybe they're already linked
+						log.Printf("Key is already linked to account %s", u.CharmID)
+						l.Status = charm.LinkStatusSameUser
+						lt.LinkedSameUser(l)
+					} else {
+						// Link requester's key is linked to another acccount, merge
+						log.Printf("Key is already linked to different account %s", lu.CharmID)
+						err = me.db.MergeUsers(u.ID, lu.ID)
+						if err != nil {
+							l.Status = charm.LinkStatusError
+							_ = me.db.UpdateLink(tok, l)
+							return err
+						}
+						l.Status = charm.LinkStatusSuccess
+					}
+					if l.Status == charm.LinkStatusSuccess {
+						log.Printf("Link %s approved", tok)
+						lt.Success(l)
+					}
+				} else {
+					log.Printf("Link %s not approved", tok)
+					l.Status = charm.LinkStatusRequestDenied
 				}
-				l.Status = charm.LinkStatusSuccess
-			} else if lu.ID == u.ID {
-				// Maybe they're already linked
-				log.Printf("Key is already linked to account %s", u.CharmID)
-				l.Status = charm.LinkStatusSameUser
-				lt.LinkedSameUser(l)
-			} else {
-				// Link requester's key is linked to another acccount, merge
-				log.Printf("Key is already linked to different account %s", lu.CharmID)
-				err = me.db.MergeUsers(u.ID, lu.ID)
-				if err != nil {
-					l.Status = charm.LinkStatusError
-					me.sendLink(lt, linkRequest, l)
-					return err
-				}
-				l.Status = charm.LinkStatusSuccess
+				_ = me.db.UpdateLink(tok, l)
 			}
-			if l.Status == charm.LinkStatusSuccess {
-				log.Printf("Link %s approved", tok)
-				lt.Success(l)
-			}
-		} else {
-			log.Printf("Link %s not approved", tok)
-			l.Status = charm.LinkStatusRequestDenied
+			return nil
 		}
-		me.sendLink(lt, linkRequest, l)
-	case <-time.After(charm.LinkTimeout):
-		log.Printf("Link %s timed out", tok)
-		lt.TimedOut(&charm.Link{Status: charm.LinkStatusTimedOut})
 	}
-	return nil
 }
 
 // LinkRequest implements the proto.LinkTransport interface for the SSHLinker.
 func (me *SSHServer) LinkRequest(lt charm.LinkTransport, key string, token string, ip string) error {
+	timedOut := false
+	tok := charm.Token(token)
 	l := &charm.Link{
 		Host:          me.config.Host,
 		RequestAddr:   ip,
 		RequestPubKey: key,
 		Status:        charm.LinkStatusTokenSent,
+		Token:         tok,
 	}
-	l.Token = charm.Token(token)
+	defer me.DeleteLinkRequest(tok)
 	lt.RequestStart(l)
-	linkRequest, ok := me.linkRequests[l.Token]
-	if ok {
-		l.Status = charm.LinkStatusValidTokenRequest
-		lt.RequestValidToken(l)
-	} else {
+	lr, err := me.db.LinkForToken(l.Token, false)
+	if err != nil && err != charm.ErrLinkNotFound {
+		log.Printf("Link request error: %s", err)
+		l.Status = charm.LinkStatusError
+		lt.Error(l)
+		return nil
+	}
+	if err == charm.ErrLinkNotFound || lr.Status != charm.LinkStatusTokenCreated ||
+		lr.CreatedAt.Add(charm.LinkTimeout).Before(time.Now()) {
 		l.Status = charm.LinkStatusInvalidTokenRequest
 		lt.RequestInvalidToken(l)
-		return fmt.Errorf("Invalid token '%s'", token)
+		return nil
 	}
-	select {
-	case linkRequest <- l:
-		select {
-		case lr := <-linkRequest:
-			switch lr.Status {
-			case charm.LinkStatusSuccess:
-				lt.Success(l)
-			case charm.LinkStatusSameUser:
-				lt.LinkedSameUser(l)
-			case charm.LinkStatusRequestDenied:
-				lt.RequestDenied(l)
-			default:
-				log.Printf("Link error: %d", lr.Status)
-				l.Status = charm.LinkStatusError
-				lt.Error(l)
-			}
-		case <-time.After(charm.LinkTimeout):
-			l.Status = charm.LinkStatusTimedOut
-			lt.TimedOut(l)
-		}
-	case <-time.After(charm.LinkTimeout):
+	l.Status = charm.LinkStatusValidTokenRequest
+	lt.RequestValidToken(l)
+	_ = me.db.UpdateLink(tok, l)
+	go func() {
+		<-time.After(charm.LinkTimeout)
 		l.Status = charm.LinkStatusTimedOut
 		lt.TimedOut(l)
+		timedOut = true
+	}()
+	for {
+		<-time.After(time.Second)
+		lr, err := me.db.LinkForToken(l.Token, false)
+		if err != nil {
+			log.Printf("Link request error: %s", err)
+			return err
+		}
+		l.Status = lr.Status
+		switch lr.Status {
+		case charm.LinkStatusSuccess:
+			lt.Success(l)
+			return nil
+		case charm.LinkStatusSameUser:
+			lt.LinkedSameUser(l)
+			return nil
+		case charm.LinkStatusRequestDenied:
+			lt.RequestDenied(l)
+			return nil
+		case charm.LinkStatusError:
+			log.Printf("Link error: %d", lr.Status)
+			lt.Error(l)
+			return nil
+		case charm.LinkStatusTimedOut:
+			lt.TimedOut(l)
+			return nil
+		}
+		if timedOut {
+			return nil
+		}
 	}
-	return nil
 }
 
 // NewToken creates and returns a new Token.

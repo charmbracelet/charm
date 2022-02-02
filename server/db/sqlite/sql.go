@@ -41,6 +41,16 @@ const (
                            tag varchar(250),
                            news_id integer REFERENCES news (id) NOT NULL)`
 
+	sqlCreateLinkTable = `CREATE TABLE IF NOT EXISTS link(
+                        id INTEGER NOT NULL PRIMARY KEY,
+                        token text UNIQUE NOT NULL,
+                        req_pub_key text DEFAULT "",
+                        req_addr text DEFAULT "",
+                        host text DEFAULT "",
+                        port integer DEFAULT 0,
+                        status integer NOT NULL DEFAULT 0,
+                        created_at timestamp default current_timestamp)`
+
 	sqlSelectUserWithName         = `SELECT id, charm_id, name, email, bio, created_at FROM charm_user WHERE name like ?`
 	sqlSelectUserWithCharmID      = `SELECT id, charm_id, name, email, bio, created_at FROM charm_user WHERE charm_id = ?`
 	sqlSelectUserWithID           = `SELECT id, charm_id, name, email, bio, created_at FROM charm_user WHERE id = ?`
@@ -50,6 +60,7 @@ const (
 	sqlSelectEncryptKey           = `SELECT global_id, encrypted_key, created_at FROM encrypt_key WHERE public_key_id = ? AND global_id = ?`
 	sqlSelectEncryptKeys          = `SELECT global_id, encrypted_key, created_at FROM encrypt_key WHERE public_key_id = ? ORDER BY created_at ASC`
 	sqlSelectNamedSeq             = `SELECT seq FROM named_seq WHERE user_id = ? AND name = ?`
+	sqlSelectLink                 = `SELECT id, status, created_at, req_pub_key, req_addr, host, port FROM link WHERE token = ? ORDER BY created_at ASC`
 
 	sqlInsertUser         = `INSERT INTO charm_user (charm_id) VALUES (?)`
 	sqlInsertUserWithName = `INSERT INTO charm_user (charm_id, name) VALUES (?, ?)`
@@ -71,11 +82,17 @@ const (
 	sqlInsertEncryptKey         = `INSERT INTO encrypt_key (encrypted_key, global_id, public_key_id) VALUES (?, ?, ?)`
 	sqlInsertEncryptKeyWithDate = `INSERT INTO encrypt_key (encrypted_key, global_id, public_key_id, created_at) VALUES (?, ?, ?, ?)`
 
+	sqlInsertLink = `INSERT INTO link (token, status, req_pub_key, req_addr, host, port) VALUES (?, ?, ?, ?, ?, ?)`
+
 	sqlUpdateUser            = `UPDATE charm_user SET name = ? WHERE charm_id = ?`
 	sqlUpdateMergePublicKeys = `UPDATE public_key SET user_id = ? WHERE user_id = ?`
 
+	sqlUpdateLink = `UPDATE link SET status = ?, req_pub_key = ?, req_addr = ?, host = ?, port = ? WHERE token = ?`
+
 	sqlDeleteUserPublicKey = `DELETE FROM public_key WHERE user_id = ? AND public_key = ?`
 	sqlDeleteUser          = `DELETE FROM charm_user WHERE id = ?`
+
+	sqlDeleteLink = `DELETE FROM link WHERE token = ?`
 
 	sqlCountUsers     = `SELECT COUNT(*) FROM charm_user`
 	sqlCountUserNames = `SELECT COUNT(*) FROM charm_user WHERE name <> ''`

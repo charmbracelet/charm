@@ -28,12 +28,11 @@ type SessionHandler func(s Session)
 // SSHServer serves the SSH protocol and handles requests to authenticate and
 // link Charm user accounts.
 type SSHServer struct {
-	config       *Config
-	db           db.DB
-	tokenBucket  *toktok.Bucket
-	linkRequests map[charm.Token]chan *charm.Link
-	server       *ssh.Server
-	errorLog     *log.Logger
+	config      *Config
+	db          db.DB
+	tokenBucket *toktok.Bucket
+	server      *ssh.Server
+	errorLog    *log.Logger
 }
 
 // NewSSHServer creates a new SSHServer from the provided Config.
@@ -52,7 +51,6 @@ func NewSSHServer(cfg *Config) (*SSHServer, error) {
 	}
 	s.tokenBucket = &b
 	s.db = cfg.DB
-	s.linkRequests = make(map[charm.Token]chan *charm.Link)
 	srv, err := wish.NewServer(
 		wish.WithAddress(addr),
 		wish.WithHostKeyPEM(cfg.PrivateKey),

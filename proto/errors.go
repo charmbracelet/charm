@@ -30,6 +30,8 @@ var ErrUserExists = errors.New("user already exists for that key")
 // ErrPageOutOfBounds is an error for an invalid page number.
 var ErrPageOutOfBounds = errors.New("page must be a value of 1 or greater")
 
+var ErrLinkNotFound = errors.New("link token not found")
+
 // ErrAuthFailed indicates an authentication failure. The underlying error is
 // wrapped.
 type ErrAuthFailed struct {

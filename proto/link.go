@@ -30,12 +30,14 @@ type Token string
 // Link is the struct used to communicate state during the account linking
 // process.
 type Link struct {
+	ID            int        `json:"id"`
 	Token         Token      `json:"token"`
 	RequestPubKey string     `json:"request_pub_key"`
 	RequestAddr   string     `json:"request_addr"`
 	Host          string     `json:"host"`
 	Port          int        `json:"port"`
 	Status        LinkStatus `json:"status"`
+	CreatedAt     time.Time  `json:"created_at"`
 }
 
 // LinkHandler handles linking operations for the key to be linked.

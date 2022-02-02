@@ -14,8 +14,7 @@ import (
 )
 
 type DB struct {
-	host string
-	db   *sql.DB
+	db *sql.DB
 }
 
 func NewDB(path string) *DB {
@@ -355,30 +354,66 @@ func (me *DB) MergeUsers(userID1 int, userID2 int) error {
 	})
 }
 
+func (me *DB) LinkForToken(token charm.Token, create bool) (*charm.Link, error) {
+	l := &charm.Link{
+		Token:  token,
+		Status: charm.LinkStatusTokenCreated,
+	}
+	err := me.wrapTransaction(func(tx *sql.Tx) error {
+		r := me.selectLink(tx, string(token))
+		err := r.Scan(&l.ID, &l.Status, &l.CreatedAt, &l.RequestPubKey,
+			&l.RequestAddr, &l.Host, &l.Port)
+		if err != nil && err != sql.ErrNoRows {
+			return err
+		}
+		if err == sql.ErrNoRows && !create {
+			return charm.ErrLinkNotFound
+		}
+		if err == sql.ErrNoRows {
+			log.Printf("Making new link for token: %s\n", token)
+			return me.insertLink(tx, l)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return l, nil
+}
+
+func (me *DB) UpdateLink(token charm.Token, l *charm.Link) error {
+	return me.wrapTransaction(func(tx *sql.Tx) error {
+		return me.updateLink(tx, string(token), l)
+	})
+}
+
+func (me *DB) DeleteLink(token charm.Token) error {
+	return me.wrapTransaction(func(tx *sql.Tx) error {
+		return me.deleteLink(tx, string(token))
+	})
+}
+
 func (me *DB) CreateDB() error {
 	return me.wrapTransaction(func(tx *sql.Tx) error {
-		err := me.createUserTable(tx)
-		if err != nil {
+		if err := me.createUserTable(tx); err != nil {
 			return err
 		}
-		err = me.createPublicKeyTable(tx)
-		if err != nil {
+		if err := me.createPublicKeyTable(tx); err != nil {
 			return err
 		}
-		err = me.createNamedSeqTable(tx)
-		if err != nil {
+		if err := me.createNamedSeqTable(tx); err != nil {
 			return err
 		}
-		err = me.createEncryptKeyTable(tx)
-		if err != nil {
+		if err := me.createEncryptKeyTable(tx); err != nil {
 			return err
 		}
-		err = me.createNewsTable(tx)
-		if err != nil {
+		if err := me.createNewsTable(tx); err != nil {
 			return err
 		}
-		err = me.createNewsTagTable(tx)
-		if err != nil {
+		if err := me.createNewsTagTable(tx); err != nil {
+			return err
+		}
+		if err := me.createLinkTable(tx); err != nil {
 			return err
 		}
 		return nil
@@ -435,6 +470,14 @@ func (me *DB) insertNews(tx *sql.Tx, subject string, body string, tags []string)
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (me *DB) insertLink(tx *sql.Tx, l *charm.Link) error {
+	_, err := tx.Exec(sqlInsertLink, l.Token, l.Status, l.RequestPubKey, l.RequestAddr, l.Host, l.Port)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -502,6 +545,10 @@ func (me *DB) selectNewsList(tx *sql.Tx, tag string, offset int) (*sql.Rows, err
 	return tx.Query(sqlSelectNewsList, tag, offset)
 }
 
+func (me *DB) selectLink(tx *sql.Tx, token string) *sql.Row {
+	return tx.QueryRow(sqlSelectLink, token)
+}
+
 func (me *DB) deleteUserPublicKey(tx *sql.Tx, userID int, publicKey string) error {
 	_, err := tx.Exec(sqlDeleteUserPublicKey, userID, publicKey)
 	return err
@@ -512,8 +559,18 @@ func (me *DB) deleteUser(tx *sql.Tx, userID int) error {
 	return err
 }
 
+func (me *DB) deleteLink(tx *sql.Tx, token string) error {
+	_, err := tx.Exec(sqlDeleteLink, token)
+	return err
+}
+
 func (me *DB) updateMergePublicKeys(tx *sql.Tx, userID1 int, userID2 int) error {
 	_, err := tx.Exec(sqlUpdateMergePublicKeys, userID1, userID2)
+	return err
+}
+
+func (me *DB) updateLink(tx *sql.Tx, token string, l *charm.Link) error {
+	_, err := tx.Exec(sqlUpdateLink, l.Status, l.RequestPubKey, l.RequestAddr, l.Host, l.Port, token)
 	return err
 }
 
@@ -544,6 +601,11 @@ func (me *DB) createNewsTable(tx *sql.Tx) error {
 
 func (me *DB) createNewsTagTable(tx *sql.Tx) error {
 	_, err := tx.Exec(sqlCreateNewsTagTable)
+	return err
+}
+
+func (me *DB) createLinkTable(tx *sql.Tx) error {
+	_, err := tx.Exec(sqlCreateLinkTable)
 	return err
 }
 

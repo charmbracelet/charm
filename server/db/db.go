@@ -26,4 +26,7 @@ type DB interface {
 	PostNews(subject string, body string, tags []string) error
 	GetNews(id string) (*charm.News, error)
 	GetNewsList(tag string, page int) ([]*charm.News, error)
+	LinkForToken(token charm.Token, create bool) (*charm.Link, error)
+	UpdateLink(token charm.Token, link *charm.Link) error
+	DeleteLink(token charm.Token) error
 }
