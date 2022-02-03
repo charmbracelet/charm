@@ -73,3 +73,12 @@ type LinkTransport interface {
 type UnlinkRequest struct {
 	Key string `json:"key"`
 }
+
+// LinkQueue handles creating, validating, and sending link requests.
+type LinkQueue interface {
+	InitLinkRequest(t Token)
+	WaitLinkRequest(t Token) (chan *Link, error)
+	SendLinkRequest(lt LinkTransport, lc chan *Link, l *Link)
+	ValidateLinkRequest(t Token) bool
+	DeleteLinkRequest(t Token)
+}

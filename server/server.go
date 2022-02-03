@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/caarlos0/env/v6"
+	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/server/db"
 	"github.com/charmbracelet/charm/server/db/sqlite"
 	"github.com/charmbracelet/charm/server/stats"
@@ -36,6 +37,7 @@ type Config struct {
 	DB          db.DB
 	FileStore   storage.FileStore
 	Stats       stats.Stats
+	linkQueue   charm.LinkQueue
 	tlsConfig   *tls.Config
 	jwtKeyPair  JSONWebKeyPair
 	httpScheme  string
@@ -94,6 +96,12 @@ func (cfg *Config) WithTLSConfig(c *tls.Config) *Config {
 // WithErrorLogger returns a Config with the provided error log for the server.
 func (cfg *Config) WithErrorLogger(l *log.Logger) *Config {
 	cfg.errorLog = l
+	return cfg
+}
+
+// WithLinkQueue returns a Config with the provided LinkQueue implementation.
+func (cfg *Config) WithLinkQueue(q charm.LinkQueue) *Config {
+	cfg.linkQueue = q
 	return cfg
 }
 
