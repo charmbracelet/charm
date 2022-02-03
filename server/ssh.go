@@ -11,6 +11,7 @@ import (
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/server/db"
 	"github.com/charmbracelet/wish"
+	rm "github.com/charmbracelet/wish/recover"
 	"github.com/gliderlabs/ssh"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/muesli/toktok"
@@ -58,7 +59,10 @@ func NewSSHServer(cfg *Config) (*SSHServer, error) {
 		wish.WithHostKeyPEM(cfg.PrivateKey),
 		wish.WithPublicKeyAuth(s.authHandler),
 		wish.WithMiddleware(
-			s.sshMiddleware(),
+			rm.MiddlewareWithLogger(
+				s.errorLog,
+				s.sshMiddleware(),
+			),
 		),
 	)
 	if err != nil {

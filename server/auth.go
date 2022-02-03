@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"log"
-	"runtime/debug"
 
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/wish"
@@ -13,33 +12,25 @@ import (
 func (me *SSHServer) sshMiddleware() wish.Middleware {
 	return func(sh ssh.Handler) ssh.Handler {
 		return func(s ssh.Session) {
-			func() {
-				// Recover from panics
-				defer func() {
-					if r := recover(); r != nil {
-						me.errorLog.Printf("ssh: panic %v\n%s", r, string(debug.Stack()))
-					}
-				}()
-				cmd := s.Command()
-				if len(cmd) >= 1 {
-					r := cmd[0]
-					log.Printf("ssh %s\n", r)
-					switch r {
-					case "api-auth":
-						me.handleAPIAuth(s)
-					case "api-keys":
-						me.handleAPIKeys(s)
-					case "api-link":
-						me.handleAPILink(s)
-					case "api-unlink":
-						me.handleAPIUnlink(s)
-					case "id":
-						me.handleID(s)
-					case "jwt":
-						me.handleJWT(s)
-					}
+			cmd := s.Command()
+			if len(cmd) >= 1 {
+				r := cmd[0]
+				log.Printf("ssh %s\n", r)
+				switch r {
+				case "api-auth":
+					me.handleAPIAuth(s)
+				case "api-keys":
+					me.handleAPIKeys(s)
+				case "api-link":
+					me.handleAPILink(s)
+				case "api-unlink":
+					me.handleAPIUnlink(s)
+				case "id":
+					me.handleID(s)
+				case "jwt":
+					me.handleJWT(s)
 				}
-			}()
+			}
 			sh(s)
 		}
 	}
