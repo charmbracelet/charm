@@ -359,7 +359,7 @@ type channelLinkQueue struct {
 	linkRequests map[charm.Token]chan *charm.Link
 }
 
-// InitLinkRequest implements the proto.LinkQueue interface for the sshLinkQueue.
+// InitLinkRequest implements the proto.LinkQueue interface for the channelLinkQueue.
 func (s *channelLinkQueue) InitLinkRequest(t charm.Token) {
 	_, ok := s.linkRequests[t]
 	if !ok {
@@ -369,13 +369,13 @@ func (s *channelLinkQueue) InitLinkRequest(t charm.Token) {
 	}
 }
 
-// ValidateLinkRequest implements the proto.LinkQueue interface for the sshLinkQueue.
+// ValidateLinkRequest implements the proto.LinkQueue interface for the channelLinkQueue.
 func (s *channelLinkQueue) ValidateLinkRequest(t charm.Token) bool {
 	_, err := s.WaitLinkRequest(t)
 	return err == nil
 }
 
-// WaitLinkRequest implements the proto.LinkQueue interface for the sshLinkQueue.
+// WaitLinkRequest implements the proto.LinkQueue interface for the channelLinkQueue.
 func (s *channelLinkQueue) WaitLinkRequest(t charm.Token) (chan *charm.Link, error) {
 	lr, ok := s.linkRequests[t]
 	if !ok {
@@ -384,7 +384,7 @@ func (s *channelLinkQueue) WaitLinkRequest(t charm.Token) (chan *charm.Link, err
 	return lr, nil
 }
 
-// SendLinkRequest implements the proto.LinkQueue interface for the sshLinkQueue.
+// SendLinkRequest implements the proto.LinkQueue interface for the channelLinkQueue.
 func (s *channelLinkQueue) SendLinkRequest(lt charm.LinkTransport, lc chan *charm.Link, l *charm.Link) {
 	go func() {
 		select {
@@ -396,7 +396,7 @@ func (s *channelLinkQueue) SendLinkRequest(lt charm.LinkTransport, lc chan *char
 	}()
 }
 
-// DeleteLinkRequest implements the proto.LinkTransport interface for the sshLinkQueue.
+// DeleteLinkRequest implements the proto.LinkTransport interface for the channelLinkQueue.
 func (s *channelLinkQueue) DeleteLinkRequest(tok charm.Token) {
 	delete(s.linkRequests, tok)
 }
