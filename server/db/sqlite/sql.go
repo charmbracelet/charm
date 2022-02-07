@@ -41,6 +41,11 @@ const (
                            tag varchar(250),
                            news_id integer REFERENCES news (id) NOT NULL)`
 
+	sqlCreateTokenTable = `CREATE TABLE IF NOT EXISTS token(
+                           id INTEGER NOT NULL PRIMARY KEY,
+                           pin text UNIQUE NOT NULL,
+                           created_at timestamp default current_timestamp)`
+
 	sqlSelectUserWithName         = `SELECT id, charm_id, name, email, bio, created_at FROM charm_user WHERE name like ?`
 	sqlSelectUserWithCharmID      = `SELECT id, charm_id, name, email, bio, created_at FROM charm_user WHERE charm_id = ?`
 	sqlSelectUserWithID           = `SELECT id, charm_id, name, email, bio, created_at FROM charm_user WHERE id = ?`
@@ -71,11 +76,15 @@ const (
 	sqlInsertEncryptKey         = `INSERT INTO encrypt_key (encrypted_key, global_id, public_key_id) VALUES (?, ?, ?)`
 	sqlInsertEncryptKeyWithDate = `INSERT INTO encrypt_key (encrypted_key, global_id, public_key_id, created_at) VALUES (?, ?, ?, ?)`
 
+	sqlInsertToken = `INSERT INTO token (pin) VALUES (?)`
+
 	sqlUpdateUser            = `UPDATE charm_user SET name = ? WHERE charm_id = ?`
 	sqlUpdateMergePublicKeys = `UPDATE public_key SET user_id = ? WHERE user_id = ?`
 
 	sqlDeleteUserPublicKey = `DELETE FROM public_key WHERE user_id = ? AND public_key = ?`
 	sqlDeleteUser          = `DELETE FROM charm_user WHERE id = ?`
+
+	sqlDeleteToken = `DELETE FROM token WHERE pin = ?`
 
 	sqlCountUsers     = `SELECT COUNT(*) FROM charm_user`
 	sqlCountUserNames = `SELECT COUNT(*) FROM charm_user WHERE name <> ''`

@@ -14,7 +14,6 @@ import (
 	rm "github.com/charmbracelet/wish/recover"
 	"github.com/gliderlabs/ssh"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/muesli/toktok"
 )
 
 // Session represents a Charm User's SSH session.
@@ -29,12 +28,11 @@ type SessionHandler func(s Session)
 // SSHServer serves the SSH protocol and handles requests to authenticate and
 // link Charm user accounts.
 type SSHServer struct {
-	config      *Config
-	db          db.DB
-	tokenBucket *toktok.Bucket
-	server      *ssh.Server
-	errorLog    *log.Logger
-	linkQueue   charm.LinkQueue
+	config    *Config
+	db        db.DB
+	server    *ssh.Server
+	errorLog  *log.Logger
+	linkQueue charm.LinkQueue
 }
 
 // NewSSHServer creates a new SSHServer from the provided Config.
@@ -48,11 +46,6 @@ func NewSSHServer(cfg *Config) (*SSHServer, error) {
 		s.errorLog = log.Default()
 	}
 	addr := fmt.Sprintf("%s:%d", cfg.BindAddr, cfg.SSHPort)
-	b, err := toktok.NewBucket(6)
-	if err != nil {
-		return nil, err
-	}
-	s.tokenBucket = &b
 	s.db = cfg.DB
 	if s.linkQueue == nil {
 		s.linkQueue = &channelLinkQueue{

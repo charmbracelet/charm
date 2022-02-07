@@ -28,7 +28,7 @@ type Config struct {
 	HTTPPort    int    `env:"CHARM_SERVER_HTTP_PORT" envDefault:"35354"`
 	StatsPort   int    `env:"CHARM_SERVER_STATS_PORT" envDefault:"35355"`
 	HealthPort  int    `env:"CHARM_SERVER_HEALTH_PORT" envDefault:"35356"`
-	DataDir     string `env:"CHARM_SERVER_DATA_DIR" envDefault:"./data"`
+	DataDir     string `env:"CHARM_SERVER_DATA_DIR" envDefault:"data"`
 	TLSKeyFile  string `env:"CHARM_SERVER_TLS_KEY_FILE"`
 	TLSCertFile string `env:"CHARM_SERVER_TLS_CERT_FILE"`
 	errorLog    *log.Logger

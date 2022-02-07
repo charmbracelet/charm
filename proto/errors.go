@@ -30,6 +30,9 @@ var ErrUserExists = errors.New("user already exists for that key")
 // ErrPageOutOfBounds is an error for an invalid page number.
 var ErrPageOutOfBounds = errors.New("page must be a value of 1 or greater")
 
+// ErrTokenExists is used when attempting to create a token that already exists.
+var ErrTokenExists = errors.New("token already exists")
+
 // ErrAuthFailed indicates an authentication failure. The underlying error is
 // wrapped.
 type ErrAuthFailed struct {
