@@ -10,7 +10,9 @@ import (
 
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/google/uuid"
+	"modernc.org/sqlite"
 	_ "modernc.org/sqlite"
+	sqlitelib "modernc.org/sqlite/lib"
 )
 
 type DB struct {
@@ -355,6 +357,25 @@ func (me *DB) MergeUsers(userID1 int, userID2 int) error {
 	})
 }
 
+func (me *DB) SetToken(token charm.Token) error {
+	return me.wrapTransaction(func(tx *sql.Tx) error {
+		err := me.insertToken(tx, string(token))
+		if err != nil {
+			serr, ok := err.(*sqlite.Error)
+			if ok && serr.Code() == sqlitelib.SQLITE_CONSTRAINT_UNIQUE {
+				return charm.ErrTokenExists
+			}
+		}
+		return err
+	})
+}
+
+func (me *DB) DeleteToken(token charm.Token) error {
+	return me.wrapTransaction(func(tx *sql.Tx) error {
+		return me.deleteToken(tx, string(token))
+	})
+}
+
 func (me *DB) CreateDB() error {
 	return me.wrapTransaction(func(tx *sql.Tx) error {
 		err := me.createUserTable(tx)
@@ -378,6 +399,10 @@ func (me *DB) CreateDB() error {
 			return err
 		}
 		err = me.createNewsTagTable(tx)
+		if err != nil {
+			return err
+		}
+		err = me.createTokenTable(tx)
 		if err != nil {
 			return err
 		}
@@ -437,6 +462,11 @@ func (me *DB) insertNews(tx *sql.Tx, subject string, body string, tags []string)
 		}
 	}
 	return nil
+}
+
+func (me *DB) insertToken(tx *sql.Tx, token string) error {
+	_, err := tx.Exec(sqlInsertToken, token)
+	return err
 }
 
 func (me *DB) selectNamedSeq(tx *sql.Tx, userID int, name string) (uint64, error) {
@@ -512,6 +542,11 @@ func (me *DB) deleteUser(tx *sql.Tx, userID int) error {
 	return err
 }
 
+func (me *DB) deleteToken(tx *sql.Tx, token string) error {
+	_, err := tx.Exec(sqlDeleteToken, token)
+	return err
+}
+
 func (me *DB) updateMergePublicKeys(tx *sql.Tx, userID1 int, userID2 int) error {
 	_, err := tx.Exec(sqlUpdateMergePublicKeys, userID1, userID2)
 	return err
@@ -544,6 +579,11 @@ func (me *DB) createNewsTable(tx *sql.Tx) error {
 
 func (me *DB) createNewsTagTable(tx *sql.Tx) error {
 	_, err := tx.Exec(sqlCreateNewsTagTable)
+	return err
+}
+
+func (me *DB) createTokenTable(tx *sql.Tx) error {
+	_, err := tx.Exec(sqlCreateTokenTable)
 	return err
 }
 

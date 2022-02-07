@@ -9,6 +9,7 @@ import (
 
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/gliderlabs/ssh"
+	"github.com/muesli/toktok"
 )
 
 // SSHLinker implments proto.LinkTransport for the Charm SSH server.
@@ -114,6 +115,7 @@ func (sl *SSHLinker) User() *charm.User {
 func (me *SSHServer) LinkGen(lt charm.LinkTransport) error {
 	u := lt.User()
 	tok := me.NewToken()
+	defer me.db.DeleteToken(tok)
 	me.linkQueue.InitLinkRequest(tok)
 	defer me.linkQueue.DeleteLinkRequest(tok)
 	linkRequest, err := me.linkQueue.WaitLinkRequest(tok)
@@ -254,11 +256,16 @@ func (me *SSHServer) LinkRequest(lt charm.LinkTransport, key string, token strin
 
 // NewToken creates and returns a new Token.
 func (me *SSHServer) NewToken() charm.Token {
-	t, err := me.tokenBucket.NewToken(4)
-	if err != nil {
+	t := toktok.GenerateToken(6, []rune("ABCDEFHJKLMNPRSTUWXY369"))
+	tok := charm.Token(t)
+	err := me.db.SetToken(tok)
+	if err != nil && err != charm.ErrTokenExists {
 		panic(err)
 	}
-	return charm.Token(t)
+	if err == charm.ErrTokenExists {
+		return me.NewToken()
+	}
+	return tok
 }
 
 func (me *SSHServer) handleLinkGenAPI(s ssh.Session) {
