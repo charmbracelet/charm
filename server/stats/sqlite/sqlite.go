@@ -1,9 +1,15 @@
 package sqlite
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
+
+	"modernc.org/sqlite"
+	_ "modernc.org/sqlite"
+	sqlitelib "modernc.org/sqlite/lib"
 )
 
 const (
@@ -36,7 +42,7 @@ type Stats struct {
 
 // NewStats returns a *Stats with the default configuration.
 func NewStats(path string) (*Stats, error) {
-	db, err := sql.Open("sqlite", path)
+	db, err := sql.Open("sqlite", path+"?_pragma=busy_timeout=5000")
 	if err != nil {
 		return nil, err
 	}
@@ -58,9 +64,12 @@ func (s *Stats) createDB() error {
 }
 
 func (s *Stats) increment(field string) {
-	// SQLite doesn't use placeholders for table or field names
-	stmt := fmt.Sprintf("UPDATE stats SET %s = %s+1 WHERE id = (SELECT MAX(id) from stats)", field, field)
-	_, err := s.db.Exec(stmt)
+	err := s.wrapTransaction(func(tx *sql.Tx) error {
+		// SQLite doesn't use placeholders for table or field names
+		stmt := fmt.Sprintf("UPDATE stats SET %s = %s+1 WHERE id = (SELECT MAX(id) from stats)", field, field)
+		_, err := s.db.Exec(stmt)
+		return err
+	})
 	if err != nil {
 		log.Printf("error updating stat '%s': %s", field, err)
 	}
@@ -144,4 +153,32 @@ func (s *Stats) PostNews() {
 // GetNewsList increments the number of get-news-list calls.
 func (s *Stats) GetNewsList() {
 	s.increment("get_news_list")
+}
+
+func (s *Stats) wrapTransaction(f func(tx *sql.Tx) error) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer func() { cancel() }()
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		log.Printf("error starting transaction: %s", err)
+		return err
+	}
+	for {
+		err = f(tx)
+		if err != nil {
+			serr, ok := err.(*sqlite.Error)
+			if ok && serr.Code() == sqlitelib.SQLITE_BUSY {
+				continue
+			}
+			log.Printf("error in transaction: %s", err)
+			return err
+		}
+		err = tx.Commit()
+		if err != nil {
+			log.Printf("error committing transaction: %s", err)
+			return err
+		}
+		break
+	}
+	return nil
 }
