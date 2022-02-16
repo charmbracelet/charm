@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -23,7 +24,7 @@ type DB struct {
 func NewDB(path string) *DB {
 	var err error
 	log.Printf("Opening SQLite db: %s\n", path)
-	db, err := sql.Open("sqlite", filepath.Join(path, "charm_sqlite.db"))
+	db, err := sql.Open("sqlite", filepath.Join(path, "charm_sqlite.db")+"?_pragma=busy_timeout=5000")
 	if err != nil {
 		panic(err)
 	}
@@ -619,20 +620,29 @@ func (me *DB) execOrPanic(tx *sql.Tx, s string) {
 }
 
 func (me *DB) wrapTransaction(f func(tx *sql.Tx) error) error {
-	tx, err := me.db.Begin()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer func() { cancel() }()
+	tx, err := me.db.BeginTx(ctx, nil)
 	if err != nil {
-		log.Printf("Transaction error: %s", err)
-		if rerr := tx.Rollback(); rerr != nil {
-			log.Printf("Rollback error: %s", rerr)
-		}
+		log.Printf("error starting transaction: %s", err)
 		return err
 	}
-	err = f(tx)
-	if err != nil {
-		if rerr := tx.Rollback(); rerr != nil {
-			log.Printf("Rollback error: %s", rerr)
+	for {
+		err = f(tx)
+		if err != nil {
+			serr, ok := err.(*sqlite.Error)
+			if ok && serr.Code() == sqlitelib.SQLITE_BUSY {
+				continue
+			}
+			log.Printf("error in transaction: %s", err)
+			return err
 		}
-		return err
+		err = tx.Commit()
+		if err != nil {
+			log.Printf("error committing transaction: %s", err)
+			return err
+		}
+		break
 	}
-	return tx.Commit()
+	return nil
 }
