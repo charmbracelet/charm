@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"log"
+	"net/url"
 	"path/filepath"
 
 	"github.com/caarlos0/env/v6"
@@ -29,8 +30,10 @@ type Config struct {
 	StatsPort   int    `env:"CHARM_SERVER_STATS_PORT" envDefault:"35355"`
 	HealthPort  int    `env:"CHARM_SERVER_HEALTH_PORT" envDefault:"35356"`
 	DataDir     string `env:"CHARM_SERVER_DATA_DIR" envDefault:"data"`
+	UseTLS      bool   `env:"CHARM_SERVER_USE_TLS" envDefault:"false"`
 	TLSKeyFile  string `env:"CHARM_SERVER_TLS_KEY_FILE"`
 	TLSCertFile string `env:"CHARM_SERVER_TLS_CERT_FILE"`
+	PublicURL   string `env:"CHARM_SERVER_PUBLIC_URL"`
 	errorLog    *log.Logger
 	PublicKey   []byte
 	PrivateKey  []byte
@@ -105,8 +108,17 @@ func (cfg *Config) WithLinkQueue(q charm.LinkQueue) *Config {
 	return cfg
 }
 
-func (cfg *Config) httpURL() string {
-	return fmt.Sprintf("%s://%s:%d", cfg.httpScheme, cfg.Host, cfg.HTTPPort)
+func (cfg *Config) httpURL() *url.URL {
+	s := fmt.Sprintf("%s://%s:%d", cfg.httpScheme, cfg.Host, cfg.HTTPPort)
+	if cfg.PublicURL != "" {
+		s = cfg.PublicURL
+	}
+	url, err := url.Parse(s)
+	if err != nil {
+		log.Fatalf("could not parse URL: %s", err)
+	}
+	log.Print(url.String())
+	return url
 }
 
 // NewServer returns a *Server with the specified Config.
@@ -119,12 +131,6 @@ func NewServer(cfg *Config) (*Server, error) {
 		return nil, err
 	}
 	cfg.jwtKeyPair = NewJSONWebKeyPair(pk.(*ed25519.PrivateKey))
-
-	// Use HTTPS when TLS is configured.
-	if cfg.tlsConfig != nil || (cfg.TLSCertFile != "" && cfg.TLSKeyFile != "") {
-		cfg.httpScheme = "https"
-	}
-
 	ss, err := NewSSHServer(cfg)
 	if err != nil {
 		return nil, err

@@ -43,7 +43,10 @@ services:
 
 To set up TLS under Docker, consider using a reverse proxy such as
 [traefik](https://doc.traefik.io/traefik/https/overview/) or a web server with
-automatic HTTPS like [caddy](https://caddyserver.com/docs/automatic-https).
+automatic HTTPS like [caddy](https://caddyserver.com/docs/automatic-https). If
+you're using a reverse proxy, you will need to set `CHARM_SERVER_HOST` to your
+public host, and `CHARM_SERVER_PUBLIC_URL` to the full public URL of your
+reverse proxy i.e.  `CHARM_SERVER_PUBLIC_URL=https://cloud.charm.sh:35354`.
 
 ***
 

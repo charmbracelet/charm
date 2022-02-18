@@ -28,12 +28,12 @@ const resultsPerPage = 50
 
 // HTTPServer is the HTTP server for the Charm Cloud backend.
 type HTTPServer struct {
-	db      db.DB
-	fstore  storage.FileStore
-	cfg     *Config
-	handler http.Handler
-	server  *http.Server
-	health  *http.Server
+	db         db.DB
+	fstore     storage.FileStore
+	cfg        *Config
+	server     *http.Server
+	health     *http.Server
+	httpScheme string
 }
 
 type providerJSON struct {
@@ -59,13 +59,24 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 	}
 	mux := goji.NewMux()
 	s := &HTTPServer{
-		cfg:     cfg,
-		handler: mux,
-		health:  health,
+		cfg:        cfg,
+		health:     health,
+		httpScheme: "http",
 	}
+	s.server = &http.Server{
+		Addr:     fmt.Sprintf("%s:%d", s.cfg.BindAddr, s.cfg.HTTPPort),
+		Handler:  mux,
+		ErrorLog: s.cfg.errorLog,
+	}
+	if cfg.UseTLS {
+		s.httpScheme = "https"
+		s.health.TLSConfig = s.cfg.tlsConfig
+		s.server.TLSConfig = s.cfg.tlsConfig
+	}
+
 	jwtMiddleware, err := JWTMiddleware(
 		cfg.jwtKeyPair.JWK.Public(),
-		cfg.httpURL(),
+		cfg.httpURL().String(),
 		[]string{"charm"},
 	)
 	if err != nil {
@@ -97,24 +108,19 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 
 // Start start the HTTP and health servers on the ports specified in the Config.
 func (s *HTTPServer) Start() {
-	useTLS := s.cfg.httpScheme == "https"
-	listenAddr := fmt.Sprintf("%s:%d", s.cfg.BindAddr, s.cfg.HTTPPort)
-	s.server = &http.Server{
-		Addr:      listenAddr,
-		Handler:   s.handler,
-		TLSConfig: s.cfg.tlsConfig,
-		ErrorLog:  s.cfg.errorLog,
-	}
-
+	scheme := strings.ToUpper(s.httpScheme)
 	go func() {
-		log.Printf("Starting HTTP health server on: %s", s.health.Addr)
-		if err := s.health.ListenAndServe(); err != nil {
-			log.Fatalf("http health endpoint server exited with error: %s", err)
+		log.Printf("Starting %s health server on: %s", scheme, s.health.Addr)
+		if s.cfg.UseTLS {
+			log.Fatalf("http health endpoint server exited with error: %s",
+				s.health.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile))
+		} else {
+			log.Fatalf("http health endpoint server exited with error: %s", s.health.ListenAndServe())
 		}
 	}()
 
-	log.Printf("Starting %s server on: %s", strings.ToUpper(s.cfg.httpScheme), listenAddr)
-	if useTLS {
+	log.Printf("Starting %s server on: %s", scheme, s.server.Addr)
+	if s.cfg.UseTLS {
 		log.Fatalf("Server crashed: %s", s.server.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile))
 	} else {
 		log.Fatalf("Server crashed: %s", s.server.ListenAndServe())
@@ -123,8 +129,9 @@ func (s *HTTPServer) Start() {
 
 // Shutdown gracefully shut down the HTTP and health servers.
 func (s *HTTPServer) Shutdown(ctx context.Context) error {
-	log.Printf("Stopping %s server on %s", strings.ToUpper(s.cfg.httpScheme), s.server.Addr)
-	log.Printf("Stopping HTTP health server on %s", s.health.Addr)
+	scheme := strings.ToUpper(s.httpScheme)
+	log.Printf("Stopping %s server on %s", scheme, s.server.Addr)
+	log.Printf("Stopping %s health server on %s", scheme, s.health.Addr)
 	if err := s.health.Shutdown(ctx); err != nil {
 		return err
 	}
