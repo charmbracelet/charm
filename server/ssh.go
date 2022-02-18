@@ -127,7 +127,7 @@ func (me *SSHServer) newJWT(charmID string, audience ...string) (string, error) 
 	claims := &jwt.RegisteredClaims{
 		Subject:   charmID,
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
-		Issuer:    me.config.httpURL(),
+		Issuer:    me.config.httpURL().String(),
 		Audience:  audience,
 	}
 	token := jwt.NewWithClaims(&jwt.SigningMethodEd25519{}, claims)
