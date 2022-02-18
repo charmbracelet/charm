@@ -69,6 +69,9 @@ var (
 )
 
 func init() {
+	ServeCmd.AddCommand(
+		ServeMigrationCmd,
+	)
 	ServeCmd.Flags().IntVar(&serverHTTPPort, "http-port", 0, "HTTP port to listen on")
 	ServeCmd.Flags().IntVar(&serverSSHPort, "ssh-port", 0, "SSH port to listen on")
 	ServeCmd.Flags().IntVar(&serverHealthPort, "health-port", 0, "Health port to listen on")
