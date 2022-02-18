@@ -16,6 +16,13 @@ import (
 	sqlitelib "modernc.org/sqlite/lib"
 )
 
+const (
+	// The DB default file name.
+	DbName = "charm_sqlite.db"
+	// The DB default connection options.
+	DbOptions = "?_pragma=busy_timeout=5000&_pragma=foreign_keys=ON"
+)
+
 type DB struct {
 	host string
 	db   *sql.DB
@@ -24,7 +31,7 @@ type DB struct {
 func NewDB(path string) *DB {
 	var err error
 	log.Printf("Opening SQLite db: %s\n", path)
-	db, err := sql.Open("sqlite", filepath.Join(path, "charm_sqlite.db")+"?_pragma=busy_timeout=5000")
+	db, err := sql.Open("sqlite", filepath.Join(path, DbName)+DbOptions)
 	if err != nil {
 		panic(err)
 	}
