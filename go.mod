@@ -6,11 +6,11 @@ require (
 	github.com/auth0/go-jwt-middleware/v2 v2.0.0-beta
 	github.com/caarlos0/env/v6 v6.9.1
 	github.com/calmh/randomart v1.1.0
-	github.com/charmbracelet/bubbles v0.8.0
-	github.com/charmbracelet/bubbletea v0.19.1
-	github.com/charmbracelet/keygen v0.1.2
+	github.com/charmbracelet/bubbles v0.10.3
+	github.com/charmbracelet/bubbletea v0.20.0
+	github.com/charmbracelet/keygen v0.2.1
 	github.com/charmbracelet/lipgloss v0.4.0
-	github.com/charmbracelet/wish v0.2.1-0.20220201011151-beb5f0cf971c
+	github.com/charmbracelet/wish v0.2.1
 	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/gliderlabs/ssh v0.3.3
 	github.com/golang-jwt/jwt/v4 v4.2.0
@@ -33,9 +33,9 @@ require (
 require (
 	github.com/DataDog/zstd v1.4.1 // indirect
 	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be // indirect
-	github.com/atotto/clipboard v0.1.2 // indirect
+	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
-	github.com/containerd/console v1.0.2 // indirect
+	github.com/containerd/console v1.0.3 // indirect
 	github.com/dgraph-io/ristretto v0.0.4-0.20210122082011-bb5d392ed82d // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
@@ -52,7 +52,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/mikesmitty/edkey v0.0.0-20170222072505-3356ea4e686a // indirect
 	github.com/muesli/ansi v0.0.0-20211018074035-2e021307bc4b // indirect
-	github.com/muesli/termenv v0.9.0 // indirect
+	github.com/muesli/termenv v0.11.1-0.20220212125758-44cd13922739 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
