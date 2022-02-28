@@ -25,10 +25,9 @@ docker run \
 or by using `docker-compose`:
 
 ```yaml
----
 version: "3.1"
 services:
-  soft-serve:
+  charm:
     image: charmcli/charm:latest
     container_name: charm
     volumes:
