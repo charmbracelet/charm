@@ -28,4 +28,5 @@ type DB interface {
 	GetNewsList(tag string, page int) ([]*charm.News, error)
 	SetToken(token charm.Token) error
 	DeleteToken(token charm.Token) error
+	Close() error
 }

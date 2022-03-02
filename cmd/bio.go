@@ -14,7 +14,7 @@ var BioCmd = &cobra.Command{
 	Long:   "",
 	Args:   cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cc := initCharmClient(animatedKeygen)
+		cc := initCharmClient()
 		u, err := cc.Bio()
 		if err != nil {
 			return err

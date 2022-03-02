@@ -74,7 +74,7 @@ func NewSSHServer(cfg *Config) (*SSHServer, error) {
 // Start serves the SSH protocol on the configured port.
 func (me *SSHServer) Start() {
 	log.Printf("Starting SSH server on %s", me.server.Addr)
-	log.Fatal(me.server.ListenAndServe())
+	me.server.ListenAndServe()
 }
 
 // Shutdown gracefully shuts down the SSH server.

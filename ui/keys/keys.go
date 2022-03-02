@@ -10,7 +10,6 @@ import (
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/ui/charmclient"
 	"github.com/charmbracelet/charm/ui/common"
-	"github.com/charmbracelet/charm/ui/keygen"
 	"github.com/muesli/reflow/indent"
 )
 
@@ -20,8 +19,6 @@ type state int
 
 const (
 	stateInitCharmClient state = iota
-	stateKeygenRunning
-	stateKeygenFinished
 	stateLoading
 	stateNormal
 	stateDeletingKey
@@ -68,7 +65,6 @@ type Model struct {
 	Exit           bool
 	Quit           bool
 	spinner        spinner.Model
-	keygen         keygen.Model
 }
 
 // getSelectedIndex returns the index of the cursor in relation to the total
@@ -199,13 +195,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case charmclient.SSHAuthErrorMsg:
-		if m.state == stateInitCharmClient {
-			// Couldn't find SSH keys, so let's try the keygen
-			m.state = stateKeygenRunning
-			m.keygen = keygen.NewModel()
-			return m, keygen.GenerateKeys(m.cfg.Host)
-		}
-		// Keygen failed too
 		m.err = msg.Err
 		return m, tea.Quit
 
@@ -213,10 +202,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.cc = msg
 		m.state = stateLoading
 		return m, LoadKeys(m)
-
-	case keygen.DoneMsg:
-		m.state = stateKeygenFinished
-		return m, charmclient.NewClient(m.cfg)
 
 	case errMsg:
 		m.err = msg.err
@@ -254,18 +239,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 
-	// Update keygen
-	if m.state == stateKeygenRunning {
-		newModel, cmd := m.keygen.Update(msg)
-		keygenModel, ok := newModel.(keygen.Model)
-		if !ok {
-			panic("could not perform assertion on keygen model")
-		}
-
-		m.keygen = keygenModel
-		return m, cmd
-	}
-
 	m.UpdatePaging(msg)
 
 	// If an item is being confirmed for delete, any key (other than the key
@@ -289,11 +262,6 @@ func (m Model) View() string {
 	switch m.state {
 	case stateInitCharmClient:
 		s = m.spinner.View() + " Initializing...\n\n"
-	case stateKeygenRunning:
-		if m.keygen.Status != keygen.StatusSuccess {
-			s += m.spinner.View()
-		}
-		s += m.keygen.View()
 	case stateLoading:
 		s = m.spinner.View() + " Loading...\n\n"
 	case stateQuitting:

@@ -10,6 +10,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var randomart bool
+var simpleOutput bool
+
 // KeysCmd is the cobra.Command for a user to browser and print their linked
 // SSH keys.
 var KeysCmd = &cobra.Command{
@@ -18,7 +21,7 @@ var KeysCmd = &cobra.Command{
 	Long:  paragraph("Charm accounts are powered by " + keyword("SSH keys") + ". This command prints all of the keys linked to your account. To remove keys use the main " + code("charm") + " interface."),
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if common.IsTTY() && !simpleOutput && !randomart {
+		if common.IsTTY() && !randomart && !simpleOutput {
 			// Log to file, if set
 			cfg := getCharmConfig()
 			if cfg.Logfile != "" {
@@ -30,7 +33,7 @@ var KeysCmd = &cobra.Command{
 			}
 			return keys.NewProgram(cfg).Start()
 		}
-		cc := initCharmClient(animatedKeygen)
+		cc := initCharmClient()
 
 		// Print randomart with fingerprints
 		k, err := cc.AuthorizedKeysWithMetadata()

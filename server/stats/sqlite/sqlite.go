@@ -155,6 +155,11 @@ func (s *Stats) GetNewsList() {
 	s.increment("get_news_list")
 }
 
+// Close SQLite DB
+func (s *Stats) Close() error {
+	return s.db.Close()
+}
+
 func (s *Stats) wrapTransaction(f func(tx *sql.Tx) error) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer func() { cancel() }()
