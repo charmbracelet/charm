@@ -8,7 +8,6 @@ import (
 	"github.com/charmbracelet/charm/client"
 	"github.com/charmbracelet/charm/ui/charmclient"
 	"github.com/charmbracelet/charm/ui/common"
-	"github.com/charmbracelet/charm/ui/keygen"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -23,8 +22,6 @@ type status int
 
 const (
 	initCharmClient status = iota
-	keygenRunning
-	keygenFinished
 	linkInit
 	linkTokenSent
 	linkTokenValid
@@ -55,7 +52,6 @@ type model struct {
 	alreadyLinked bool
 	err           error
 	spinner       spinner.Model
-	keygen        keygen.Model
 }
 
 func newModel(cfg *client.Config, code string) model {
@@ -98,19 +94,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.err = msg.Err
 		return m, tea.Quit
 
-	case charmclient.SSHAuthErrorMsg:
-		if m.status == initCharmClient {
-			m.status = keygenRunning
-			m.keygen = keygen.NewModel()
-			return m, keygen.GenerateKeys(m.cfg.Host)
-		}
-		m.err = msg.Err
-		return m, tea.Quit
-
-	case keygen.DoneMsg:
-		m.status = keygenFinished
-		return m, charmclient.NewClient(m.cfg)
-
 	case tokenSentMsg:
 		m.status = linkTokenSent
 		return m, nil
@@ -148,17 +131,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	default:
-		if m.status == keygenRunning {
-			newModel, cmd := m.keygen.Update(msg)
-			keygenModel, ok := newModel.(keygen.Model)
-			if !ok {
-				panic("could not perform assertion on keygen model")
-			}
-
-			m.keygen = keygenModel
-			return m, cmd
-		}
-
 		return m, nil
 	}
 }
@@ -173,12 +145,6 @@ func (m model) View() string {
 	switch m.status {
 	case initCharmClient:
 		s += "Initializing..."
-	case keygenRunning:
-		if m.keygen.Status != keygen.StatusSuccess {
-			s += m.keygen.View()
-		} else {
-			s = m.keygen.View()
-		}
 	case linkInit:
 		s += "Linking..."
 	case linkTokenSent:

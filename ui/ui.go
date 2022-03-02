@@ -12,7 +12,6 @@ import (
 	"github.com/charmbracelet/charm/ui/charmclient"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/charm/ui/info"
-	"github.com/charmbracelet/charm/ui/keygen"
 	"github.com/charmbracelet/charm/ui/keys"
 	"github.com/charmbracelet/charm/ui/linkgen"
 	"github.com/charmbracelet/charm/ui/username"
@@ -99,7 +98,6 @@ type model struct {
 	menuChoice menuChoice
 
 	spinner  spinner.Model
-	keygen   keygen.Model
 	info     info.Model
 	linkgen  linkgen.Model
 	username username.Model
@@ -115,7 +113,6 @@ func initialModel(cfg *client.Config) model {
 		status:     statusInit,
 		menuChoice: unsetChoice,
 		spinner:    common.NewSpinner(),
-		keygen:     keygen.NewModel(),
 	}
 }
 
@@ -188,21 +185,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.err = msg.Err
 
 	case charmclient.SSHAuthErrorMsg:
-		if m.status == statusInit {
-			// SSH auth didn't work so let's try generating keys
-			m.status = statusKeygen
-			return m, keygen.GenerateKeys(m.cfg.Host)
-		}
-		// We tried the keygen, to no avail. Quit.
 		m.err = msg.Err
 		return m, tea.Quit
-
-	case keygen.DoneMsg:
-		m.status = statusKeygenComplete
-		return m, tea.Batch(
-			charmclient.NewClient(m.cfg),
-			spinner.Tick,
-		)
 
 	case charmclient.NewClientMsg:
 		// Save reference to Charm client
@@ -242,16 +226,6 @@ func updateChilden(msg tea.Msg, m model) (model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch m.status {
-	// Keygen
-	case statusKeygen:
-		newModel, newCmd := m.keygen.Update(msg)
-		keygenModel, ok := newModel.(keygen.Model)
-		if !ok {
-			panic("could not perform assertion on keygen model")
-		}
-		m.keygen = keygenModel
-		cmd = newCmd
-
 	// User info
 	case statusFetching:
 		m.info, cmd = info.Update(msg, m.info)
@@ -362,13 +336,6 @@ func (m model) View() string {
 	switch m.status {
 	case statusInit:
 		s += m.spinner.View() + " Initializing..."
-	case statusKeygen:
-		if m.keygen.Status == keygen.StatusRunning {
-			s += m.spinner.View()
-		}
-		s += m.keygen.View()
-	case statusKeygenComplete:
-		s += m.spinner.View() + " Reinitializing..."
 	case statusFetching:
 		if m.info.User == nil {
 			s += m.spinner.View()
@@ -420,7 +387,7 @@ func (m model) backupView() string {
 	code := m.styles.Code.Render
 	em := lipgloss.NewStyle().Underline(true).Render
 
-	p, err := client.DataPath(m.cfg.Host)
+	p, err := m.cc.DataPath()
 	if err != nil {
 		return m.errorView(err)
 	}

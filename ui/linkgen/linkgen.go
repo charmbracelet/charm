@@ -9,16 +9,13 @@ import (
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/ui/charmclient"
 	"github.com/charmbracelet/charm/ui/common"
-	"github.com/charmbracelet/charm/ui/keygen"
 )
 
 type status int
 
 const (
 	initCharmClient status = iota // we're creating charm client
-	keygenRunning
-	keygenFinished
-	linkInit // we're initializing the linking process
+	linkInit                      // we're initializing the linking process
 	linkTokenCreated
 	linkRequested
 	linkSuccess
@@ -66,7 +63,6 @@ type Model struct {
 	cc            *client.Client
 	buttonIndex   int // focused state of ok/cancel buttons
 	spinner       spinner.Model
-	keygen        keygen.Model
 }
 
 // acceptRequest rejects the current linking request.
@@ -195,20 +191,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case charmclient.SSHAuthErrorMsg:
-		if m.status == initCharmClient {
-			// SSH auth didn't work, so let's try generating keys
-			m.status = keygenRunning
-			m.keygen = keygen.NewModel()
-			return m, keygen.GenerateKeys(m.cfg.Host)
-		}
-		// We tried the keygen and it still didn't work: fatal
 		m.err = msg.Err
 		return m, tea.Quit
-
-	case keygen.DoneMsg:
-		// The keygen's finished, so let's try creating a Charm Client again
-		m.status = keygenFinished
-		return m, charmclient.NewClient(m.cfg)
 
 	case errMsg:
 		m.status = linkError
@@ -242,23 +226,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case spinner.TickMsg:
 		switch m.status {
-		case initCharmClient, keygenRunning, linkInit:
+		case initCharmClient, linkInit:
 			newSpinnerModel, cmd := m.spinner.Update(msg)
 			m.spinner = newSpinnerModel
 			return m, cmd
 		}
 		return m, nil
-	}
-
-	if m.status == keygenRunning {
-		newModel, cmd := m.keygen.Update(msg)
-		keygenModel, ok := newModel.(keygen.Model)
-		if !ok {
-			panic("could not perform assertion on keygen model")
-		}
-
-		m.keygen = keygenModel
-		return m, cmd
 	}
 
 	return m, nil
@@ -279,12 +252,6 @@ func (m Model) View() string {
 	case initCharmClient:
 		s += m.preambleView()
 		s += m.spinner.View() + " Initializing..."
-	case keygenRunning:
-		s += m.preambleView()
-		if m.keygen.Status != keygen.StatusSuccess {
-			s += m.spinner.View()
-		}
-		s += m.keygen.View()
 	case linkInit:
 		s += m.preambleView()
 		s += m.spinner.View() + " Generating link..."

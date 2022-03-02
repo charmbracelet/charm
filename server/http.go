@@ -112,18 +112,29 @@ func (s *HTTPServer) Start() {
 	go func() {
 		log.Printf("Starting %s health server on: %s", scheme, s.health.Addr)
 		if s.cfg.UseTLS {
-			log.Fatalf("http health endpoint server exited with error: %s",
-				s.health.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile))
+			err := s.health.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile)
+			if err != http.ErrServerClosed {
+				log.Fatalf("http health endpoint with tls server exited with error: %s", err)
+			}
 		} else {
-			log.Fatalf("http health endpoint server exited with error: %s", s.health.ListenAndServe())
+			err := s.health.ListenAndServe()
+			if err != http.ErrServerClosed {
+				log.Fatalf("http health endpoint server exited with error: %s", err)
+			}
 		}
 	}()
 
 	log.Printf("Starting %s server on: %s", scheme, s.server.Addr)
 	if s.cfg.UseTLS {
-		log.Fatalf("Server crashed: %s", s.server.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile))
+		err := s.server.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile)
+		if err != http.ErrServerClosed {
+			log.Fatalf("Server crashed: %s", err)
+		}
 	} else {
-		log.Fatalf("Server crashed: %s", s.server.ListenAndServe())
+		err := s.server.ListenAndServe()
+		if err != http.ErrServerClosed {
+			log.Fatalf("Server crashed: %s", err)
+		}
 	}
 }
 

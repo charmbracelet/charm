@@ -417,6 +417,11 @@ func (me *DB) CreateDB() error {
 	})
 }
 
+func (me *DB) Close() error {
+	log.Println("Closing db")
+	return me.db.Close()
+}
+
 func (me *DB) createUser(tx *sql.Tx, key string) error {
 	charmID := uuid.New().String()
 	err := me.insertUser(tx, charmID)

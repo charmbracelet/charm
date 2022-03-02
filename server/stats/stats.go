@@ -19,4 +19,5 @@ type Stats interface {
 	GetNewsList()
 	GetNews()
 	PostNews()
+	Close() error
 }

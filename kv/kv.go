@@ -50,7 +50,7 @@ func OpenWithDefaults(name string) (*KV, error) {
 	if err != nil {
 		return nil, err
 	}
-	dd, err := client.DataPath(cc.Config.Host)
+	dd, err := cc.DataPath()
 	if err != nil {
 		return nil, err
 	}

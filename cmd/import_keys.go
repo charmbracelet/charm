@@ -43,7 +43,11 @@ var (
 			if err != nil {
 				return err
 			}
-			dd, err := client.DataPath(cfg.Host)
+			cc, err := client.NewClient(cfg)
+			if err != nil {
+				return err
+			}
+			dd, err := cc.DataPath()
 			if err != nil {
 				return err
 			}

@@ -18,6 +18,7 @@ import (
 	"github.com/charmbracelet/keygen"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/mitchellh/go-homedir"
+	gap "github.com/muesli/go-app-paths"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -25,12 +26,14 @@ var nameValidator = regexp.MustCompile("^[a-zA-Z0-9]{1,50}$")
 
 // Config contains the Charm client configuration.
 type Config struct {
-	Host     string `env:"CHARM_HOST" envDefault:"cloud.charm.sh"`
-	SSHPort  int    `env:"CHARM_SSH_PORT" envDefault:"35353"`
-	HTTPPort int    `env:"CHARM_HTTP_PORT" envDefault:"35354"`
-	Debug    bool   `env:"CHARM_DEBUG" envDefault:"false"`
-	Logfile  string `env:"CHARM_LOGFILE" envDefault:""`
-	KeyType  string `env:"CHARM_KEY_TYPE" envDefault:"ed25519"`
+	Host        string `env:"CHARM_HOST" envDefault:"cloud.charm.sh"`
+	SSHPort     int    `env:"CHARM_SSH_PORT" envDefault:"35353"`
+	HTTPPort    int    `env:"CHARM_HTTP_PORT" envDefault:"35354"`
+	Debug       bool   `env:"CHARM_DEBUG" envDefault:"false"`
+	Logfile     string `env:"CHARM_LOGFILE" envDefault:""`
+	KeyType     string `env:"CHARM_KEY_TYPE" envDefault:"ed25519"`
+	DataDir     string `env:"CHARM_DATA_DIR" envDefault:""`
+	IdentityKey string `env:"CHARM_IDENTITY_KEY" envDefault:""`
 }
 
 // Client is the Charm client.
@@ -63,15 +66,32 @@ func NewClient(cfg *Config) (*Client, error) {
 		authLock:       &sync.Mutex{},
 		encryptKeyLock: &sync.Mutex{},
 	}
-	sshKeys, err := FindAuthKeys(cfg.Host, cfg.KeyType)
-	if err != nil {
-		return nil, err
-	}
-	if len(sshKeys) == 0 { // We didn't find any keys; give up
-		return nil, charm.ErrMissingSSHAuth
+
+	var sshKeys []string
+	var err error
+	if cfg.IdentityKey != "" {
+		sshKeys = []string{cfg.IdentityKey}
+	} else {
+		sshKeys, err = cc.findAuthKeys(cfg.KeyType)
+		if err != nil {
+			return nil, err
+		}
+		if len(sshKeys) == 0 {
+			dp, err := cc.DataPath()
+			if err != nil {
+				return nil, err
+			}
+			_, err = keygen.NewWithWrite(dp, "charm", []byte(""), cfg.KeygenType())
+			if err != nil {
+				return nil, err
+			}
+			sshKeys, err = cc.findAuthKeys(cfg.KeyType)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
-	// Try and use the keys we found
 	var pkam ssh.AuthMethod
 	for i := 0; i < len(sshKeys); i++ {
 		pkam, err = publicKeyAuthMethod(sshKeys[i])
@@ -95,17 +115,7 @@ func NewClientWithDefaults() (*Client, error) {
 		return nil, err
 	}
 	cc, err := NewClient(cfg)
-	if err == charm.ErrMissingSSHAuth {
-		dp, err := DataPath(cfg.Host)
-		if err != nil {
-			return nil, err
-		}
-		_, err = keygen.NewWithWrite(dp, "charm", []byte(""), cfg.KeygenType())
-		if err != nil {
-			return nil, err
-		}
-		return NewClient(cfg)
-	} else if err != nil {
+	if err != nil {
 		return nil, err
 	}
 	return cc, nil
@@ -265,26 +275,25 @@ func (cc *Client) sshSession() (*ssh.Session, error) {
 	return s, nil
 }
 
-func publicKeyAuthMethod(kp string) (ssh.AuthMethod, error) {
-	keyPath, err := homedir.Expand(kp)
-	if err != nil {
-		return nil, err
+// DataPath return the directory a Charm user's data is stored. It will default
+// to XDG-HOME/$CHARM_HOST.
+func (cc *Client) DataPath() (string, error) {
+	if cc.Config.DataDir != "" {
+		return filepath.Join(cc.Config.DataDir, cc.Config.Host), nil
+	} else {
+		scope := gap.NewScope(gap.User, filepath.Join("charm", cc.Config.Host))
+		dataPath, err := scope.DataPath("")
+		if err != nil {
+			return "", err
+		}
+		return dataPath, nil
 	}
-	key, err := ioutil.ReadFile(keyPath)
-	if err != nil {
-		return nil, err
-	}
-	signer, err := ssh.ParsePrivateKey(key)
-	if err != nil {
-		return nil, err
-	}
-	return ssh.PublicKeys(signer), nil
 }
 
 // FindAuthKeys looks in a user's XDG charm-dir for possible auth keys.
 // If no keys are found we return an empty slice.
-func FindAuthKeys(host string, keyType string) (pathsToKeys []string, err error) {
-	keyPath, err := DataPath(host)
+func (cc *Client) findAuthKeys(keyType string) (pathsToKeys []string, err error) {
+	keyPath, err := cc.DataPath()
 	if err != nil {
 		return nil, err
 	}
@@ -305,4 +314,20 @@ func FindAuthKeys(host string, keyType string) (pathsToKeys []string, err error)
 	}
 
 	return found, nil
+}
+
+func publicKeyAuthMethod(kp string) (ssh.AuthMethod, error) {
+	keyPath, err := homedir.Expand(kp)
+	if err != nil {
+		return nil, err
+	}
+	key, err := ioutil.ReadFile(keyPath)
+	if err != nil {
+		return nil, err
+	}
+	signer, err := ssh.ParsePrivateKey(key)
+	if err != nil {
+		return nil, err
+	}
+	return ssh.PublicKeys(signer), nil
 }
