@@ -2,57 +2,74 @@ package kv
 
 import (
 	"bytes"
-	"fmt"
 	"log"
+	"strings"
 	"testing"
 
+	"github.com/charmbracelet/charm/client"
 	badger "github.com/dgraph-io/badger/v3"
 )
 
-func setup(t *testing.T) *badger.DB {
+func setup(t *testing.T) *KV {
 	t.Helper()
-	db, err := badger.Open(badger.DefaultOptions("").WithInMemory(true))
+	opt := badger.DefaultOptions("").WithInMemory(true)
+	cc, err := client.NewClientWithDefaults()
 	if err != nil {
 		log.Fatal(err)
 	}
-	t.Cleanup(func() {
-		db.DropAll()
-	})
-	return db
+	kv, err := Open(cc, "test", opt)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return kv
 }
 
-// TestGetForEmptyDB should return an error as no values exist in DB
+// TestGet
 func TestGetForEmptyDB(t *testing.T) {
-	db := setup(t)
-	defer db.Close()
-	kv := &KV{DB: db, name: "database"}
+	kv := setup(t)
 	_, err := kv.Get([]byte("1234"))
 	if err == nil {
 		t.Errorf("expected error")
 	}
 }
 
+// Tests Set() and Get()
 func TestGetForValidValue(t *testing.T) {
-	db := setup(t)
-	defer db.Close()
+	kv := setup(t)
 	want := []byte("yes")
-	// Start a writable transaction.
-	txn := db.NewTransaction(true)
-	defer txn.Discard()
-
-	// Use the transaction...
-	err := txn.Set([]byte("1234"), []byte("yes"))
-	if err != nil {
-		t.Errorf("unable to set kv pair for badgerdb: %v", err)
-	}
-
-	// Commit the transaction and check for error.
-	if err := txn.Commit(); err != nil {
-		t.Errorf("unable to commit kv pair to badgerdb: %v", err)
-	}
-	kv := &KV{DB: db, name: "database"}
-	got, err := kv.Get([]byte("1234"))
-	if bytes.Compare(got, want) == 0 {
+	kv.Set([]byte("1234"), []byte("yes"))
+	got, _ := kv.Get([]byte("1234"))
+	if bytes.Compare(got, want) != 0 {
 		t.Errorf("got %s, want %s", got, want)
+	}
+}
+
+// TestSetReader
+func TestSetReader(t *testing.T) {
+	tests := []struct {
+		testname  string
+		key       []byte
+		want      string
+		expectErr bool
+	}{
+		{"set valid value", []byte("am key"), "hello I am a very powerful test *flex*", false},
+		{"set empty key", []byte(""), "", true},
+	}
+
+	for _, tc := range tests {
+		kv := setup(t)
+		kv.SetReader(tc.key, strings.NewReader(tc.want))
+		got, err := kv.Get(tc.key)
+		if tc.expectErr && err == nil {
+			t.Errorf("case: %s expected an error but did not get one", tc.testname)
+		} else {
+			if !tc.expectErr && err != nil {
+				t.Errorf("case: %s unexpected error %v", tc.testname, err)
+			}
+			if bytes.Compare(got, []byte(tc.want)) != 0 {
+				t.Errorf("case: %s got %s, want %s", tc.testname, got, tc.want)
+
+			}
+		}
 	}
 }
