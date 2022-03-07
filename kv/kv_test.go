@@ -44,6 +44,14 @@ func TestGetForValidValue(t *testing.T) {
 	}
 }
 
+func TestGetForInvalidKey(t *testing.T) {
+	kv := setup(t)
+	kv.Set([]byte{}, []byte{})
+	if _, err := kv.Get([]byte{}); err == nil {
+		t.Errorf("expected an error")
+	}
+}
+
 // TestSetReader
 func TestSetReader(t *testing.T) {
 	tests := []struct {
@@ -70,6 +78,41 @@ func TestSetReader(t *testing.T) {
 				t.Errorf("case: %s got %s, want %s", tc.testname, got, tc.want)
 
 			}
+		}
+	}
+}
+
+// TestDelete
+func TestDelete(t *testing.T) {
+	tests := []struct {
+		testname  string
+		key       []byte
+		value     []byte
+		expectErr bool
+	}{
+		{"valid key", []byte("hello"), []byte("value"), false},
+		{"empty key with value", []byte{}, []byte("value"), true},
+		{"empty key no value", []byte{}, []byte{}, true},
+	}
+
+	for _, tc := range tests {
+		kv := setup(t)
+		kv.Set(tc.key, tc.value)
+		if tc.expectErr {
+			if err := kv.Delete(tc.key); err == nil {
+				t.Errorf("%s: expected error", tc.testname)
+			}
+		} else {
+			if err := kv.Delete(tc.key); err != nil {
+				t.Errorf("%s: unexpected error in Delete %v", tc.testname, err)
+			}
+
+			want := []byte{} // want an empty result
+			if get, _ := kv.Get(tc.key); bytes.Compare(get, want) != 0 {
+				t.Errorf("%s: expected an empty string %s, got %s", tc.testname, want, get)
+
+			}
+
 		}
 	}
 }
