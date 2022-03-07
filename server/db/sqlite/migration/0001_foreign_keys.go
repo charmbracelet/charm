@@ -24,8 +24,6 @@ CREATE TABLE public_key(
 );
 
 INSERT INTO public_key SELECT * FROM _public_key;
-
-DROP TABLE _public_key;
 /* public_key */
 
 /* encrypt_key */
@@ -45,8 +43,6 @@ CREATE TABLE encrypt_key(
 );
 
 INSERT INTO encrypt_key SELECT * FROM _encrypt_key;
-
-DROP TABLE _encrypt_key;
 /* encrypt_key */
 
 /* named_seq */
@@ -66,8 +62,6 @@ CREATE TABLE named_seq(
 );
 
 INSERT INTO named_seq SELECT * FROM _named_seq;
-
-DROP TABLE _named_seq;
 /* named_seq */
 
 /* news_tag */
@@ -85,9 +79,12 @@ CREATE TABLE news_tag(
 );
 
 INSERT INTO news_tag SELECT * FROM _news_tag;
-
-DROP TABLE _news_tag;
 /* news_tag */
+
+DROP TABLE _public_key;
+DROP TABLE _encrypt_key;
+DROP TABLE _named_seq;
+DROP TABLE _news_tag;
 
 PRAGMA foreign_keys=on;
 `,

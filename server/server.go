@@ -167,7 +167,7 @@ func (srv *Server) init(cfg *Config) {
 		if err != nil {
 			log.Fatalf("could not init sqlite path: %s", err)
 		}
-		db := sqlite.NewDB(dp)
+		db := sqlite.NewDB(filepath.Join(dp, sqlite.DbName))
 		srv.Config = cfg.WithDB(db)
 	}
 	if cfg.FileStore == nil {

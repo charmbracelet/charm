@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"path/filepath"
 	"strconv"
 	"time"
 
@@ -20,7 +19,7 @@ const (
 	// The DB default file name.
 	DbName = "charm_sqlite.db"
 	// The DB default connection options.
-	DbOptions = "?_pragma=busy_timeout=5000&_pragma=foreign_keys=ON"
+	DbOptions = "?_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)"
 )
 
 type DB struct {
@@ -31,7 +30,7 @@ type DB struct {
 func NewDB(path string) *DB {
 	var err error
 	log.Printf("Opening SQLite db: %s\n", path)
-	db, err := sql.Open("sqlite", filepath.Join(path, DbName)+DbOptions)
+	db, err := sql.Open("sqlite", path+DbOptions)
 	if err != nil {
 		panic(err)
 	}
@@ -84,7 +83,7 @@ func (me *DB) GetUserWithName(name string) (*charm.User, error) {
 func (me *DB) SetUserName(charmID string, name string) (*charm.User, error) {
 	var u *charm.User
 	log.Printf("Setting name `%s` for user %s\n", name, charmID)
-	err := me.wrapTransaction(func(tx *sql.Tx) error {
+	err := me.WrapTransaction(func(tx *sql.Tx) error {
 		var err error
 		r := me.selectUserWithName(tx, name)
 		u, err = me.scanUser(r)
@@ -126,7 +125,7 @@ func (me *DB) SetUserName(charmID string, name string) (*charm.User, error) {
 func (me *DB) UserForKey(key string, create bool) (*charm.User, error) {
 	pk := &charm.PublicKey{}
 	u := &charm.User{}
-	err := me.wrapTransaction(func(tx *sql.Tx) error {
+	err := me.WrapTransaction(func(tx *sql.Tx) error {
 		var err error
 		r := me.selectPublicKey(tx, key)
 		err = r.Scan(&pk.ID, &pk.UserID, &pk.Key)
@@ -168,7 +167,7 @@ func (me *DB) UserForKey(key string, create bool) (*charm.User, error) {
 
 func (me *DB) AddEncryptKeyForPublicKey(u *charm.User, pk string, gid string, ek string, ca *time.Time) error {
 	log.Printf("Adding encrypted key %s %s for user %s\n", gid, ca, u.CharmID)
-	return me.wrapTransaction(func(tx *sql.Tx) error {
+	return me.WrapTransaction(func(tx *sql.Tx) error {
 		u2, err := me.UserForKey(pk, false)
 		if err != nil {
 			return err
@@ -193,7 +192,7 @@ func (me *DB) AddEncryptKeyForPublicKey(u *charm.User, pk string, gid string, ek
 
 func (me *DB) EncryptKeysForPublicKey(pk *charm.PublicKey) ([]*charm.EncryptKey, error) {
 	var ks []*charm.EncryptKey
-	err := me.wrapTransaction(func(tx *sql.Tx) error {
+	err := me.WrapTransaction(func(tx *sql.Tx) error {
 		rs, err := me.selectEncryptKeys(tx, pk.ID)
 		if err != nil {
 			return err
@@ -217,7 +216,7 @@ func (me *DB) EncryptKeysForPublicKey(pk *charm.PublicKey) ([]*charm.EncryptKey,
 func (me *DB) LinkUserKey(user *charm.User, key string) error {
 	ks := charm.PublicKeySha(key)
 	log.Printf("Linking user %s and key %s\n", user.CharmID, ks)
-	return me.wrapTransaction(func(tx *sql.Tx) error {
+	return me.WrapTransaction(func(tx *sql.Tx) error {
 		return me.insertPublicKey(tx, user.ID, key)
 	})
 }
@@ -225,7 +224,7 @@ func (me *DB) LinkUserKey(user *charm.User, key string) error {
 func (me *DB) UnlinkUserKey(user *charm.User, key string) error {
 	ks := charm.PublicKeySha(key)
 	log.Printf("Unlinking user %s key %s\n", user.CharmID, ks)
-	return me.wrapTransaction(func(tx *sql.Tx) error {
+	return me.WrapTransaction(func(tx *sql.Tx) error {
 		err := me.deleteUserPublicKey(tx, user.ID, key)
 		if err != nil {
 			return err
@@ -252,7 +251,7 @@ func (me *DB) UnlinkUserKey(user *charm.User, key string) error {
 func (me *DB) KeysForUser(user *charm.User) ([]*charm.PublicKey, error) {
 	var keys []*charm.PublicKey
 	log.Printf("Getting keys for user %s\n", user.CharmID)
-	err := me.wrapTransaction(func(tx *sql.Tx) error {
+	err := me.WrapTransaction(func(tx *sql.Tx) error {
 		rs, err := me.selectUserPublicKeys(tx, user.ID)
 		if err != nil {
 			return err
@@ -283,7 +282,7 @@ func (me *DB) KeysForUser(user *charm.User) ([]*charm.PublicKey, error) {
 func (me *DB) GetSeq(u *charm.User, name string) (uint64, error) {
 	var seq uint64
 	var err error
-	err = me.wrapTransaction(func(tx *sql.Tx) error {
+	err = me.WrapTransaction(func(tx *sql.Tx) error {
 		seq, err = me.selectNamedSeq(tx, u.ID, name)
 		if err == sql.ErrNoRows {
 			seq, err = me.incNamedSeq(tx, u.ID, name)
@@ -299,7 +298,7 @@ func (me *DB) GetSeq(u *charm.User, name string) (uint64, error) {
 func (me *DB) NextSeq(u *charm.User, name string) (uint64, error) {
 	var seq uint64
 	var err error
-	err = me.wrapTransaction(func(tx *sql.Tx) error {
+	err = me.WrapTransaction(func(tx *sql.Tx) error {
 		seq, err = me.incNamedSeq(tx, u.ID, name)
 		if err != nil {
 			return err
@@ -318,7 +317,7 @@ func (me *DB) GetNews(id string) (*charm.News, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = me.wrapTransaction(func(tx *sql.Tx) error {
+	err = me.WrapTransaction(func(tx *sql.Tx) error {
 		r := me.selectNews(tx, i)
 		return r.Scan(&n.ID, &n.Subject, &n.Body, &n.CreatedAt)
 	})
@@ -330,7 +329,7 @@ func (me *DB) GetNews(id string) (*charm.News, error) {
 
 func (me *DB) GetNewsList(tag string, page int) ([]*charm.News, error) {
 	var ns []*charm.News
-	err := me.wrapTransaction(func(tx *sql.Tx) error {
+	err := me.WrapTransaction(func(tx *sql.Tx) error {
 		rs, err := me.selectNewsList(tx, tag, page)
 		if err != nil {
 			return err
@@ -349,13 +348,13 @@ func (me *DB) GetNewsList(tag string, page int) ([]*charm.News, error) {
 }
 
 func (me *DB) PostNews(subject string, body string, tags []string) error {
-	return me.wrapTransaction(func(tx *sql.Tx) error {
+	return me.WrapTransaction(func(tx *sql.Tx) error {
 		return me.insertNews(tx, subject, body, tags)
 	})
 }
 
 func (me *DB) MergeUsers(userID1 int, userID2 int) error {
-	return me.wrapTransaction(func(tx *sql.Tx) error {
+	return me.WrapTransaction(func(tx *sql.Tx) error {
 		err := me.updateMergePublicKeys(tx, userID1, userID2)
 		if err != nil {
 			return err
@@ -366,7 +365,7 @@ func (me *DB) MergeUsers(userID1 int, userID2 int) error {
 }
 
 func (me *DB) SetToken(token charm.Token) error {
-	return me.wrapTransaction(func(tx *sql.Tx) error {
+	return me.WrapTransaction(func(tx *sql.Tx) error {
 		err := me.insertToken(tx, string(token))
 		if err != nil {
 			serr, ok := err.(*sqlite.Error)
@@ -379,13 +378,13 @@ func (me *DB) SetToken(token charm.Token) error {
 }
 
 func (me *DB) DeleteToken(token charm.Token) error {
-	return me.wrapTransaction(func(tx *sql.Tx) error {
+	return me.WrapTransaction(func(tx *sql.Tx) error {
 		return me.deleteToken(tx, string(token))
 	})
 }
 
 func (me *DB) CreateDB() error {
-	return me.wrapTransaction(func(tx *sql.Tx) error {
+	return me.WrapTransaction(func(tx *sql.Tx) error {
 		err := me.createUserTable(tx)
 		if err != nil {
 			return err
@@ -626,7 +625,7 @@ func (me *DB) execOrPanic(tx *sql.Tx, s string) {
 	}
 }
 
-func (me *DB) wrapTransaction(f func(tx *sql.Tx) error) error {
+func (me *DB) WrapTransaction(f func(tx *sql.Tx) error) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer func() { cancel() }()
 	tx, err := me.db.BeginTx(ctx, nil)
