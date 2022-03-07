@@ -25,6 +25,7 @@ func setup(t *testing.T) *KV {
 }
 
 // TestGet
+
 func TestGetForEmptyDB(t *testing.T) {
 	kv := setup(t)
 	_, err := kv.Get([]byte("1234"))
@@ -33,26 +34,38 @@ func TestGetForEmptyDB(t *testing.T) {
 	}
 }
 
-// Tests Set() and Get()
-func TestGetForValidValue(t *testing.T) {
-	kv := setup(t)
-	want := []byte("yes")
-	kv.Set([]byte("1234"), []byte("yes"))
-	got, _ := kv.Get([]byte("1234"))
-	if bytes.Compare(got, want) != 0 {
-		t.Errorf("got %s, want %s", got, want)
+func TestGet(t *testing.T) {
+	tests := []struct {
+		testname  string
+		key       []byte
+		want      []byte
+		expectErr bool
+	}{
+		{"valid kv pair", []byte("1234"), []byte("valid"), false},
+		{"invalid key", []byte{}, []byte{}, true},
 	}
-}
 
-func TestGetForInvalidKey(t *testing.T) {
-	kv := setup(t)
-	kv.Set([]byte{}, []byte{})
-	if _, err := kv.Get([]byte{}); err == nil {
-		t.Errorf("expected an error")
+	for _, tc := range tests {
+		kv := setup(t)
+		kv.Set(tc.key, tc.want)
+		got, err := kv.Get(tc.key)
+		if tc.expectErr {
+			if err == nil {
+				t.Errorf("%s: expected error", tc.testname)
+			}
+		} else {
+			if err != nil {
+				t.Errorf("%s: unexpected error %v", tc.testname, err)
+			}
+			if bytes.Compare(got, tc.want) != 0 {
+				t.Errorf("%s: got %s, want %s", tc.testname, got, tc.want)
+			}
+		}
 	}
 }
 
 // TestSetReader
+
 func TestSetReader(t *testing.T) {
 	tests := []struct {
 		testname  string
@@ -68,10 +81,12 @@ func TestSetReader(t *testing.T) {
 		kv := setup(t)
 		kv.SetReader(tc.key, strings.NewReader(tc.want))
 		got, err := kv.Get(tc.key)
-		if tc.expectErr && err == nil {
-			t.Errorf("case: %s expected an error but did not get one", tc.testname)
+		if tc.expectErr {
+			if err == nil {
+				t.Errorf("case: %s expected an error but did not get one", tc.testname)
+			}
 		} else {
-			if !tc.expectErr && err != nil {
+			if err != nil {
 				t.Errorf("case: %s unexpected error %v", tc.testname, err)
 			}
 			if bytes.Compare(got, []byte(tc.want)) != 0 {
@@ -83,6 +98,7 @@ func TestSetReader(t *testing.T) {
 }
 
 // TestDelete
+
 func TestDelete(t *testing.T) {
 	tests := []struct {
 		testname  string
