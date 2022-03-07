@@ -29,28 +29,21 @@ var (
 			if err != nil {
 				return fmt.Errorf("database does not exist: %s", err)
 			}
-			log.Printf("Opening SQLite db: %s\n", dp)
-			db, err := sql.Open("sqlite", dp+sqlite.DbOptions)
-			if err != nil {
-				return err
-			}
+			db := sqlite.NewDB(dp)
 			for _, m := range []migration.Migration{
 				migration.Migration0001,
 			} {
 				log.Printf("Running migration: %04d %s\n", m.ID, m.Name)
-				tx, err := db.Begin()
+				err = db.WrapTransaction(func(tx *sql.Tx) error {
+					_, err := tx.Exec(m.Sql)
+					if err != nil {
+						return err
+					}
+					return nil
+				})
 				if err != nil {
-					return err
+					break
 				}
-				_, err = tx.Exec(m.Sql)
-				if err != nil {
-					return err
-				}
-				err = tx.Commit()
-				if err != nil {
-					return err
-				}
-				return nil
 			}
 			if err != nil {
 				return err

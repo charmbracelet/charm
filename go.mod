@@ -27,7 +27,7 @@ require (
 	goji.io v2.0.2+incompatible
 	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e
 	gopkg.in/square/go-jose.v2 v2.6.0
-	modernc.org/sqlite v1.14.2
+	modernc.org/sqlite v1.14.8
 )
 
 require (
@@ -67,9 +67,9 @@ require (
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	lukechampine.com/uint128 v1.1.1 // indirect
-	modernc.org/cc/v3 v3.35.18 // indirect
-	modernc.org/ccgo/v3 v3.12.82 // indirect
-	modernc.org/libc v1.11.87 // indirect
+	modernc.org/cc/v3 v3.35.22 // indirect
+	modernc.org/ccgo/v3 v3.15.14 // indirect
+	modernc.org/libc v1.14.6 // indirect
 	modernc.org/mathutil v1.4.1 // indirect
 	modernc.org/memory v1.0.5 // indirect
 	modernc.org/opt v0.1.1 // indirect
