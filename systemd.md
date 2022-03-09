@@ -28,9 +28,7 @@ in the systemd service file as described below.
 
 ## TLS
 
-To set up TLS, you should set `CHARM_SERVER_USE_TLS` to `true`, and specify
-`CHARM_SERVER_HOST`, `CHARM_SERVER_TLS_KEY_FILE`, and
-`CHARM_SERVER_TLS_CERT_FILE` file paths.
+See [TLS](README.md#tls) for more information.
 
 ***
 
@@ -40,12 +38,3 @@ Part of [Charm](https://charm.sh).
 
 Charm热爱开源 • Charm loves open source
 
-
-[releases]: https://github.com/charmbracelet/charm/releases
-[docs]: https://pkg.go.dev/github.com/charmbracelet/charm?tab=doc
-[kv]: https://github.com/charmbracelet/charm/tree/main/kv
-[fs]: https://github.com/charmbracelet/charm/tree/main/fs
-[crypt]: https://github.com/charmbracelet/charm/tree/main/crypt
-[glow]: https://github.com/charmbracelet/glow
-[skate]: https://github.com/charmbracelet/skate
-[badger]: https://github.com/dgraph-io/badger

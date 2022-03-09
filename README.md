@@ -196,8 +196,8 @@ See instructions for [Systemd](https://github.com/charmbracelet/charm/blob/main/
 
 ### TLS
 
-To set up TLS, you should set `CHARM_SERVER_HTTP_SCHEME` environment variable to
-`https` and specify `CHARM_SERVER_HOST`, `CHARM_SERVER_TLS_KEY_FILE`, and
+To set up TLS, you should set `CHARM_SERVER_USE_TLS` to `true`, and specify
+`CHARM_SERVER_HOST`, `CHARM_SERVER_TLS_KEY_FILE`, and
 `CHARM_SERVER_TLS_CERT_FILE` file paths.
 
 ## Projects using Charm
