@@ -23,6 +23,7 @@ require (
 	github.com/muesli/reflow v0.3.0
 	github.com/muesli/sasquatch v0.0.0-20200811221207-66979d92330a
 	github.com/muesli/toktok v0.1.0
+	github.com/prometheus/client_golang v0.9.3
 	github.com/spf13/cobra v1.0.0
 	goji.io v2.0.2+incompatible
 	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e
@@ -34,6 +35,7 @@ require (
 	github.com/DataDog/zstd v1.4.1 // indirect
 	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
+	github.com/beorn7/perks v1.0.0 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/containerd/console v1.0.3 // indirect
 	github.com/dgraph-io/ristretto v0.0.4-0.20210122082011-bb5d392ed82d // indirect
@@ -50,10 +52,14 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mikesmitty/edkey v0.0.0-20170222072505-3356ea4e686a // indirect
 	github.com/muesli/ansi v0.0.0-20211018074035-2e021307bc4b // indirect
 	github.com/muesli/termenv v0.11.1-0.20220212125758-44cd13922739 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4 // indirect
+	github.com/prometheus/common v0.4.0 // indirect
+	github.com/prometheus/procfs v0.0.0-20190507164030-5867b95ac084 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
