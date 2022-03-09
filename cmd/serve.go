@@ -16,6 +16,7 @@ import (
 var (
 	serverHTTPPort   int
 	serverSSHPort    int
+	serverStatsPort  int
 	serverHealthPort int
 	serverDataDir    string
 
@@ -34,6 +35,9 @@ var (
 			}
 			if serverSSHPort != 0 {
 				cfg.SSHPort = serverSSHPort
+			}
+			if serverStatsPort != 0 {
+				cfg.StatsPort = serverStatsPort
 			}
 			if serverHealthPort != 0 {
 				cfg.HealthPort = serverHealthPort
@@ -74,6 +78,7 @@ func init() {
 	)
 	ServeCmd.Flags().IntVar(&serverHTTPPort, "http-port", 0, "HTTP port to listen on")
 	ServeCmd.Flags().IntVar(&serverSSHPort, "ssh-port", 0, "SSH port to listen on")
+	ServeCmd.Flags().IntVar(&serverStatsPort, "stats-port", 0, "Stats port to listen on")
 	ServeCmd.Flags().IntVar(&serverHealthPort, "health-port", 0, "Health port to listen on")
 	ServeCmd.Flags().StringVar(&serverDataDir, "data-dir", "", "Directory to store SQLite db, SSH keys and file data")
 }
