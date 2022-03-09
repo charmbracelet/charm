@@ -117,7 +117,6 @@ func (cfg *Config) httpURL() *url.URL {
 	if err != nil {
 		log.Fatalf("could not parse URL: %s", err)
 	}
-	log.Print(url.String())
 	return url
 }
 
