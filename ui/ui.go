@@ -18,6 +18,8 @@ import (
 	"github.com/charmbracelet/charm/ui/username"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/reflow/indent"
+	"github.com/muesli/reflow/wordwrap"
+	"github.com/muesli/reflow/wrap"
 )
 
 // NewProgram returns a new Bubble Tea program. Use this to start up the
@@ -102,6 +104,8 @@ type model struct {
 	linkgen  linkgen.Model
 	username username.Model
 	keys     keys.Model
+
+	terminalWidth int
 }
 
 func initialModel(cfg *client.Config) model {
@@ -135,6 +139,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.terminalWidth = msg.Width
+
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC:
@@ -349,6 +356,7 @@ func updateChilden(msg tea.Msg, m model) (model, tea.Cmd) {
 }
 
 func (m model) View() string {
+	w := m.terminalWidth - m.styles.App.GetHorizontalFrameSize()
 	s := m.styles.Logo.String() + "\n\n"
 
 	switch m.status {
@@ -384,7 +392,7 @@ func (m model) View() string {
 		s += m.err.Error()
 	}
 
-	return m.styles.App.Render(s)
+	return m.styles.App.Render(wrap.String(wordwrap.String(s, w), w))
 }
 
 func (m model) menuView() string {
@@ -428,7 +436,7 @@ func (m model) backupView() string {
 
 func (m model) quitView() string {
 	if m.err != nil {
-		return fmt.Sprintf("Uh oh, there’s been an error: %v\n", m.err)
+		return fmt.Sprintf("Uh oh, there’s been an error: %s\n", m.err)
 	}
 	return "Thanks for using Charm!\n"
 }
