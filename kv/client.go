@@ -177,6 +177,9 @@ func openDB(cc *client.Client, name string, opt badger.Options) (*badger.DB, err
 			if err == nil {
 				break
 			}
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	if db == nil {
