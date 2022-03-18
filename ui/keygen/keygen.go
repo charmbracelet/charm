@@ -29,6 +29,7 @@ const (
 // NewProgram creates a new keygen TUI program
 func NewProgram(host string, fancy bool) *tea.Program {
 	m := NewModel()
+	m.host = host
 	m.standalone = true
 	m.fancy = fancy
 	m.spinner = spinner.NewModel()
