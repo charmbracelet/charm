@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"time"
 
 	charm "github.com/charmbracelet/charm/proto"
@@ -53,7 +55,7 @@ func NewSSHServer(cfg *Config) (*SSHServer, error) {
 			linkRequests: make(map[charm.Token]chan *charm.Link),
 		}
 	}
-	srv, err := wish.NewServer(
+	opts := []ssh.Option{
 		wish.WithAddress(addr),
 		wish.WithHostKeyPEM(cfg.PrivateKey),
 		wish.WithPublicKeyAuth(s.authHandler),
@@ -63,7 +65,13 @@ func NewSSHServer(cfg *Config) (*SSHServer, error) {
 				s.sshMiddleware(),
 			),
 		),
-	)
+	}
+	fp := filepath.Join(cfg.DataDir, ".ssh", "authorized_keys")
+	if _, err := os.Stat(fp); err == nil {
+		log.Print("Loading authorized_keys from ", fp)
+		opts = append(opts, wish.WithAuthorizedKeys(fp))
+	}
+	srv, err := wish.NewServer(opts...)
 	if err != nil {
 		return nil, err
 	}
