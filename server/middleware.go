@@ -17,19 +17,23 @@ type contextKey string
 
 var ctxUserKey contextKey = "charmUser"
 
+// MaxFSRequestSize is the maximum size of a request body for fs endpoints.
+var MaxFSRequestSize int64 = 1024 * 1024 * 1024 // 1GB
+
 // RequestLimitMiddleware limits the request body size to the specified limit.
 func RequestLimitMiddleware() func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var maxRequestSize int64
 			if strings.HasPrefix(r.URL.Path, "/v1/fs") {
-				maxRequestSize = 1 << 30 // limit request size to 1GB for fs endpoints
+				maxRequestSize = MaxFSRequestSize
 			} else {
-				maxRequestSize = 1 << 20 // limit request size to 1MB for other endpoints
+				maxRequestSize = 1024 * 1024 // limit request size to 1MB for other endpoints
 			}
 			// Check if the request body is too large using Content-Length
 			if r.ContentLength > maxRequestSize {
 				http.Error(w, http.StatusText(http.StatusRequestEntityTooLarge), http.StatusRequestEntityTooLarge)
+				return
 			}
 			// Limit body read using MaxBytesReader
 			r.Body = http.MaxBytesReader(w, r.Body, maxRequestSize)
