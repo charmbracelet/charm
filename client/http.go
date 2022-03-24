@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
+	"strconv"
 )
 
 // ErrRequestTooLarge is an error for a request that is too large.
@@ -43,12 +43,6 @@ func (cc *Client) AuthedJSONRequest(method string, path string, reqBody interfac
 
 // AuthedRequest sends an authorized request to the Charm and Glow HTTP servers.
 func (cc *Client) AuthedRequest(method string, path string, headers http.Header, reqBody io.Reader) (*http.Response, error) {
-	var maxRequestSize int64
-	if strings.HasPrefix(path, "/v1/fs") {
-		maxRequestSize = 1 << 30
-	} else {
-		maxRequestSize = 1 << 20
-	}
 	client := &http.Client{}
 	cfg := cc.Config
 	auth, err := cc.Auth()
@@ -60,12 +54,12 @@ func (cc *Client) AuthedRequest(method string, path string, headers http.Header,
 	if err != nil {
 		return nil, err
 	}
-	if req.ContentLength > maxRequestSize {
-		return nil, ErrRequestTooLarge{Size: req.ContentLength, Limit: maxRequestSize}
-	}
 	for k, v := range headers {
 		for _, vv := range v {
 			req.Header.Add(k, vv)
+			if k == "Content-Length" {
+				req.ContentLength, _ = strconv.ParseInt(vv, 10, 64)
+			}
 		}
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("bearer %s", jwt))
