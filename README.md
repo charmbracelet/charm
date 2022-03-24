@@ -185,7 +185,25 @@ of serving an entire Charm instance:
 charm serve
 ```
 
-To change hosts users can set `CHARM_HOST` to the domain or IP or their
+### Server settings
+
+The Charm server can be configured using environment variables. These are the defaults:
+
+* `CHARM_SERVER_BIND_ADDRESS`: Network interface to listen to (_default 0.0.0.0_)
+* `CHARM_SERVER_HOST`: Hostname to advertise (_default localhost_)
+* `CHARM_SERVER_SSH_PORT`: SSH server port to listen to (_default 35353_)
+* `CHARM_SERVER_HTTP_PORT`: HTTP server port to listen to (_default 35354_)
+* `CHARM_SERVER_STATS_PORT`: Stats server port to listen to (_default 35355_)
+* `CHARM_SERVER_HEALTH_PORT`: Health server port to listen to (_default 35356_)
+* `CHARM_SERVER_DATA_DIR`: Server data directory (_default ./data_)
+* `CHARM_SERVER_USE_TLS`: Whether to use TLS (_default false_)
+* `CHARM_SERVER_TLS_KEY_FILE`: The TLS key file path to use
+* `CHARM_SERVER_TLS_CERT_FILE`: The TLS cert file path to use
+* `CHARM_SERVER_PUBLIC_URL`: Server public URL, useful when hosting the Charm server behind a TLS enabled reverse proxy
+* `CHARM_SERVER_ENABLE_METRICS`: Whether to enable collecting Prometheus metrics (_default false_) Metrics can be accessed from `http://<CHARM_SERVER_HOST>:<CHARM_SERVER_STATS_PORT>/metrics`
+* `CHARM_SERVER_USER_MAX_STORAGE`: Maximum FS storage for a user (_default 0_) Zero means no limit
+
+To change hosts, users can set `CHARM_HOST` to the domain or IP of their
 choosing:
 
 ```bash
