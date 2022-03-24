@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"path"
@@ -19,22 +20,12 @@ import (
 	charm "github.com/charmbracelet/charm/proto"
 )
 
-// ErrFileTooLarge is returned when a file is too large to upload.
-type ErrFileTooLarge struct {
-	Limit int64
-}
-
-func (e ErrFileTooLarge) Error() string {
-	return fmt.Sprintf("file too large: %d", e.Limit)
-}
-
 // FS is an implementation of fs.FS, fs.ReadFileFS and fs.ReadDirFS with
 // additional write methods. Data is stored across the network on a Charm Cloud
 // server, with encryption and decryption happening client-side.
 type FS struct {
-	cc          *client.Client
-	crypt       *crypt.Crypt
-	maxFileSize int64 // Max file size in bytes
+	cc    *client.Client
+	crypt *crypt.Crypt
 }
 
 // File implements the fs.File interface.
@@ -93,7 +84,7 @@ func NewFSWithClient(cc *client.Client) (*FS, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &FS{cc: cc, crypt: crypt, maxFileSize: 1 << 30}, nil
+	return &FS{cc: cc, crypt: crypt}, nil
 }
 
 // Open implements Open for fs.FS.
@@ -172,7 +163,7 @@ func (cfs *FS) Open(name string) (fs.File, error) {
 	return f, nil
 }
 
-// ReadFile implements fs.ReadFileFS
+// ReadFile implements fs.ReadFileFS.
 func (cfs *FS) ReadFile(name string) ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
 	f, err := cfs.Open(name)
@@ -195,9 +186,6 @@ func (cfs *FS) WriteFile(name string, src fs.File) error {
 	if err != nil {
 		return err
 	}
-	if info.Size() > cfs.maxFileSize {
-		return ErrFileTooLarge{Limit: cfs.maxFileSize}
-	}
 	ebuf := bytes.NewBuffer(nil)
 	eb, err := cfs.crypt.NewEncryptedWriter(ebuf)
 	if err != nil {
@@ -208,26 +196,74 @@ func (cfs *FS) WriteFile(name string, src fs.File) error {
 		return err
 	}
 	eb.Close()
-	buf := bytes.NewBuffer(nil)
-	w := multipart.NewWriter(buf)
-	fw, err := w.CreateFormFile("data", name)
+	// To calculate the Content Length of a multipart request, we need to split
+	// the multipart into header, data body, and boundary footer and then
+	// calculate the length of each.
+	// http/request cannot set Content-Length for a pipe reader
+	// https://go.dev/src/net/http/request.go#L891
+	databuf := bytes.NewBuffer(nil)
+	w := multipart.NewWriter(databuf)
+	_, err = w.CreateFormFile("data", name)
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(fw, ebuf)
+	headlen := databuf.Len()
+	header := make([]byte, headlen)
+	_, err = databuf.Read(header)
 	if err != nil {
 		return err
 	}
 	w.Close()
+	bounlen := databuf.Len()
+	boun := make([]byte, bounlen)
+	_, err = databuf.Read(boun)
+	if err != nil {
+		return err
+	}
+	// headlen is the length of the multipart part header, bounlen is the length of the multipart boundary footer.
+	contentLength := int64(headlen) + int64(ebuf.Len()) + int64(bounlen)
+	// pipe the multipart request to the server
+	rr, rw := io.Pipe()
+	defer rr.Close()
+	go func() {
+		defer rw.Close()
+
+		// write multipart header
+		_, err = rw.Write(header)
+		if err != nil {
+			log.Printf("WriteFile %s error: %v", name, err)
+			return
+		}
+		// chunk the read data into 64MB chunks
+		buf := make([]byte, 1024*1024*64)
+		for {
+			n, err := ebuf.Read(buf)
+			if err != nil {
+				break
+			}
+			_, err = rw.Write(buf[:n])
+			if err != nil {
+				log.Printf("WriteFile %s error: %v", name, err)
+				return
+			}
+		}
+		// write multipart boundary
+		_, err = rw.Write(boun)
+		if err != nil {
+			log.Printf("WriteFile %s error: %v", name, err)
+			return
+		}
+	}()
 	ep, err := cfs.EncryptPath(name)
 	if err != nil {
 		return err
 	}
 	path := fmt.Sprintf("/v1/fs/%s?mode=%d", ep, info.Mode())
 	headers := http.Header{
-		"Content-Type": {w.FormDataContentType()},
+		"Content-Type":   {w.FormDataContentType()},
+		"Content-Length": {fmt.Sprintf("%d", contentLength)},
 	}
-	_, err = cfs.cc.AuthedRequest("POST", path, headers, buf)
+	_, err = cfs.cc.AuthedRequest("POST", path, headers, rr)
 	return err
 }
 
