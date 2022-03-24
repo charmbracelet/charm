@@ -154,8 +154,8 @@ func (s *HTTPServer) renderError(w http.ResponseWriter) {
 }
 
 func (s *HTTPServer) renderCustomError(w http.ResponseWriter, msg string, status int) {
-	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(charm.Message{Message: msg})
 }
 
@@ -357,6 +357,7 @@ func (s *HTTPServer) handleDeleteFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *HTTPServer) handleGetNewsList(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	p := r.FormValue("page")
 	if p == "" {
 		p = "1"
@@ -379,12 +380,12 @@ func (s *HTTPServer) handleGetNewsList(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(ns)
 	s.cfg.Stats.GetNews()
 }
 
 func (s *HTTPServer) handleGetNews(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	id := pat.Param(r, "id")
 	news, err := s.db.GetNews(id)
 	if err != nil {
@@ -392,7 +393,6 @@ func (s *HTTPServer) handleGetNews(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(news)
 	s.cfg.Stats.GetNews()
 }
