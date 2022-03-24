@@ -24,28 +24,29 @@ import (
 
 // Config is the configuration for the Charm server.
 type Config struct {
-	BindAddr      string `env:"CHARM_SERVER_BIND_ADDRESS" envDefault:""`
-	Host          string `env:"CHARM_SERVER_HOST" envDefault:"localhost"`
-	SSHPort       int    `env:"CHARM_SERVER_SSH_PORT" envDefault:"35353"`
-	HTTPPort      int    `env:"CHARM_SERVER_HTTP_PORT" envDefault:"35354"`
-	StatsPort     int    `env:"CHARM_SERVER_STATS_PORT" envDefault:"35355"`
-	HealthPort    int    `env:"CHARM_SERVER_HEALTH_PORT" envDefault:"35356"`
-	DataDir       string `env:"CHARM_SERVER_DATA_DIR" envDefault:"data"`
-	UseTLS        bool   `env:"CHARM_SERVER_USE_TLS" envDefault:"false"`
-	TLSKeyFile    string `env:"CHARM_SERVER_TLS_KEY_FILE"`
-	TLSCertFile   string `env:"CHARM_SERVER_TLS_CERT_FILE"`
-	PublicURL     string `env:"CHARM_SERVER_PUBLIC_URL"`
-	EnableMetrics bool   `env:"CHARM_SERVER_ENABLE_METRICS" envDefault:"false"`
-	errorLog      *log.Logger
-	PublicKey     []byte
-	PrivateKey    []byte
-	DB            db.DB
-	FileStore     storage.FileStore
-	Stats         stats.Stats
-	linkQueue     charm.LinkQueue
-	tlsConfig     *tls.Config
-	jwtKeyPair    JSONWebKeyPair
-	httpScheme    string
+	BindAddr       string `env:"CHARM_SERVER_BIND_ADDRESS" envDefault:""`
+	Host           string `env:"CHARM_SERVER_HOST" envDefault:"localhost"`
+	SSHPort        int    `env:"CHARM_SERVER_SSH_PORT" envDefault:"35353"`
+	HTTPPort       int    `env:"CHARM_SERVER_HTTP_PORT" envDefault:"35354"`
+	StatsPort      int    `env:"CHARM_SERVER_STATS_PORT" envDefault:"35355"`
+	HealthPort     int    `env:"CHARM_SERVER_HEALTH_PORT" envDefault:"35356"`
+	DataDir        string `env:"CHARM_SERVER_DATA_DIR" envDefault:"data"`
+	UseTLS         bool   `env:"CHARM_SERVER_USE_TLS" envDefault:"false"`
+	TLSKeyFile     string `env:"CHARM_SERVER_TLS_KEY_FILE"`
+	TLSCertFile    string `env:"CHARM_SERVER_TLS_CERT_FILE"`
+	PublicURL      string `env:"CHARM_SERVER_PUBLIC_URL"`
+	EnableMetrics  bool   `env:"CHARM_SERVER_ENABLE_METRICS" envDefault:"false"`
+	UserMaxStorage int64  `env:"CHARM_SERVER_USER_MAX_STORAGE" envDefault:"0"`
+	errorLog       *log.Logger
+	PublicKey      []byte
+	PrivateKey     []byte
+	DB             db.DB
+	FileStore      storage.FileStore
+	Stats          stats.Stats
+	linkQueue      charm.LinkQueue
+	tlsConfig      *tls.Config
+	jwtKeyPair     JSONWebKeyPair
+	httpScheme     string
 }
 
 // Server contains the SSH and HTTP servers required to host the Charm Cloud.

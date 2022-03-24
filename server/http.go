@@ -270,13 +270,25 @@ func (s *HTTPServer) handlePostFile(w http.ResponseWriter, r *http.Request) {
 		s.renderError(w)
 		return
 	}
-	f, _, err := r.FormFile("data")
+	f, fh, err := r.FormFile("data")
 	if err != nil {
 		log.Printf("cannot parse form data: %s", err)
 		s.renderError(w)
 		return
 	}
 	defer f.Close()
+	if s.cfg.UserMaxStorage > 0 {
+		stat, err := s.cfg.FileStore.Stat(u.CharmID, "")
+		if err != nil {
+			log.Printf("cannot stat user storage: %s", err)
+			s.renderError(w)
+			return
+		}
+		if stat.Size()+fh.Size > s.cfg.UserMaxStorage {
+			s.renderCustomError(w, "user storage limit exceeded", http.StatusForbidden)
+			return
+		}
+	}
 	err = s.cfg.FileStore.Put(u.CharmID, path, f, fs.FileMode(m))
 	if err != nil {
 		log.Printf("cannot post file: %s", err)
