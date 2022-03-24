@@ -7,6 +7,9 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
+
+	charm "github.com/charmbracelet/charm/proto"
 )
 
 // ErrRequestTooLarge is an error for a request that is too large.
@@ -67,8 +70,17 @@ func (cc *Client) AuthedRequest(method string, path string, headers http.Header,
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode != http.StatusOK {
-		return resp, fmt.Errorf("server error: %d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
+	if statusCode := resp.StatusCode; statusCode >= 300 {
+		err = fmt.Errorf("server error: %d %s", statusCode, http.StatusText(statusCode))
+		// try to decode the error message
+		if strings.HasPrefix(resp.Header.Get("Content-Type"), "application/json") {
+			msg := charm.Message{}
+			_ = json.NewDecoder(resp.Body).Decode(&msg)
+			if msg.Message != "" {
+				err = fmt.Errorf("%s: %s", err, msg.Message)
+			}
+		}
+		return resp, err
 	}
 	return resp, nil
 }
