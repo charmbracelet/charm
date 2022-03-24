@@ -135,7 +135,7 @@ func NoButtonView(focused bool) string {
 	} else {
 		st = blurredButtonStyle
 	}
-	st = st.
+	st = st.Copy().
 		PaddingLeft(st.GetPaddingLeft() + 1).
 		PaddingRight(st.GetPaddingRight() + 1)
 	return underlineInitialCharButton("No", st, focused)
