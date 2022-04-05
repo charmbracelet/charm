@@ -20,6 +20,7 @@ import (
 	"github.com/charmbracelet/charm/server/storage"
 	lfs "github.com/charmbracelet/charm/server/storage/local"
 	gossh "golang.org/x/crypto/ssh"
+	"golang.org/x/sync/errgroup"
 )
 
 // Config is the configuration for the Charm server.
@@ -151,16 +152,20 @@ func NewServer(cfg *Config) (*Server, error) {
 }
 
 // Start starts the HTTP, SSH and health HTTP servers for the Charm Cloud.
-func (srv *Server) Start() {
+func (srv *Server) Start() error {
+	errg, _ := errgroup.WithContext(context.Background())
 	if srv.stats != nil {
-		go func() {
-			srv.stats.Start()
-		}()
+		errg.Go(func() error {
+			return srv.stats.Start()
+		})
 	}
-	go func() {
-		srv.http.Start()
-	}()
-	srv.ssh.Start()
+	errg.Go(func() error {
+		return srv.http.Start()
+	})
+	errg.Go(func() error {
+		return srv.ssh.Start()
+	})
+	return errg.Wait()
 }
 
 // Shutdown shuts down the HTTP, and SSH and health HTTP servers for the Charm Cloud.

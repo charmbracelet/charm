@@ -21,6 +21,7 @@ import (
 	"goji.io"
 	"goji.io/pat"
 	"goji.io/pattern"
+	"golang.org/x/sync/errgroup"
 	"gopkg.in/square/go-jose.v2"
 )
 
@@ -107,35 +108,40 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 }
 
 // Start start the HTTP and health servers on the ports specified in the Config.
-func (s *HTTPServer) Start() {
+func (s *HTTPServer) Start() error {
 	scheme := strings.ToUpper(s.httpScheme)
-	go func() {
+	errg, _ := errgroup.WithContext(context.Background())
+	errg.Go(func() error {
 		log.Printf("Starting %s health server on: %s", scheme, s.health.Addr)
 		if s.cfg.UseTLS {
 			err := s.health.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile)
 			if err != http.ErrServerClosed {
-				log.Fatalf("http health endpoint with tls server exited with error: %s", err)
+				return err
 			}
 		} else {
 			err := s.health.ListenAndServe()
 			if err != http.ErrServerClosed {
-				log.Fatalf("http health endpoint server exited with error: %s", err)
+				return err
 			}
 		}
-	}()
-
-	log.Printf("Starting %s server on: %s", scheme, s.server.Addr)
-	if s.cfg.UseTLS {
-		err := s.server.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile)
-		if err != http.ErrServerClosed {
-			log.Fatalf("Server crashed: %s", err)
+		return nil
+	})
+	errg.Go(func() error {
+		log.Printf("Starting %s server on: %s", scheme, s.server.Addr)
+		if s.cfg.UseTLS {
+			err := s.server.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile)
+			if err != http.ErrServerClosed {
+				return err
+			}
+		} else {
+			err := s.server.ListenAndServe()
+			if err != http.ErrServerClosed {
+				return err
+			}
 		}
-	} else {
-		err := s.server.ListenAndServe()
-		if err != http.ErrServerClosed {
-			log.Fatalf("Server crashed: %s", err)
-		}
-	}
+		return nil
+	})
+	return errg.Wait()
 }
 
 // Shutdown gracefully shut down the HTTP and health servers.
