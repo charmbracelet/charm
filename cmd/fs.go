@@ -119,8 +119,13 @@ func newLocalRemotePath(rawPath string) localRemotePath {
 	}
 }
 
-func (lrp *localRemotePath) separator() string {
-	return "/"
+func (lrp *localRemotePath) separator() string { // nolint:unparam
+	switch lrp.pathType {
+	case localPath:
+		return string(os.PathSeparator)
+	default:
+		return "/"
+	}
 }
 
 func (lrfs *localRemoteFS) Open(name string) (fs.File, error) {

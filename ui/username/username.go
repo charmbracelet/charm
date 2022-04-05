@@ -251,10 +251,6 @@ func View(m Model) string {
 	return s
 }
 
-func nameSetView(m Model) string {
-	return "OK! Your new username is " + m.newName
-}
-
 func spinnerView(m Model) string {
 	return m.spinner.View() + " Submitting..."
 }

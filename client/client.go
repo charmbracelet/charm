@@ -104,7 +104,7 @@ func NewClient(cfg *Config) (*Client, error) {
 	cc.sshConfig = &ssh.ClientConfig{
 		User:            "charm",
 		Auth:            []ssh.AuthMethod{pkam},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // nolint
 	}
 	return cc, nil
 }
@@ -218,11 +218,14 @@ func (cc *Client) UnlinkAuthorizedKey(key string) error {
 
 // KeygenType returns the keygen key type.
 func (cfg *Config) KeygenType() keygen.KeyType {
-	switch cfg.KeyType {
-	case "Ed25519", "ed25519":
+	kt := strings.ToLower(cfg.KeyType)
+	switch kt {
+	case "ed25519":
 		return keygen.Ed25519
-	case "RSA", "rsa":
+	case "rsa":
 		return keygen.RSA
+	case "ecdsa":
+		return keygen.ECDSA
 	default:
 		return keygen.Ed25519
 	}
@@ -283,7 +286,6 @@ func (cc *Client) DataPath() (string, error) {
 	if cc.Config.DataDir != "" {
 		return filepath.Join(cc.Config.DataDir, cc.Config.Host), nil
 	}
-
 	scope := gap.NewScope(gap.User, filepath.Join("charm", cc.Config.Host))
 	dataPath, err := scope.DataPath("")
 	if err != nil {
