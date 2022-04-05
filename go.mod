@@ -27,6 +27,7 @@ require (
 	github.com/spf13/cobra v1.0.0
 	goji.io v2.0.2+incompatible
 	golang.org/x/crypto v0.0.0-20220307211146-efcb8507fb70
+	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	gopkg.in/square/go-jose.v2 v2.6.0
 	modernc.org/sqlite v1.14.8
 )

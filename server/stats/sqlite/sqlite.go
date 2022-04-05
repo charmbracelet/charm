@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"modernc.org/sqlite"
+	_ "modernc.org/sqlite" // sqlite driver
 	sqlitelib "modernc.org/sqlite/lib"
 
 	_ "modernc.org/sqlite" // sqlite driver

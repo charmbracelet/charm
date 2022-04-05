@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -59,7 +60,9 @@ var (
 			done := make(chan os.Signal, 1)
 			signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 			go func() {
-				s.Start()
+				if err := s.Start(); err != nil {
+					log.Fatalf("error starting server: %s", err)
+				}
 			}()
 
 			<-done
