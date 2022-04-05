@@ -154,7 +154,7 @@ func kvList(cmd *cobra.Command, args []string) error {
 			opts.PrefetchValues = false
 		}
 		it := txn.NewIterator(opts)
-		defer it.Close()
+		defer it.Close() //nolint:errcheck
 		for it.Rewind(); it.Valid(); it.Next() {
 			item := it.Item()
 			k := item.Key()

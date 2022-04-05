@@ -197,6 +197,7 @@ func (cfs *FS) WriteFile(name string, src fs.File) error {
 	if err := eb.Close(); err != nil {
 		return err
 	}
+	eb.Close() //nolint:errcheck
 	// To calculate the Content Length of a multipart request, we need to split
 	// the multipart into header, data body, and boundary footer and then
 	// calculate the length of each.
@@ -215,6 +216,7 @@ func (cfs *FS) WriteFile(name string, src fs.File) error {
 	if err := w.Close(); err != nil {
 		return err
 	}
+	w.Close() //nolint:errcheck
 	bounlen := databuf.Len()
 	boun := make([]byte, bounlen)
 	if _, err := databuf.Read(boun); err != nil {

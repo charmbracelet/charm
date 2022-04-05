@@ -38,7 +38,7 @@ var (
 					if err != nil {
 						return err
 					}
-					defer f.Close()
+					defer f.Close() //nolint:errcheck
 				}
 
 				return ui.NewProgram(cfg).Start()

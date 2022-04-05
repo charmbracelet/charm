@@ -42,7 +42,7 @@ func TestPut(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error when opening file %s", path)
 		}
-		defer file.Close()
+		defer file.Close() //nolint:errcheck
 
 		fileInfo, err := file.Stat()
 		if err != nil {
@@ -75,7 +75,7 @@ func TestPut(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error when opening file %s", path)
 		}
-		defer file.Close()
+		defer file.Close() //nolint:errcheck
 
 		fileInfo, err := file.Stat()
 		if err != nil {

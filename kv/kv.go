@@ -201,7 +201,7 @@ func (kv *KV) Keys() ([][]byte, error) {
 		opts := badger.DefaultIteratorOptions
 		opts.PrefetchValues = false
 		it := txn.NewIterator(opts)
-		defer it.Close()
+		defer it.Close() //nolint:errcheck
 		for it.Rewind(); it.Valid(); it.Next() {
 			ks = append(ks, it.Item().Key())
 		}

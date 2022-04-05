@@ -65,7 +65,7 @@ func TestSSHAuthMiddleware(t *testing.T) {
 		// }
 	})
 	t.Cleanup(func() {
-		err := s.Close()
+		defer s.Close() // nolint:errcheck
 		if err != nil {
 			log.Printf("error closing server: %s", err)
 		}

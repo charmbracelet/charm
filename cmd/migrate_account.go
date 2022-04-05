@@ -10,7 +10,7 @@ import (
 )
 
 // MigrateAccountCmd is a command to convert your legacy RSA SSH keys to the
-// new Ed25519 standard keys
+// new Ed25519 standard keys.
 var (
 	verbose   bool
 	linkError bool
