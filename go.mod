@@ -8,9 +8,9 @@ require (
 	github.com/calmh/randomart v1.1.0
 	github.com/charmbracelet/bubbles v0.10.3
 	github.com/charmbracelet/bubbletea v0.20.0
-	github.com/charmbracelet/keygen v0.2.1
+	github.com/charmbracelet/keygen v0.3.0
 	github.com/charmbracelet/lipgloss v0.5.0
-	github.com/charmbracelet/wish v0.2.1
+	github.com/charmbracelet/wish v0.3.1
 	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/gliderlabs/ssh v0.3.3
 	github.com/golang-jwt/jwt/v4 v4.2.0
@@ -26,7 +26,7 @@ require (
 	github.com/prometheus/client_golang v0.9.3
 	github.com/spf13/cobra v1.0.0
 	goji.io v2.0.2+incompatible
-	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e
+	golang.org/x/crypto v0.0.0-20220307211146-efcb8507fb70
 	gopkg.in/square/go-jose.v2 v2.6.0
 	modernc.org/sqlite v1.14.8
 )
@@ -36,6 +36,7 @@ require (
 	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/beorn7/perks v1.0.0 // indirect
+	github.com/caarlos0/sshmarshal v0.0.0-20220308164159-9ddb9f83c6b3 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/containerd/console v1.0.3 // indirect
 	github.com/dgraph-io/ristretto v0.0.4-0.20210122082011-bb5d392ed82d // indirect
@@ -53,7 +54,6 @@ require (
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
-	github.com/mikesmitty/edkey v0.0.0-20170222072505-3356ea4e686a // indirect
 	github.com/muesli/ansi v0.0.0-20211018074035-2e021307bc4b // indirect
 	github.com/muesli/termenv v0.11.1-0.20220212125758-44cd13922739 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
