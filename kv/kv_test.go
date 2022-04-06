@@ -196,7 +196,6 @@ func TestDelete(t *testing.T) {
 
 // TestSync
 
-// TODO: get more test cases
 func TestSync(t *testing.T) {
 	startServer(t, "set reader", func() {
 		kv := setup(t)
@@ -216,4 +215,49 @@ func TestOptionsWithEncryption(t *testing.T) {
 			t.Errorf("expected an error")
 		}
 	})
+}
+
+// TestKeys
+
+func TestKeys(t *testing.T) {
+	startServer(t, "test keys", func() {
+		tests := []struct {
+			testname string
+			keys     [][]byte
+		}{
+			{"single value", [][]byte{[]byte("one")}},
+			{"two values", [][]byte{[]byte("one"), []byte("two")}},
+			{"multiple values", [][]byte{[]byte("one"), []byte("two"), []byte("three")}},
+		}
+
+		for _, tc := range tests {
+			kv := setup(t)
+			kv.addKeys(tc.keys)
+			got, err := kv.Keys()
+			if err != nil {
+				t.Errorf("unexpected error")
+			}
+			if compareKeyLists(got, tc.keys) {
+				t.Errorf("got did not match want")
+			}
+		}
+	})
+}
+
+func (kv *KV) addKeys(values [][]byte) {
+	for _, val := range values {
+		kv.Set(val, []byte("hello"))
+	}
+}
+
+func compareKeyLists(a, b [][]byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if bytes.Compare(a[i], b[i]) != 0 {
+			return false
+		}
+	}
+	return true
 }
