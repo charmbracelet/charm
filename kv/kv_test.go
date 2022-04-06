@@ -3,8 +3,10 @@ package kv
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -16,19 +18,16 @@ import (
 	badger "github.com/dgraph-io/badger/v3"
 )
 
+var (
+	servConfig *server.Config
+	td         string
+)
+
 // Helpers
 
 func startServer(t *testing.T, testName string, testFunc func()) {
-	// set up template server configurations
-	cfg := server.DefaultConfig()
-	td := t.TempDir()
-	cfg.DataDir = filepath.Join(td, ".data")
-	sp := filepath.Join(td, ".ssh")
-	kp, err := keygen.NewWithWrite(sp, "charm_server", []byte(""), keygen.Ed25519)
-	if err != nil {
-		t.Fatalf("keygen error: %s", err)
-	}
-	cfg = cfg.WithKeys(kp.PublicKey, kp.PrivateKeyPEM)
+	servConfig, td = getTestServerConfig(t)
+	cfg := servConfig
 	s, err := server.NewServer(cfg)
 	if err != nil {
 		t.Fatalf("new server error: %s", err)
@@ -51,6 +50,20 @@ func startServer(t *testing.T, testName string, testFunc func()) {
 	})
 }
 
+func getTestServerConfig(t *testing.T) (*server.Config, string) {
+	// set up template server configurations
+	cfg := server.DefaultConfig()
+	td := t.TempDir()
+	cfg.DataDir = filepath.Join(td, ".data")
+	sp := filepath.Join(td, ".ssh")
+	kp, err := keygen.NewWithWrite(sp, "charm_server", []byte(""), keygen.Ed25519)
+	if err != nil {
+		t.Fatalf("keygen error: %s", err)
+	}
+	cfg = cfg.WithKeys(kp.PublicKey, kp.PrivateKeyPEM)
+	return cfg, td
+}
+
 func fetchURL(url string, retries int) (*http.Response, error) {
 	resp, err := http.Get(url)
 	if err != nil {
@@ -66,18 +79,35 @@ func fetchURL(url string, retries int) (*http.Response, error) {
 	return resp, nil
 }
 
-func setup(t *testing.T) *KV {
+func setupKV(t *testing.T) (*KV, string) {
 	t.Helper()
-	opt := badger.DefaultOptions("").WithInMemory(true)
-	cc, err := client.NewClientWithDefaults()
+	pn, err := ioutil.TempDir("", "charmkv")
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
+	opt := badger.DefaultOptions(pn).WithLoggingLevel(badger.ERROR)
+	cc := setupTestClient(t)
 	kv, err := Open(cc, "test", opt)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return kv
+	return kv, pn
+}
+
+func setupTestClient(t *testing.T) *client.Client {
+	ccfg, err := client.ConfigFromEnv()
+	if err != nil {
+		t.Fatalf("client config from env error: %s", err)
+	}
+	ccfg.Host = servConfig.Host
+	ccfg.SSHPort = servConfig.SSHPort
+	ccfg.HTTPPort = servConfig.HTTPPort
+	ccfg.DataDir = filepath.Join(td, ".client-data")
+	cl, err := client.NewClient(ccfg)
+	if err != nil {
+		log.Printf("unable to create new client: %s", err)
+	}
+	return cl
 }
 
 // TestOpenWithDefaults
@@ -99,7 +129,8 @@ func TestOpenWithDefaults(t *testing.T) {
 
 func TestGetForEmptyDB(t *testing.T) {
 	startServer(t, "get for empty DB", func() {
-		kv := setup(t)
+		kv, pn := setupKV(t)
+		defer os.RemoveAll(pn)
 		_, err := kv.Get([]byte("1234"))
 		if err == nil {
 			t.Errorf("expected error")
@@ -120,7 +151,8 @@ func TestGet(t *testing.T) {
 		}
 
 		for _, tc := range tests {
-			kv := setup(t)
+			kv, pn := setupKV(t)
+			defer os.RemoveAll(pn)
 			kv.Set(tc.key, tc.want)
 			got, err := kv.Get(tc.key)
 			if tc.expectErr {
@@ -152,9 +184,9 @@ func TestSetReader(t *testing.T) {
 			{"set valid value", []byte("am key"), "hello I am a very powerful test *flex*", false},
 			{"set empty key", []byte(""), "", true},
 		}
-
 		for _, tc := range tests {
-			kv := setup(t)
+			kv, pn := setupKV(t)
+			defer os.RemoveAll(pn)
 			kv.SetReader(tc.key, strings.NewReader(tc.want))
 			got, err := kv.Get(tc.key)
 			if tc.expectErr {
@@ -190,7 +222,8 @@ func TestDelete(t *testing.T) {
 		}
 
 		for _, tc := range tests {
-			kv := setup(t)
+			kv, pn := setupKV(t)
+			defer os.RemoveAll(pn)
 			kv.Set(tc.key, tc.value)
 			if tc.expectErr {
 				if err := kv.Delete(tc.key); err == nil {
@@ -213,7 +246,8 @@ func TestDelete(t *testing.T) {
 
 func TestSync(t *testing.T) {
 	startServer(t, "set reader", func() {
-		kv := setup(t)
+		kv, pn := setupKV(t)
+		defer os.RemoveAll(pn)
 		err := kv.Sync()
 		if err != nil {
 			t.Errorf("unexpected error")
@@ -246,14 +280,15 @@ func TestKeys(t *testing.T) {
 		}
 
 		for _, tc := range tests {
-			kv := setup(t)
+			kv, pn := setupKV(t)
+			defer os.RemoveAll(pn)
 			kv.addKeys(tc.keys)
 			got, err := kv.Keys()
 			if err != nil {
 				t.Errorf("unexpected error")
 			}
-			if compareKeyLists(got, tc.keys) {
-				t.Errorf("got did not match want")
+			if !compareKeyLists(got, tc.keys) {
+				t.Errorf("got: %s want: %s", showKeys(got), showKeys(tc.keys))
 			}
 		}
 	})
@@ -275,4 +310,13 @@ func compareKeyLists(a, b [][]byte) bool {
 		}
 	}
 	return true
+}
+
+func showKeys(keys [][]byte) string {
+	msg := ""
+	for _, key := range keys {
+		msg += string(key)
+		msg += "\n"
+	}
+	return msg
 }
