@@ -80,6 +80,21 @@ func setup(t *testing.T) *KV {
 	return kv
 }
 
+// TestOpenWithDefaults
+
+func TestOpenWithDefaults(t *testing.T) {
+	tests := []string{
+		"one",
+		"",
+	}
+	for _, tc := range tests {
+		_, err := OpenWithDefaults(tc)
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	}
+}
+
 // TestGet
 
 func TestGetForEmptyDB(t *testing.T) {
