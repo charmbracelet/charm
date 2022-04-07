@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -196,7 +197,6 @@ func TestSetReader(t *testing.T) {
 			}
 			if bytes.Compare(got, []byte(tc.want)) != 0 {
 				t.Errorf("case: %s got %s, want %s", tc.testname, got, tc.want)
-
 			}
 		}
 		os.RemoveAll(clientTD)
@@ -288,9 +288,17 @@ func TestMultipleKeys(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}
+	sortKeys(got)
+	sortKeys(keys)
 	if !compareKeyLists(got, keys) {
 		t.Errorf("got: %s want: %s", showKeys(got), showKeys(keys))
 	}
+}
+
+func sortKeys(ss [][]byte) {
+	sort.Slice(ss, func(i, j int) bool {
+		return bytes.Compare(ss[i], ss[j]) < 0
+	})
 }
 
 func (kv *KV) addKeys(values [][]byte) {
