@@ -19,20 +19,20 @@ import (
 )
 
 var (
-	servConfig *server.Config
-	td         string
+	cfg *server.Config
+	td  string
 )
 
 // Helpers
 
-func startServer(t *testing.T, testName string, testFunc func()) {
-	servConfig, td = getTestServerConfig(t)
-	cfg := servConfig
+func startServer(t *testing.T, testName string, testFunc func(*KV, string)) {
+	cfg, td = getTestServerConfig(t)
 	s, err := server.NewServer(cfg)
 	if err != nil {
 		t.Fatalf("new server error: %s", err)
 	}
 	go s.Start()
+	kv, pn := setupKV(t)
 	t.Run("health-ping", func(t *testing.T) {
 		_, err := fetchURL(fmt.Sprintf("http://localhost:%d", cfg.HealthPort), 3)
 		if err != nil {
@@ -40,9 +40,10 @@ func startServer(t *testing.T, testName string, testFunc func()) {
 		}
 	})
 	t.Run(testName, func(t *testing.T) {
-		testFunc()
+		testFunc(kv, pn)
 	})
 	t.Cleanup(func() {
+		os.RemoveAll(pn)
 		err := s.Close()
 		if err != nil {
 			log.Printf("error closing server: %s", err)
@@ -99,9 +100,9 @@ func setupTestClient(t *testing.T) *client.Client {
 	if err != nil {
 		t.Fatalf("client config from env error: %s", err)
 	}
-	ccfg.Host = servConfig.Host
-	ccfg.SSHPort = servConfig.SSHPort
-	ccfg.HTTPPort = servConfig.HTTPPort
+	ccfg.Host = cfg.Host
+	ccfg.SSHPort = cfg.SSHPort
+	ccfg.HTTPPort = cfg.HTTPPort
 	ccfg.DataDir = filepath.Join(td, ".client-data")
 	cl, err := client.NewClient(ccfg)
 	if err != nil {
@@ -128,7 +129,7 @@ func TestOpenWithDefaults(t *testing.T) {
 // TestGet
 
 func TestGetForEmptyDB(t *testing.T) {
-	startServer(t, "get for empty DB", func() {
+	startServer(t, "get for empty DB", func(*KV, string) {
 		kv, pn := setupKV(t)
 		defer os.RemoveAll(pn)
 		_, err := kv.Get([]byte("1234"))
@@ -139,7 +140,7 @@ func TestGetForEmptyDB(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	startServer(t, "get for non-empty DB", func() {
+	startServer(t, "get for non-empty DB", func(*KV, string) {
 		tests := []struct {
 			testname  string
 			key       []byte
@@ -174,7 +175,7 @@ func TestGet(t *testing.T) {
 // TestSetReader
 
 func TestSetReader(t *testing.T) {
-	startServer(t, "set reader", func() {
+	startServer(t, "set reader", func(*KV, string) {
 		tests := []struct {
 			testname  string
 			key       []byte
@@ -209,7 +210,7 @@ func TestSetReader(t *testing.T) {
 // TestDelete
 
 func TestDelete(t *testing.T) {
-	startServer(t, "set reader", func() {
+	startServer(t, "set reader", func(*KV, string) {
 		tests := []struct {
 			testname  string
 			key       []byte
@@ -245,7 +246,7 @@ func TestDelete(t *testing.T) {
 // TestSync
 
 func TestSync(t *testing.T) {
-	startServer(t, "set reader", func() {
+	startServer(t, "set reader", func(*KV, string) {
 		kv, pn := setupKV(t)
 		defer os.RemoveAll(pn)
 		err := kv.Sync()
@@ -258,7 +259,7 @@ func TestSync(t *testing.T) {
 // TestOptionsWithEncryption
 
 func TestOptionsWithEncryption(t *testing.T) {
-	startServer(t, "set reader", func() {
+	startServer(t, "set reader", func(*KV, string) {
 		_, err := OptionsWithEncryption(badger.DefaultOptions(""), []byte("1234"), -2)
 		if err == nil {
 			t.Errorf("expected an error")
@@ -269,7 +270,7 @@ func TestOptionsWithEncryption(t *testing.T) {
 // TestKeys
 
 func TestKeys(t *testing.T) {
-	startServer(t, "test keys", func() {
+	startServer(t, "test keys", func(*KV, string) {
 		tests := []struct {
 			testname string
 			keys     [][]byte
@@ -281,7 +282,6 @@ func TestKeys(t *testing.T) {
 
 		for _, tc := range tests {
 			kv, pn := setupKV(t)
-			defer os.RemoveAll(pn)
 			kv.addKeys(tc.keys)
 			got, err := kv.Keys()
 			if err != nil {
@@ -290,6 +290,7 @@ func TestKeys(t *testing.T) {
 			if !compareKeyLists(got, tc.keys) {
 				t.Errorf("got: %s want: %s", showKeys(got), showKeys(tc.keys))
 			}
+			os.RemoveAll(pn)
 		}
 	})
 }
