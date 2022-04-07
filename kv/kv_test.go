@@ -303,6 +303,7 @@ func compareKeyLists(a, b [][]byte) bool {
 	if len(a) != len(b) {
 		return false
 	}
+	// TODO: make order not matter
 	for i := range a {
 		if bytes.Compare(a[i], b[i]) != 0 {
 			return false
