@@ -4,3 +4,5 @@ data
 *.db
 *.log
 dist
+cmd/coverage.out
+charm-keys-backup.tar
