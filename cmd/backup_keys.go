@@ -111,10 +111,15 @@ func createTar(source string, target string) error {
 	if err != nil {
 		return err
 	}
-	defer tarfile.Close() // nolint:errcheck
+	var tarfileErr, tarballErr, closeErr error // errors for deferred funcs
+	defer func() {
+		tarfileErr = tarfile.Close()
+	}()
 
 	tarball := tar.NewWriter(tarfile)
-	defer tarball.Close() // nolint:errcheck
+	defer func() {
+		tarballErr = tarball.Close()
+	}()
 
 	info, err := os.Stat(source)
 	if err != nil {
@@ -157,8 +162,22 @@ func createTar(source string, target string) error {
 			if err != nil {
 				return err
 			}
-			defer file.Close() // nolint:errcheck
-			_, err = io.Copy(tarball, file)
-			return err
+			defer func() {
+				closeErr = file.Close()
+			}()
+			// check deferred functions for errors
+			if tarfileErr != nil {
+				return tarfileErr
+			}
+			if tarballErr != nil {
+				return tarballErr
+			}
+			if closeErr != nil {
+				return closeErr
+			}
+			if _, err = io.Copy(tarball, file); err != nil {
+				return err
+			}
+			return nil
 		})
 }
