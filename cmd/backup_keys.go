@@ -137,7 +137,7 @@ func createTar(source string, target string) error {
 				return err
 			}
 
-			if !strings.HasSuffix(path, "charm_rsa") && !strings.HasSuffix(path, "charm_rsa.pub") {
+			if !strings.HasSuffix(path, "charm_ed25519") && !strings.HasSuffix(path, "charm_ed25519.pub") {
 				return nil
 			}
 
