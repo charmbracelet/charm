@@ -82,6 +82,7 @@ func (m Model) bioView() string {
 		username = m.styles.Subtle.Render("(none set)")
 	}
 	return common.KeyValueView(
+		"Host", m.cc.Config.Host,
 		"Username", username,
 		"Joined", m.User.CreatedAt.Format("02 Jan 2006"),
 	)
