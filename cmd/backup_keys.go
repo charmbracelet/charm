@@ -20,7 +20,7 @@ var BackupKeysCmd = &cobra.Command{
 	Use:                   "backup-keys",
 	Hidden:                false,
 	Short:                 "Backup your Charm account keys",
-	Long:                  paragraph(fmt.Sprintf("%s your Charm account keys.", keyword("Backup"))),
+	Long:                  paragraph(fmt.Sprintf("%s your Charm account keys to a tar archive file. \nYou can restore your keys from backup using import-keys. \nRun `charm import-keys -help` to learn more.", keyword("Backup"))),
 	Args:                  cobra.NoArgs,
 	DisableFlagsInUseLine: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
