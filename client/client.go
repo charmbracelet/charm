@@ -163,6 +163,34 @@ func (cc *Client) AuthorizedKeys() (string, error) {
 	return string(keys), nil
 }
 
+func (cc *Client) LinkKeyToUser(key string) error {
+	s, err := cc.sshSession()
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+	k := charm.PublicKey{Key: key}
+	in, err := s.StdinPipe()
+	if err != nil {
+		return err
+	}
+	if err := json.NewEncoder(in).Encode(k); err != nil {
+		return err
+	}
+	j, err := json.Marshal(&k)
+	if err != nil {
+		return err
+	}
+	b, err := s.Output(fmt.Sprintf("api-add-key %s", string(j)))
+	if err != nil {
+		return err
+	}
+	if len(b) != 0 {
+		return fmt.Errorf("err: %s", string(b))
+	}
+	return nil
+}
+
 // AuthorizedKeysWithMetadata fetches keys linked to a user's account, with metadata.
 func (cc *Client) AuthorizedKeysWithMetadata() (*charm.Keys, error) {
 	s, err := cc.sshSession()

@@ -21,6 +21,8 @@ func (me *SSHServer) sshMiddleware() wish.Middleware {
 					me.handleAPIAuth(s)
 				case "api-keys":
 					me.handleAPIKeys(s)
+				case "api-add-key":
+					me.handleAddAPIKey(s)
 				case "api-link":
 					me.handleAPILink(s)
 				case "api-unlink":

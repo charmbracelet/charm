@@ -361,6 +361,34 @@ func (me *SSHServer) handleAPIUnlink(s ssh.Session) {
 	me.config.Stats.APIUnlink()
 }
 
+func (me *SSHServer) handleAddAPIKey(s ssh.Session) {
+	key, err := keyText(s)
+	if err != nil {
+		log.Println(err)
+		_ = me.sendAPIMessage(s, "Missing key")
+		return
+	}
+	u, err := me.db.UserForKey(key, true)
+	if err != nil {
+		log.Printf("Error fetching user: %s", err)
+		_ = me.sendAPIMessage(s, fmt.Sprintf("Error fetching user: %s", err))
+		return
+	}
+
+	var ur charm.PublicKey
+	if err := json.NewDecoder(s).Decode(&ur); err != nil {
+		log.Printf("Error reading key: %s", err)
+		_ = me.sendAPIMessage(s, fmt.Sprintf("Error reading key: %s", err))
+		return
+	}
+
+	if err := me.db.LinkUserKey(u, ur.Key); err != nil {
+		log.Printf("Error linking key: %s", err)
+		_ = me.sendAPIMessage(s, fmt.Sprintf("Error linking key: %s", err))
+		return
+	}
+}
+
 type channelLinkQueue struct {
 	s            *SSHServer
 	linkRequests map[charm.Token]chan *charm.Link
