@@ -622,17 +622,9 @@ func (me *DB) scanUser(r *sql.Row) (*charm.User, error) {
 	return u, nil
 }
 
-func (me *DB) execOrPanic(tx *sql.Tx, s string) {
-	_, err := tx.Exec(s)
-	if err != nil {
-		me.db.Close()
-		panic(err)
-	}
-}
-
 func (me *DB) WrapTransaction(f func(tx *sql.Tx) error) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer func() { cancel() }()
+	defer cancel()
 	tx, err := me.db.BeginTx(ctx, nil)
 	if err != nil {
 		log.Printf("error starting transaction: %s", err)
