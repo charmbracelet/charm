@@ -1,14 +1,13 @@
 package client
 
 import (
-	"crypto/sha256"
-	"encoding/base64"
 	"fmt"
 	"strings"
 
 	"github.com/calmh/randomart"
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/ui/common"
+	"golang.org/x/crypto/ssh"
 )
 
 var styles = common.DefaultStyles()
@@ -32,44 +31,26 @@ func (f Fingerprint) String() string {
 // FingerprintSHA256 returns the algorithm and SHA256 fingerprint for the given
 // key.
 func FingerprintSHA256(k charm.PublicKey) (Fingerprint, error) {
-	keyParts := strings.Split(k.Key, " ")
-	if len(keyParts) != 2 {
-		return Fingerprint{}, charm.ErrMalformedKey
-	}
-
-	b, err := base64.StdEncoding.DecodeString(keyParts[1])
+	key, _, _, _, err := ssh.ParseAuthorizedKey([]byte(k.Key))
 	if err != nil {
-		return Fingerprint{}, err
+		return Fingerprint{}, fmt.Errorf("failed to parse public key: %w", err)
 	}
-
-	algo := strings.Replace(keyParts[0], "ssh-", "", -1)
-	sha256sum := sha256.Sum256(b)
-	hash := base64.RawStdEncoding.EncodeToString(sha256sum[:])
 
 	return Fingerprint{
-		Algorithm: algo,
+		Algorithm: strings.TrimPrefix(key.Type(), "ssh-"),
 		Type:      "SHA256",
-		Value:     hash,
+		Value:     strings.TrimPrefix(ssh.FingerprintSHA256(key), "SHA256:"),
 	}, nil
 }
 
 // RandomArt returns the randomart for the given key.
 func RandomArt(k charm.PublicKey) (string, error) {
-	keyParts := strings.Split(k.Key, " ")
-	if len(keyParts) != 2 {
-		return "", charm.ErrMalformedKey
-	}
-
-	b, err := base64.StdEncoding.DecodeString(keyParts[1])
+	finger, err := FingerprintSHA256(k)
 	if err != nil {
 		return "", err
 	}
 
-	algo := strings.ToUpper(strings.Replace(keyParts[0], "ssh-", "", -1))
-
 	// TODO: also add bit size of key
-	h := sha256.New()
-	_, _ = h.Write(b)
-	board := randomart.GenerateSubtitled(h.Sum(nil), algo, "SHA256").String()
+	board := randomart.GenerateSubtitled([]byte(finger.Value), finger.Algorithm, finger.Type).String()
 	return strings.TrimSpace(board), nil
 }
