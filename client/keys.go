@@ -51,6 +51,6 @@ func RandomArt(k charm.PublicKey) (string, error) {
 	}
 
 	// TODO: also add bit size of key
-	board := randomart.GenerateSubtitled([]byte(finger.Value), finger.Algorithm, finger.Type).String()
+	board := randomart.GenerateSubtitled([]byte(finger.Value), strings.ToUpper(finger.Algorithm), finger.Type).String()
 	return strings.TrimSpace(board), nil
 }
