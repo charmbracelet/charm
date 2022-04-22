@@ -124,7 +124,7 @@ func YesButtonView(focused bool) string {
 	} else {
 		st = blurredButtonStyle
 	}
-	return underlineInitialCharButton("Yes", st, focused)
+	return underlineInitialCharButton("Yes", st)
 }
 
 // NoButtonView returns a button reading "No.".
@@ -138,10 +138,10 @@ func NoButtonView(focused bool) string {
 	st = st.Copy().
 		PaddingLeft(st.GetPaddingLeft() + 1).
 		PaddingRight(st.GetPaddingRight() + 1)
-	return underlineInitialCharButton("No", st, focused)
+	return underlineInitialCharButton("No", st)
 }
 
-func underlineInitialCharButton(str string, style lipgloss.Style, focused bool) string {
+func underlineInitialCharButton(str string, style lipgloss.Style) string {
 	if len(str) == 0 {
 		return ""
 	}
