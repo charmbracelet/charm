@@ -39,7 +39,7 @@ func FingerprintSHA256(k charm.PublicKey) (Fingerprint, error) {
 	}
 
 	return Fingerprint{
-		Algorithm: algo(key),
+		Algorithm: algo(key.Type()),
 		Type:      "SHA256",
 		Value:     strings.TrimPrefix(ssh.FingerprintSHA256(key), "SHA256:"),
 	}, nil
@@ -66,22 +66,32 @@ func RandomArt(k charm.PublicKey) (string, error) {
 	_, _ = h.Write(b)
 	board := randomart.GenerateSubtitled(
 		h.Sum(nil),
-		fmt.Sprintf("%s %d", strings.ToUpper(algo(key)), bitsize(key)),
+		fmt.Sprintf(
+			"%s %d",
+			strings.ToUpper(algo(key.Type())),
+			bitsize(key.Type()),
+		),
 		"SHA256",
 	).String()
 	return strings.TrimSpace(board), nil
 }
 
-func algo(key ssh.PublicKey) string {
-	parts := strings.Split(key.Type(), "-")
+func algo(keyType string) string {
+	if idx := strings.Index(keyType, "@"); idx > 0 {
+		return algo(keyType[0:idx])
+	}
+	parts := strings.Split(keyType, "-")
 	if len(parts) == 2 {
 		return parts[1]
+	}
+	if parts[0] == "sk" {
+		return algo(strings.TrimPrefix(keyType, "sk-"))
 	}
 	return parts[0]
 }
 
-func bitsize(key ssh.PublicKey) int {
-	switch key.Type() {
+func bitsize(keyType string) int {
+	switch keyType {
 	case ssh.KeyAlgoED25519, ssh.KeyAlgoECDSA256, ssh.KeyAlgoSKECDSA256, ssh.KeyAlgoSKED25519:
 		return 256
 	case ssh.KeyAlgoECDSA384:
