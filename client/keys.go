@@ -1,6 +1,8 @@
 package client
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -37,7 +39,7 @@ func FingerprintSHA256(k charm.PublicKey) (Fingerprint, error) {
 	}
 
 	return Fingerprint{
-		Algorithm: strings.TrimPrefix(key.Type(), "ssh-"),
+		Algorithm: algo(key),
 		Type:      "SHA256",
 		Value:     strings.TrimPrefix(ssh.FingerprintSHA256(key), "SHA256:"),
 	}, nil
@@ -45,12 +47,52 @@ func FingerprintSHA256(k charm.PublicKey) (Fingerprint, error) {
 
 // RandomArt returns the randomart for the given key.
 func RandomArt(k charm.PublicKey) (string, error) {
-	finger, err := FingerprintSHA256(k)
+	key, _, _, _, err := ssh.ParseAuthorizedKey([]byte(k.Key))
+	if err != nil {
+		return "", fmt.Errorf("failed to parse public key: %w", err)
+	}
+
+	keyParts := strings.Split(string(ssh.MarshalAuthorizedKey(key)), " ")
+	if len(keyParts) != 2 {
+		return "", charm.ErrMalformedKey
+	}
+
+	b, err := base64.StdEncoding.DecodeString(keyParts[1])
 	if err != nil {
 		return "", err
 	}
 
-	// TODO: also add bit size of key
-	board := randomart.GenerateSubtitled([]byte(finger.Value), strings.ToUpper(finger.Algorithm), finger.Type).String()
+	h := sha256.New()
+	_, _ = h.Write(b)
+	board := randomart.GenerateSubtitled(
+		h.Sum(nil),
+		fmt.Sprintf("%s %d", strings.ToUpper(algo(key)), bitsize(key)),
+		"SHA256",
+	).String()
 	return strings.TrimSpace(board), nil
+}
+
+func algo(key ssh.PublicKey) string {
+	parts := strings.Split(key.Type(), "-")
+	if len(parts) == 2 {
+		return parts[1]
+	}
+	return parts[0]
+}
+
+func bitsize(key ssh.PublicKey) int {
+	switch key.Type() {
+	case ssh.KeyAlgoED25519, ssh.KeyAlgoECDSA256, ssh.KeyAlgoSKECDSA256, ssh.KeyAlgoSKED25519:
+		return 256
+	case ssh.KeyAlgoECDSA384:
+		return 384
+	case ssh.KeyAlgoECDSA521:
+		return 521
+	case ssh.KeyAlgoDSA:
+		return 1024
+	case ssh.KeyAlgoRSA:
+		return 3071 // usually
+	default:
+		return 0
+	}
 }
