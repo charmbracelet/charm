@@ -57,8 +57,7 @@ var BackupKeysCmd = &cobra.Command{
 			return err
 		}
 
-		err = createTar(dd, filename)
-		if err != nil {
+		if err := createTar(dd, filename); err != nil {
 			return err
 		}
 		fmt.Printf("Done! Saved keys to %s.\n\n", code(filename))
