@@ -23,7 +23,6 @@ type kvFileInfo struct {
 	name    string
 	size    int64
 	mode    fs.FileMode
-	isDir   bool
 	modTime time.Time
 }
 
@@ -83,7 +82,7 @@ func (kv *KV) backupSeq(from uint64, at uint64) error {
 		info: &kvFileInfo{
 			name:    name,
 			size:    int64(size),
-			mode:    fs.FileMode(0660),
+			mode:    fs.FileMode(0o660),
 			modTime: time.Now(),
 		},
 	}
@@ -99,7 +98,7 @@ func (kv *KV) restoreSeq(seq uint64) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer r.Close() // nolint:errcheck
 	// TODO DB.Load() should be called on a database that is not running any
 	// other concurrent transactions while it is running.
 	return kv.DB.Load(r, 1)
@@ -157,10 +156,10 @@ func encryptKeyToBadgerKey(k *charm.EncryptKey) ([]byte, error) {
 	if len(ek) < 32 {
 		return nil, fmt.Errorf("Encryption key is too short")
 	}
-	return []byte(ek)[0:32], nil
+	return ek[0:32], nil
 }
 
-func openDB(cc *client.Client, name string, opt badger.Options) (*badger.DB, error) {
+func openDB(cc *client.Client, opt badger.Options) (*badger.DB, error) {
 	var db *badger.DB
 	eks, err := cc.EncryptKeys()
 	if err != nil {

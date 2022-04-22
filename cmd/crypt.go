@@ -76,7 +76,7 @@ func cryptEncrypt(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	eb.Close()
+	eb.Close() // nolint:errcheck
 	cf := cryptFile{
 		Data: base64.StdEncoding.EncodeToString(buf.Bytes()),
 	}
@@ -99,7 +99,7 @@ func cryptDecrypt(cmd *cobra.Command, args []string) error {
 		r = os.Stdin
 	default:
 		f, err := os.Open(args[0])
-		defer f.Close()
+		defer f.Close() // nolint:errcheck
 		r = f
 		if err != nil {
 			return err

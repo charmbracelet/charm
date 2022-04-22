@@ -39,7 +39,7 @@ type Stats struct {
 }
 
 // Start starts the PrometheusStats HTTP server.
-func (ps *Stats) Start() {
+func (ps *Stats) Start() error {
 	// collect totals every minute
 	go func() {
 		for {
@@ -56,7 +56,11 @@ func (ps *Stats) Start() {
 		}
 	}()
 	log.Printf("Starting Stats HTTP server on: %s", ps.server.Addr)
-	log.Fatal(ps.server.ListenAndServe())
+	err := ps.server.ListenAndServe()
+	if err != http.ErrServerClosed {
+		return err
+	}
+	return nil
 }
 
 // Shutdown shuts down the Stats HTTP server.

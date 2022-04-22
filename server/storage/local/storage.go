@@ -24,7 +24,7 @@ type LocalFileStore struct {
 // will be encrypted client-side and stored as regular file system files and
 // folders.
 func NewLocalFileStore(path string) (*LocalFileStore, error) {
-	err := storage.EnsureDir(path, 0700)
+	err := storage.EnsureDir(path, 0o700)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +142,7 @@ func (lfs *LocalFileStore) Put(charmID string, path string, r io.Reader, mode fs
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer f.Close() // nolint:errcheck
 	_, err = io.Copy(f, r)
 	if err != nil {
 		return err
@@ -156,9 +156,5 @@ func (lfs *LocalFileStore) Put(charmID string, path string, r io.Reader, mode fs
 // Delete deletes the file at the given path for the provided Charm ID.
 func (lfs *LocalFileStore) Delete(charmID string, path string) error {
 	fp := filepath.Join(lfs.Path, charmID, path)
-	err := os.RemoveAll(fp)
-	if err != nil {
-		return err
-	}
-	return nil
+	return os.RemoveAll(fp)
 }

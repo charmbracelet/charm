@@ -11,8 +11,10 @@ import (
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/google/uuid"
 	"modernc.org/sqlite"
-	_ "modernc.org/sqlite"
+	_ "modernc.org/sqlite" // sqlite driver
 	sqlitelib "modernc.org/sqlite/lib"
+
+	_ "modernc.org/sqlite" // sqlite driver
 )
 
 const (
@@ -22,11 +24,12 @@ const (
 	DbOptions = "?_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)"
 )
 
+// DB is the database struct.
 type DB struct {
-	host string
-	db   *sql.DB
+	db *sql.DB
 }
 
+// NewDB creates a new DB in the given path.
 func NewDB(path string) *DB {
 	var err error
 	log.Printf("Opening SQLite db: %s\n", path)
@@ -42,26 +45,27 @@ func NewDB(path string) *DB {
 	return d
 }
 
+// UserCount returns the number of users.
 func (me *DB) UserCount() (int, error) {
 	var c int
 	r := me.db.QueryRow(sqlCountUsers)
-	err := r.Scan(&c)
-	if err != nil {
+	if err := r.Scan(&c); err != nil {
 		return 0, err
 	}
 	return c, nil
 }
 
+// UserNameCount returns the number of users with a user name set.
 func (me *DB) UserNameCount() (int, error) {
 	var c int
 	r := me.db.QueryRow(sqlCountUserNames)
-	err := r.Scan(&c)
-	if err != nil {
+	if err := r.Scan(&c); err != nil {
 		return 0, err
 	}
 	return c, nil
 }
 
+// GetUserWithID returns the user for the given id.
 func (me *DB) GetUserWithID(charmID string) (*charm.User, error) {
 	r := me.db.QueryRow(sqlSelectUserWithCharmID, charmID)
 	u, err := me.scanUser(r)
@@ -71,6 +75,7 @@ func (me *DB) GetUserWithID(charmID string) (*charm.User, error) {
 	return u, nil
 }
 
+// GetUserWithName returns the user for the given name.
 func (me *DB) GetUserWithName(name string) (*charm.User, error) {
 	r := me.db.QueryRow(sqlSelectUserWithName, name)
 	u, err := me.scanUser(r)
@@ -80,10 +85,12 @@ func (me *DB) GetUserWithName(name string) (*charm.User, error) {
 	return u, nil
 }
 
+// SetUserName sets a user name for the given user id.
 func (me *DB) SetUserName(charmID string, name string) (*charm.User, error) {
 	var u *charm.User
 	log.Printf("Setting name `%s` for user %s\n", name, charmID)
 	err := me.WrapTransaction(func(tx *sql.Tx) error {
+		// TODO: this should be handled with unique constraints in the database instead.
 		var err error
 		r := me.selectUserWithName(tx, name)
 		u, err = me.scanUser(r)
@@ -122,6 +129,7 @@ func (me *DB) SetUserName(charmID string, name string) (*charm.User, error) {
 	return u, nil
 }
 
+// UserForKey returns the user for the given key, or optionally creates a new user with it.
 func (me *DB) UserForKey(key string, create bool) (*charm.User, error) {
 	pk := &charm.PublicKey{}
 	u := &charm.User{}
@@ -165,6 +173,7 @@ func (me *DB) UserForKey(key string, create bool) (*charm.User, error) {
 	return u, nil
 }
 
+// AddEncryptKeyForPublicKey adds an ecrypted key to the user.
 func (me *DB) AddEncryptKeyForPublicKey(u *charm.User, pk string, gid string, ek string, ca *time.Time) error {
 	log.Printf("Adding encrypted key %s %s for user %s\n", gid, ca, u.CharmID)
 	return me.WrapTransaction(func(tx *sql.Tx) error {
@@ -190,6 +199,7 @@ func (me *DB) AddEncryptKeyForPublicKey(u *charm.User, pk string, gid string, ek
 	})
 }
 
+// EncryptKeysForPublicKey returns the encrypt keys for the given user.
 func (me *DB) EncryptKeysForPublicKey(pk *charm.PublicKey) ([]*charm.EncryptKey, error) {
 	var ks []*charm.EncryptKey
 	err := me.WrapTransaction(func(tx *sql.Tx) error {
@@ -197,6 +207,10 @@ func (me *DB) EncryptKeysForPublicKey(pk *charm.PublicKey) ([]*charm.EncryptKey,
 		if err != nil {
 			return err
 		}
+		if rs.Err() != nil {
+			return rs.Err()
+		}
+		defer rs.Close() // nolint:errcheck
 		for rs.Next() {
 			k := &charm.EncryptKey{}
 			err := rs.Scan(&k.ID, &k.Key, &k.CreatedAt)
@@ -213,6 +227,7 @@ func (me *DB) EncryptKeysForPublicKey(pk *charm.PublicKey) ([]*charm.EncryptKey,
 	return ks, nil
 }
 
+// LinkUserKey links a user to a key.
 func (me *DB) LinkUserKey(user *charm.User, key string) error {
 	ks := charm.PublicKeySha(key)
 	log.Printf("Linking user %s and key %s\n", user.CharmID, ks)
@@ -221,6 +236,7 @@ func (me *DB) LinkUserKey(user *charm.User, key string) error {
 	})
 }
 
+// UnlinkUserKey unlinks the key from the user.
 func (me *DB) UnlinkUserKey(user *charm.User, key string) error {
 	ks := charm.PublicKeySha(key)
 	log.Printf("Unlinking user %s key %s\n", user.CharmID, ks)
@@ -248,6 +264,7 @@ func (me *DB) UnlinkUserKey(user *charm.User, key string) error {
 	})
 }
 
+// KeysForUser returns all user's public keys.
 func (me *DB) KeysForUser(user *charm.User) ([]*charm.PublicKey, error) {
 	var keys []*charm.PublicKey
 	log.Printf("Getting keys for user %s\n", user.CharmID)
@@ -256,7 +273,7 @@ func (me *DB) KeysForUser(user *charm.User) ([]*charm.PublicKey, error) {
 		if err != nil {
 			return err
 		}
-		defer rs.Close()
+		defer rs.Close() // nolint:errcheck
 
 		for rs.Next() {
 			k := &charm.PublicKey{}
@@ -279,6 +296,7 @@ func (me *DB) KeysForUser(user *charm.User) ([]*charm.PublicKey, error) {
 	return keys, nil
 }
 
+// GetSeq returns the named sequence.
 func (me *DB) GetSeq(u *charm.User, name string) (uint64, error) {
 	var seq uint64
 	var err error
@@ -295,6 +313,7 @@ func (me *DB) GetSeq(u *charm.User, name string) (uint64, error) {
 	return seq, nil
 }
 
+// NextSeq increments the sequence and returns.
 func (me *DB) NextSeq(u *charm.User, name string) (uint64, error) {
 	var seq uint64
 	var err error
@@ -311,6 +330,7 @@ func (me *DB) NextSeq(u *charm.User, name string) (uint64, error) {
 	return seq, nil
 }
 
+// GetNews returns the server news.
 func (me *DB) GetNews(id string) (*charm.News, error) {
 	n := &charm.News{}
 	i, err := strconv.Atoi(id)
@@ -327,6 +347,7 @@ func (me *DB) GetNews(id string) (*charm.News, error) {
 	return n, nil
 }
 
+// GetNewsList returns the list of server news.
 func (me *DB) GetNewsList(tag string, page int) ([]*charm.News, error) {
 	var ns []*charm.News
 	err := me.WrapTransaction(func(tx *sql.Tx) error {
@@ -334,6 +355,10 @@ func (me *DB) GetNewsList(tag string, page int) ([]*charm.News, error) {
 		if err != nil {
 			return err
 		}
+		if rs.Err() != nil {
+			return rs.Err()
+		}
+		defer rs.Close() // nolint:errcheck
 		for rs.Next() {
 			n := &charm.News{}
 			err := rs.Scan(&n.ID, &n.Subject, &n.CreatedAt)
@@ -347,12 +372,14 @@ func (me *DB) GetNewsList(tag string, page int) ([]*charm.News, error) {
 	return ns, err
 }
 
+// PostNews publish news to the server.
 func (me *DB) PostNews(subject string, body string, tags []string) error {
 	return me.WrapTransaction(func(tx *sql.Tx) error {
 		return me.insertNews(tx, subject, body, tags)
 	})
 }
 
+// MergeUsers merge two users into a single one.
 func (me *DB) MergeUsers(userID1 int, userID2 int) error {
 	return me.WrapTransaction(func(tx *sql.Tx) error {
 		err := me.updateMergePublicKeys(tx, userID1, userID2)
@@ -364,6 +391,7 @@ func (me *DB) MergeUsers(userID1 int, userID2 int) error {
 	})
 }
 
+// SetToken creates the given token.
 func (me *DB) SetToken(token charm.Token) error {
 	return me.WrapTransaction(func(tx *sql.Tx) error {
 		err := me.insertToken(tx, string(token))
@@ -377,12 +405,14 @@ func (me *DB) SetToken(token charm.Token) error {
 	})
 }
 
+// DeleteToken deletes the given token.
 func (me *DB) DeleteToken(token charm.Token) error {
 	return me.WrapTransaction(func(tx *sql.Tx) error {
 		return me.deleteToken(tx, string(token))
 	})
 }
 
+// CreateDB creates the database.
 func (me *DB) CreateDB() error {
 	return me.WrapTransaction(func(tx *sql.Tx) error {
 		err := me.createUserTable(tx)
@@ -417,6 +447,7 @@ func (me *DB) CreateDB() error {
 	})
 }
 
+// Close the db.
 func (me *DB) Close() error {
 	log.Println("Closing db")
 	return me.db.Close()
@@ -441,11 +472,6 @@ func (me *DB) insertUser(tx *sql.Tx, charmID string) error {
 	return err
 }
 
-func (me *DB) insertUserWithName(tx *sql.Tx, charmID string, name string) error {
-	_, err := tx.Exec(sqlInsertUserWithName, charmID, name)
-	return err
-}
-
 func (me *DB) insertPublicKey(tx *sql.Tx, userID int, key string) error {
 	_, err := tx.Exec(sqlInsertPublicKey, userID, key)
 	return err
@@ -463,6 +489,9 @@ func (me *DB) insertEncryptKey(tx *sql.Tx, key string, globalID string, publicKe
 
 func (me *DB) insertNews(tx *sql.Tx, subject string, body string, tags []string) error {
 	r, err := tx.Exec(sqlInsertNews, subject, body)
+	if err != nil {
+		return err
+	}
 	nid, err := r.LastInsertId()
 	if err != nil {
 		return err
@@ -484,8 +513,7 @@ func (me *DB) insertToken(tx *sql.Tx, token string) error {
 func (me *DB) selectNamedSeq(tx *sql.Tx, userID int, name string) (uint64, error) {
 	var seq uint64
 	r := tx.QueryRow(sqlSelectNamedSeq, userID, name)
-	err := r.Scan(&seq)
-	if err != nil {
+	if err := r.Scan(&seq); err != nil {
 		return 0, err
 	}
 	return seq, nil
@@ -622,17 +650,10 @@ func (me *DB) scanUser(r *sql.Row) (*charm.User, error) {
 	return u, nil
 }
 
-func (me *DB) execOrPanic(tx *sql.Tx, s string) {
-	_, err := tx.Exec(s)
-	if err != nil {
-		me.db.Close()
-		panic(err)
-	}
-}
-
+// WrapTransaction runs the given function within a transaction.
 func (me *DB) WrapTransaction(f func(tx *sql.Tx) error) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer func() { cancel() }()
+	defer cancel()
 	tx, err := me.db.BeginTx(ctx, nil)
 	if err != nil {
 		log.Printf("error starting transaction: %s", err)
