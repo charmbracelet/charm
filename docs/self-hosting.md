@@ -6,7 +6,7 @@ To start your charm server, run
 ```bash
 charm serve
 ```
-in a dedicated terminal window. Then, change the default host by adding `CHARM_HOST=localhost` or `CHARM_HOST=burrito.example.com` to your PATH. 
+in a dedicated terminal window or in a [Docker container](https://github.com/charmbracelet/charm/blob/main/docker.md). Then, change the default host by adding `CHARM_HOST=localhost` or `CHARM_HOST=burrito.example.com` to your PATH. 
 
 ## Self-Hosting With TLS
 
