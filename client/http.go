@@ -37,7 +37,7 @@ func (cc *Client) AuthedJSONRequest(method string, path string, reqBody interfac
 		return err
 	}
 	if respBody != nil {
-		defer resp.Body.Close()
+		defer resp.Body.Close() // nolint:errcheck
 		dec := json.NewDecoder(resp.Body)
 		return dec.Decode(respBody)
 	}

@@ -24,7 +24,7 @@ var (
 		Use:    "kv",
 		Hidden: false,
 		Short:  "Use the Charm key value store.",
-		Long:   paragraph(fmt.Sprintf("Commands to set, get and delete data from your Charm Cloud backed key value store.")),
+		Long:   paragraph("Commands to set, get and delete data from your Charm Cloud backed key value store."),
 		Args:   cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return nil
@@ -143,7 +143,9 @@ func kvList(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	db.Sync()
+	if err := db.Sync(); err != nil {
+		return err
+	}
 	return db.View(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
 		opts.PrefetchSize = 10

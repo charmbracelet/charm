@@ -32,3 +32,8 @@ linters:
     - unconvert
     - unparam
     - whitespace
+
+rules:
+  - linters:
+    - godox
+    severity: warn

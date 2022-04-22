@@ -287,7 +287,7 @@ func (s *HTTPServer) handlePostFile(w http.ResponseWriter, r *http.Request) {
 		s.renderError(w)
 		return
 	}
-	defer f.Close()
+	defer f.Close() // nolint:errcheck
 	if s.cfg.UserMaxStorage > 0 {
 		stat, err := s.cfg.FileStore.Stat(u.CharmID, "")
 		if err != nil {
@@ -321,7 +321,7 @@ func (s *HTTPServer) handleGetFile(w http.ResponseWriter, r *http.Request) {
 		s.renderError(w)
 		return
 	}
-	defer f.Close()
+	defer f.Close() // nolint:errcheck
 	fi, err := f.Stat()
 	if err != nil {
 		log.Printf("cannot get file info: %s", err)

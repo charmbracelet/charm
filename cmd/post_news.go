@@ -10,11 +10,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var newsSubject string
-var newsTagList string
-
 var (
-	//PostNewsCmd is the cobra.Command to self-host the Charm Cloud.
+	newsTagList string
+	newsSubject string
+
+	// PostNewsCmd is the cobra.Command to self-host the Charm Cloud.
 	PostNewsCmd = &cobra.Command{
 		Use:    "post-news",
 		Hidden: true,

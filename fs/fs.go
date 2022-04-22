@@ -59,12 +59,12 @@ func (df *DirFile) Stat() (fs.FileInfo, error) {
 	return df.FileInfo, nil
 }
 
-// Read reads from the DirFile and satisfies fs.FS
+// Read reads from the DirFile and satisfies fs.FS.
 func (df *DirFile) Read(buf []byte) (int, error) {
 	return df.Buffer.Read(buf)
 }
 
-// Close is a no-op but satisfies fs.FS
+// Close is a no-op but satisfies fs.FS.
 func (df *DirFile) Close() error {
 	return nil
 }
@@ -103,7 +103,7 @@ func (cfs *FS) Open(name string) (fs.File, error) {
 	} else if err != nil {
 		return nil, pathError(name, err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 
 	switch resp.Header.Get("Content-Type") {
 	case "application/json":
@@ -191,11 +191,12 @@ func (cfs *FS) WriteFile(name string, src fs.File) error {
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(eb, src)
-	if err != nil {
+	if _, err := io.Copy(eb, src); err != nil {
 		return err
 	}
-	eb.Close()
+	if err := eb.Close(); err != nil {
+		return err
+	}
 	// To calculate the Content Length of a multipart request, we need to split
 	// the multipart into header, data body, and boundary footer and then
 	// calculate the length of each.
@@ -203,34 +204,32 @@ func (cfs *FS) WriteFile(name string, src fs.File) error {
 	// https://go.dev/src/net/http/request.go#L891
 	databuf := bytes.NewBuffer(nil)
 	w := multipart.NewWriter(databuf)
-	_, err = w.CreateFormFile("data", name)
-	if err != nil {
+	if _, err := w.CreateFormFile("data", name); err != nil {
 		return err
 	}
 	headlen := databuf.Len()
 	header := make([]byte, headlen)
-	_, err = databuf.Read(header)
-	if err != nil {
+	if _, err := databuf.Read(header); err != nil {
 		return err
 	}
-	w.Close()
+	if err := w.Close(); err != nil {
+		return err
+	}
 	bounlen := databuf.Len()
 	boun := make([]byte, bounlen)
-	_, err = databuf.Read(boun)
-	if err != nil {
+	if _, err := databuf.Read(boun); err != nil {
 		return err
 	}
 	// headlen is the length of the multipart part header, bounlen is the length of the multipart boundary footer.
 	contentLength := int64(headlen) + int64(ebuf.Len()) + int64(bounlen)
 	// pipe the multipart request to the server
 	rr, rw := io.Pipe()
-	defer rr.Close()
+	defer rr.Close() // nolint:errcheck
 	go func() {
-		defer rw.Close()
+		defer rw.Close() // nolint:errcheck
 
 		// write multipart header
-		_, err = rw.Write(header)
-		if err != nil {
+		if _, err := rw.Write(header); err != nil {
 			log.Printf("WriteFile %s error: %v", name, err)
 			return
 		}
@@ -241,15 +240,13 @@ func (cfs *FS) WriteFile(name string, src fs.File) error {
 			if err != nil {
 				break
 			}
-			_, err = rw.Write(buf[:n])
-			if err != nil {
+			if _, err := rw.Write(buf[:n]); err != nil {
 				log.Printf("WriteFile %s error: %v", name, err)
 				return
 			}
 		}
 		// write multipart boundary
-		_, err = rw.Write(boun)
-		if err != nil {
+		if _, err := rw.Write(boun); err != nil {
 			log.Printf("WriteFile %s error: %v", name, err)
 			return
 		}
@@ -263,8 +260,11 @@ func (cfs *FS) WriteFile(name string, src fs.File) error {
 		"Content-Type":   {w.FormDataContentType()},
 		"Content-Length": {fmt.Sprintf("%d", contentLength)},
 	}
-	_, err = cfs.cc.AuthedRequest("POST", path, headers, rr)
-	return err
+	resp, err := cfs.cc.AuthedRequest("POST", path, headers, rr)
+	if err != nil {
+		return err
+	}
+	return resp.Body.Close()
 }
 
 // Remove deletes a file from the Charm Cloud server.
@@ -274,8 +274,11 @@ func (cfs *FS) Remove(name string) error {
 		return err
 	}
 	path := fmt.Sprintf("/v1/fs/%s", ep)
-	_, err = cfs.cc.AuthedRequest("DELETE", path, nil, nil)
-	return err
+	resp, err := cfs.cc.AuthedRequest("DELETE", path, nil, nil)
+	if err != nil {
+		return err
+	}
+	return resp.Body.Close()
 }
 
 // ReadDir reads the named directory and returns a list of directory entries.
@@ -287,7 +290,7 @@ func (cfs *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer f.Close() // nolint:errcheck
 	return f.(*File).ReadDir(0)
 }
 
@@ -389,6 +392,7 @@ func (fi *FileInfo) Info() (fs.FileInfo, error) {
 	return fi, nil
 }
 
+// EncryptPath returns the encrypted path for a given path.
 func (cfs *FS) EncryptPath(path string) (string, error) {
 	eps := make([]string, 0)
 	path = strings.TrimPrefix(path, "charm:")
@@ -403,6 +407,7 @@ func (cfs *FS) EncryptPath(path string) (string, error) {
 	return strings.Join(eps, "/"), nil
 }
 
+// DecryptPath returns the unencrypted path for a given path.
 func (cfs *FS) DecryptPath(path string) (string, error) {
 	dps := make([]string, 0)
 	ps := strings.Split(path, "/")
@@ -421,7 +426,7 @@ func (sf sysFuture) resolve() ([]fs.DirEntry, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer f.Close() // nolint:errcheck
 	fi, err := f.Stat()
 	if err != nil {
 		return nil, err

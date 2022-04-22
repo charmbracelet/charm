@@ -99,7 +99,6 @@ func validateDirectory(path string) error {
 
 		// Everything looks OK!
 		return nil
-
 	} else if os.IsNotExist(err) {
 		return fmt.Errorf("'%v' does not exist", path)
 	} else {
@@ -112,10 +111,10 @@ func createTar(source string, target string) error {
 	if err != nil {
 		return err
 	}
-	defer tarfile.Close()
+	defer tarfile.Close() // nolint:errcheck
 
 	tarball := tar.NewWriter(tarfile)
-	defer tarball.Close()
+	defer tarball.Close() // nolint:errcheck
 
 	info, err := os.Stat(source)
 	if err != nil {
@@ -158,7 +157,7 @@ func createTar(source string, target string) error {
 			if err != nil {
 				return err
 			}
-			defer file.Close()
+			defer file.Close() // nolint:errcheck
 			_, err = io.Copy(tarball, file)
 			return err
 		})
