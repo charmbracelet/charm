@@ -652,7 +652,7 @@ func (me *DB) scanUser(r *sql.Row) (*charm.User, error) {
 // WrapTransaction runs the given function within a transaction.
 func (me *DB) WrapTransaction(f func(tx *sql.Tx) error) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer func() { cancel() }()
+	defer cancel()
 	tx, err := me.db.BeginTx(ctx, nil)
 	if err != nil {
 		log.Printf("error starting transaction: %s", err)

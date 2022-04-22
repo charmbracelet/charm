@@ -35,7 +35,7 @@ var (
 		Use:                   "import-keys BACKUP.tar",
 		Hidden:                false,
 		Short:                 "Import previously backed up Charm account keys.",
-		Long:                  paragraph(fmt.Sprintf("%s previously backed up Charm account keys.", keyword("Backup"))),
+		Long:                  paragraph(fmt.Sprintf("%s previously backed up Charm account keys.", keyword("Import"))),
 		Args:                  cobra.ExactArgs(1),
 		DisableFlagsInUseLine: false,
 		RunE: func(cmd *cobra.Command, args []string) error {
