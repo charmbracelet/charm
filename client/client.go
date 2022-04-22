@@ -109,6 +109,7 @@ func NewClient(cfg *Config) (*Client, error) {
 	return cc, nil
 }
 
+// NewClientWithDefaults creates a new Charm client with default values.
 func NewClientWithDefaults() (*Client, error) {
 	cfg, err := ConfigFromEnv()
 	if err != nil {
@@ -127,7 +128,7 @@ func (cc *Client) JWT(aud ...string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer s.Close()
+	defer s.Close() // nolint:errcheck
 	jwt, err := s.Output(strings.Join(append([]string{"jwt"}, aud...), " "))
 	if err != nil {
 		return "", err
@@ -141,7 +142,7 @@ func (cc *Client) ID() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer s.Close()
+	defer s.Close() // nolint:errcheck
 	id, err := s.Output("id")
 	if err != nil {
 		return "", err
@@ -155,7 +156,7 @@ func (cc *Client) AuthorizedKeys() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer s.Close()
+	defer s.Close() // nolint:errcheck
 	keys, err := s.Output("keys")
 	if err != nil {
 		return "", err
@@ -169,7 +170,7 @@ func (cc *Client) AuthorizedKeysWithMetadata() (*charm.Keys, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer s.Close()
+	defer s.Close() // nolint:errcheck
 
 	b, err := s.Output("api-keys")
 	if err != nil {
@@ -192,7 +193,7 @@ func (cc *Client) UnlinkAuthorizedKey(key string) error {
 	if err != nil {
 		return err
 	}
-	defer s.Close()
+	defer s.Close() // nolint:errcheck
 	k := charm.PublicKey{Key: key}
 	in, err := s.StdinPipe()
 	if err != nil {
@@ -215,6 +216,7 @@ func (cc *Client) UnlinkAuthorizedKey(key string) error {
 	return nil
 }
 
+// KeygenType returns the keygen key type.
 func (cfg *Config) KeygenType() keygen.KeyType {
 	switch cfg.KeyType {
 	case "Ed25519", "ed25519":
@@ -280,14 +282,14 @@ func (cc *Client) sshSession() (*ssh.Session, error) {
 func (cc *Client) DataPath() (string, error) {
 	if cc.Config.DataDir != "" {
 		return filepath.Join(cc.Config.DataDir, cc.Config.Host), nil
-	} else {
-		scope := gap.NewScope(gap.User, filepath.Join("charm", cc.Config.Host))
-		dataPath, err := scope.DataPath("")
-		if err != nil {
-			return "", err
-		}
-		return dataPath, nil
 	}
+
+	scope := gap.NewScope(gap.User, filepath.Join("charm", cc.Config.Host))
+	dataPath, err := scope.DataPath("")
+	if err != nil {
+		return "", err
+	}
+	return dataPath, nil
 }
 
 // FindAuthKeys looks in a user's XDG charm-dir for possible auth keys.

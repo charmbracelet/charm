@@ -10,8 +10,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var randomart bool
-var simpleOutput bool
+var (
+	randomart    bool
+	simpleOutput bool
+)
 
 // KeysCmd is the cobra.Command for a user to browser and print their linked
 // SSH keys.
@@ -29,7 +31,7 @@ var KeysCmd = &cobra.Command{
 				if err != nil {
 					return err
 				}
-				defer f.Close()
+				defer f.Close() // nolint:errcheck
 			}
 			return keys.NewProgram(cfg).Start()
 		}

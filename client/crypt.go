@@ -58,8 +58,7 @@ func (cc *Client) findIdentities() ([]sasquatch.Identity, error) {
 
 // EncryptKeys returns all of the symmetric encrypt keys for the authed user.
 func (cc *Client) EncryptKeys() ([]*charm.EncryptKey, error) {
-	err := cc.cryptCheck()
-	if err != nil {
+	if err := cc.cryptCheck(); err != nil {
 		return nil, err
 	}
 	return cc.plainTextEncryptKeys, nil
@@ -75,8 +74,12 @@ func (cc *Client) addEncryptKey(pk string, gid string, key string, createdAt *ti
 	if err != nil {
 		return err
 	}
-	w.Write([]byte(key))
-	w.Close()
+	if _, err := w.Write([]byte(key)); err != nil {
+		return err
+	}
+	if err := w.Close(); err != nil {
+		return err
+	}
 
 	encKey := base64.StdEncoding.EncodeToString(buf.Bytes())
 	ek := charm.EncryptKey{}

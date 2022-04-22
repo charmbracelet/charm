@@ -19,7 +19,7 @@ func (cc *Client) Auth() (*charm.Auth, error) {
 		if err != nil {
 			return nil, charm.ErrAuthFailed{Err: err}
 		}
-		defer s.Close()
+		defer s.Close() // nolint:errcheck
 
 		b, err := s.Output("api-auth")
 		if err != nil {

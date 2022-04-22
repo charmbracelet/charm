@@ -8,8 +8,9 @@ import (
 	"time"
 
 	"modernc.org/sqlite"
-	_ "modernc.org/sqlite"
 	sqlitelib "modernc.org/sqlite/lib"
+
+	_ "modernc.org/sqlite" // sqlite driver
 )
 
 const (
@@ -35,7 +36,7 @@ const (
 	)`
 )
 
-// Stats implements the stats.Stats interface for SQLite
+// Stats implements the stats.Stats interface for SQLite.
 type Stats struct {
 	db *sql.DB
 }
@@ -66,7 +67,7 @@ func (s *Stats) createDB() error {
 func (s *Stats) increment(field string) {
 	err := s.wrapTransaction(func(tx *sql.Tx) error {
 		// SQLite doesn't use placeholders for table or field names
-		stmt := fmt.Sprintf("UPDATE stats SET %s = %s+1 WHERE id = (SELECT MAX(id) from stats)", field, field)
+		stmt := fmt.Sprintf("UPDATE stats SET %s = %s+1 WHERE id = (SELECT MAX(id) from stats)", field, field) // nolint:gosec
 		_, err := s.db.Exec(stmt)
 		return err
 	})
@@ -155,7 +156,7 @@ func (s *Stats) GetNewsList() {
 	s.increment("get_news_list")
 }
 
-// Close SQLite DB
+// Close SQLite DB.
 func (s *Stats) Close() error {
 	return s.db.Close()
 }

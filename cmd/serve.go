@@ -20,7 +20,7 @@ var (
 	serverHealthPort int
 	serverDataDir    string
 
-	//ServeCmd is the cobra.Command to self-host the Charm Cloud.
+	// ServeCmd is the cobra.Command to self-host the Charm Cloud.
 	ServeCmd = &cobra.Command{
 		Use:     "serve",
 		Aliases: []string{"server"},

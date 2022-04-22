@@ -52,7 +52,7 @@ var (
 				return err
 			}
 
-			if err := os.MkdirAll(dd, 0700); err != nil {
+			if err := os.MkdirAll(dd, 0o700); err != nil {
 				return err
 			}
 
@@ -160,7 +160,7 @@ func isEmpty(name string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	defer f.Close()
+	defer f.Close() // nolint:errcheck
 
 	_, err = f.Readdirnames(1)
 	if err == io.EOF {
@@ -174,7 +174,7 @@ func untar(tarball, targetDir string) error {
 	if err != nil {
 		return err
 	}
-	defer reader.Close()
+	defer reader.Close() // nolint:errcheck
 	tarReader := tar.NewReader(reader)
 
 	for {
@@ -208,10 +208,16 @@ func untar(tarball, targetDir string) error {
 		if err != nil {
 			return err
 		}
-		defer file.Close()
-		_, err = io.Copy(file, tarReader)
-		if err != nil {
-			return err
+		defer file.Close() // nolint:errcheck
+
+		for {
+			_, err := io.CopyN(file, tarReader, 1024)
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				return err
+			}
 		}
 	}
 	return nil

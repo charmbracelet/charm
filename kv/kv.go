@@ -32,7 +32,7 @@ type KV struct {
 // Open a Charm Cloud managed Badger DB instance with badger.Options and
 // *client.Client.
 func Open(cc *client.Client, name string, opt badger.Options) (*KV, error) {
-	db, err := openDB(cc, name, opt)
+	db, err := openDB(cc, opt)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +219,7 @@ func (kv *KV) Client() *client.Client {
 }
 
 // Reset deletes the local copy of the Badger DB and rebuilds with a fresh sync
-// from the Charm Cloud
+// from the Charm Cloud.
 func (kv *KV) Reset() error {
 	opts := kv.DB.Opts()
 	err := kv.DB.Close()
@@ -236,7 +236,7 @@ func (kv *KV) Reset() error {
 			return err
 		}
 	}
-	db, err := openDB(kv.cc, kv.name, opts)
+	db, err := openDB(kv.cc, opts)
 	if err != nil {
 		return err
 	}
