@@ -10,6 +10,7 @@ require (
 	github.com/charmbracelet/bubbletea v0.20.0
 	github.com/charmbracelet/keygen v0.3.0
 	github.com/charmbracelet/lipgloss v0.5.0
+	github.com/charmbracelet/melt v0.3.0
 	github.com/charmbracelet/wish v0.3.1
 	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/gliderlabs/ssh v0.3.3
@@ -17,6 +18,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/jacobsa/crypto v0.0.0-20190317225127-9f44e2d11115
 	github.com/mattn/go-isatty v0.0.14
+	github.com/mattn/go-tty v0.0.4
 	github.com/meowgorithm/babylogger v1.2.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/muesli/go-app-paths v0.2.1
@@ -28,6 +30,7 @@ require (
 	goji.io v2.0.2+incompatible
 	golang.org/x/crypto v0.0.0-20220307211146-efcb8507fb70
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
 	gopkg.in/square/go-jose.v2 v2.6.0
 	modernc.org/sqlite v1.14.8
 )
@@ -64,12 +67,12 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/tyler-smith/go-bip39 v1.1.0 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	go.opencensus.io v0.22.5 // indirect
 	golang.org/x/mod v0.3.0 // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
-	golang.org/x/sys v0.0.0-20211007075335-d3039528d8ac // indirect
-	golang.org/x/term v0.0.0-20210422114643-f5beecf764ed // indirect
+	golang.org/x/sys v0.0.0-20220307203707-22a9840ba4d7 // indirect
 	golang.org/x/tools v0.0.0-20201124115921-2c860bdd6e78 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect

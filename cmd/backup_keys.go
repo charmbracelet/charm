@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"archive/tar"
+	"crypto/ed25519"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -11,8 +13,26 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/mattn/go-tty"
+	"github.com/muesli/termenv"
+	"golang.org/x/crypto/ssh"
+	"golang.org/x/term"
+
 	"github.com/charmbracelet/charm/client"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/melt"
 	"github.com/spf13/cobra"
+)
+
+const maxWidth = 72
+
+var (
+	violet        = lipgloss.Color(completeColor("#6B50FF", "63", "12"))
+	baseStyle     = lipgloss.NewStyle().Margin(0, 0, 1, 2) // nolint: gomnd
+	mnemonicStyle = baseStyle.Copy().
+			Foreground(violet).
+			Background(lipgloss.AdaptiveColor{Light: completeColor("#EEEBFF", "255", "7"), Dark: completeColor("#1B1731", "235", "8")}).
+			Padding(1, 2) // nolint: gomnd
 )
 
 // BackupKeysCmd is the cobra.Command to back up a user's account SSH keys.
@@ -60,7 +80,15 @@ var BackupKeysCmd = &cobra.Command{
 		if err := createTar(dd, filename); err != nil {
 			return err
 		}
+		seed, err := backup(filepath.Join(dd, "charm_ed25519"), []byte(""))
+		if err != nil {
+			return err
+		}
 
+		b := strings.Builder{}
+		w := getWidth(maxWidth)
+		renderBlock(&b, mnemonicStyle, w, seed)
+		fmt.Printf("Use this seed phrase to restore your key with melt!\n%s", b.String())
 		fmt.Printf("Done! Saved keys to %s.\n\n", code(filename))
 		return nil
 	},
@@ -173,4 +201,85 @@ func createTar(source string, target string) error {
 		return err
 	}
 	return tarfile.Close()
+}
+
+func backup(path string, pass []byte) (string, error) {
+	bts, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("could not read key: %w", err)
+	}
+
+	key, err := parsePrivateKey(bts, pass)
+	if err != nil {
+		pwderr := &ssh.PassphraseMissingError{}
+		if errors.As(err, &pwderr) {
+			pass, err := askKeyPassphrase(path)
+			if err != nil {
+				return "", err
+			}
+			return backup(path, pass)
+		}
+		return "", fmt.Errorf("could not parse key: %w", err)
+	}
+
+	switch key := key.(type) {
+	case *ed25519.PrivateKey:
+		// nolint: wrapcheck
+		return melt.ToMnemonic(key)
+	default:
+		return "", fmt.Errorf("unknown key type: %v", key)
+	}
+}
+
+func askKeyPassphrase(path string) ([]byte, error) {
+	defer fmt.Fprintf(os.Stderr, "\n")
+	return readPassword(fmt.Sprintf("Enter the passphrase to unlock %q: ", path))
+}
+
+func readPassword(msg string) ([]byte, error) {
+	fmt.Fprint(os.Stderr, msg)
+	t, err := tty.Open()
+	if err != nil {
+		return nil, fmt.Errorf("could not open tty")
+	}
+	defer t.Close() // nolint: errcheck
+	pass, err := term.ReadPassword(int(t.Input().Fd()))
+	if err != nil {
+		return nil, fmt.Errorf("could not read passphrase: %w", err)
+	}
+	return pass, nil
+}
+
+func parsePrivateKey(bts, pass []byte) (interface{}, error) {
+	if len(pass) == 0 {
+		// nolint: wrapcheck
+		return ssh.ParseRawPrivateKey(bts)
+	}
+	// nolint: wrapcheck
+	return ssh.ParseRawPrivateKeyWithPassphrase(bts, pass)
+}
+
+func renderBlock(w io.Writer, s lipgloss.Style, width int, str string) {
+	_, _ = io.WriteString(w, "\n")
+	_, _ = io.WriteString(w, s.Copy().Width(width).Render(str))
+	_, _ = io.WriteString(w, "\n")
+}
+
+func completeColor(truecolor, ansi256, ansi string) string {
+	// nolint: exhaustive
+	switch lipgloss.ColorProfile() {
+	case termenv.TrueColor:
+		return truecolor
+	case termenv.ANSI256:
+		return ansi256
+	}
+	return ansi
+}
+
+func getWidth(max int) int {
+	w, _, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil || w > max {
+		return maxWidth
+	}
+	return w
 }
