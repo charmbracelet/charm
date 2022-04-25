@@ -126,7 +126,7 @@ func createTar(source string, target string) error {
 		baseDir = filepath.Base(source)
 	}
 
-	exp := regexp.MustCompilePOSIX("/charm_(rsa|ed25519)(.pub)?$")
+	exp := regexp.MustCompilePOSIX("charm_(rsa|ed25519)(.pub)?$")
 
 	if err := filepath.Walk(source,
 		func(path string, info os.FileInfo, err error) error {
