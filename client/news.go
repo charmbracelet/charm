@@ -8,6 +8,7 @@ import (
 	charm "github.com/charmbracelet/charm/proto"
 )
 
+// NewsList lists the server news.
 func (cc *Client) NewsList(tags []string, page int) ([]*charm.News, error) {
 	var nl []*charm.News
 
@@ -22,6 +23,7 @@ func (cc *Client) NewsList(tags []string, page int) ([]*charm.News, error) {
 	return nl, nil
 }
 
+// News shows a given news.
 func (cc *Client) News(id string) (*charm.News, error) {
 	var n *charm.News
 	err := cc.AuthedJSONRequest("GET", fmt.Sprintf("/v1/news/%s", url.QueryEscape(id)), nil, &n)

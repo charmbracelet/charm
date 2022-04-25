@@ -212,6 +212,11 @@ export CHARM_HOST=burrito.example.com
 
 See instructions for [Systemd](https://github.com/charmbracelet/charm/blob/main/systemd.md) and [Docker](https://github.com/charmbracelet/charm/blob/main/docker.md).
 
+#### Storage Considerations
+
+The max data you can store on our Charm Cloud servers is 1GB per account.
+By default, self-hosted servers don't have a data storage limit. Should you want to set a max storage limit on your server, you can do so using `CHARM_SERVER_USER_MAX_STORAGE`
+
 ### TLS
 
 To set up TLS, you should set `CHARM_SERVER_USE_TLS` to `true`, and specify

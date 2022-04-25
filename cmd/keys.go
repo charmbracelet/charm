@@ -36,7 +36,7 @@ var KeysCmd = &cobra.Command{
 				if err != nil {
 					return err
 				}
-				defer f.Close()
+				defer f.Close() // nolint:errcheck
 			}
 			return keys.NewProgram(cfg).Start()
 		}

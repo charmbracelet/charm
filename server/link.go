@@ -115,7 +115,7 @@ func (sl *SSHLinker) User() *charm.User {
 func (me *SSHServer) LinkGen(lt charm.LinkTransport) error {
 	u := lt.User()
 	tok := me.NewToken()
-	defer me.db.DeleteToken(tok)
+	defer me.db.DeleteToken(tok) // nolint:errcheck
 	me.linkQueue.InitLinkRequest(tok)
 	defer me.linkQueue.DeleteLinkRequest(tok)
 	linkRequest, err := me.linkQueue.WaitLinkRequest(tok)
@@ -317,8 +317,7 @@ func (me *SSHServer) handleLinkRequestAPI(s ssh.Session) {
 }
 
 func (me *SSHServer) handleAPILink(s ssh.Session) {
-	args := s.Command()[1:]
-	if len(args) == 0 {
+	if args := s.Command()[1:]; len(args) == 0 {
 		me.handleLinkGenAPI(s)
 	} else {
 		me.handleLinkRequestAPI(s)
@@ -396,8 +395,7 @@ type channelLinkQueue struct {
 
 // InitLinkRequest implements the proto.LinkQueue interface for the channelLinkQueue.
 func (s *channelLinkQueue) InitLinkRequest(t charm.Token) {
-	_, ok := s.linkRequests[t]
-	if !ok {
+	if _, ok := s.linkRequests[t]; !ok {
 		log.Printf("Making new link for token: %s\n", t)
 		lr := make(chan *charm.Link)
 		s.linkRequests[t] = lr

@@ -17,11 +17,11 @@ func TestSSHAuthMiddleware(t *testing.T) {
 	td := t.TempDir()
 	cfg.DataDir = filepath.Join(td, ".data")
 	sp := filepath.Join(td, ".ssh")
-	kp, err := keygen.NewWithWrite(sp, "charm_server", []byte(""), keygen.Ed25519)
+	kp, err := keygen.NewWithWrite(filepath.Join(sp, "charm_server"), []byte(""), keygen.Ed25519)
 	if err != nil {
 		t.Fatalf("keygen error: %s", err)
 	}
-	cfg = cfg.WithKeys(kp.PublicKey, kp.PrivateKeyPEM)
+	cfg = cfg.WithKeys(kp.PublicKey(), kp.PrivateKeyPEM())
 	s, err := NewServer(cfg)
 	if err != nil {
 		t.Fatalf("new server error: %s", err)
@@ -65,7 +65,7 @@ func TestSSHAuthMiddleware(t *testing.T) {
 		// }
 	})
 	t.Cleanup(func() {
-		err := s.Close()
+		defer s.Close() // nolint:errcheck
 		if err != nil {
 			log.Printf("error closing server: %s", err)
 		}

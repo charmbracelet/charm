@@ -83,8 +83,7 @@ const (
 	sqlSelectEncryptKeys          = `SELECT global_id, encrypted_key, created_at FROM encrypt_key WHERE public_key_id = ? ORDER BY created_at ASC`
 	sqlSelectNamedSeq             = `SELECT seq FROM named_seq WHERE user_id = ? AND name = ?`
 
-	sqlInsertUser         = `INSERT INTO charm_user (charm_id) VALUES (?)`
-	sqlInsertUserWithName = `INSERT INTO charm_user (charm_id, name) VALUES (?, ?)`
+	sqlInsertUser = `INSERT INTO charm_user (charm_id) VALUES (?)`
 
 	sqlInsertPublicKey = `INSERT INTO public_key (user_id, public_key) VALUES (?, ?)
                         ON CONFLICT (user_id, public_key) DO UPDATE SET

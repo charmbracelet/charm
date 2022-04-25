@@ -14,7 +14,7 @@ import (
 
 // ErrIncorrectEncryptKeys is returned when the encrypt keys are missing or
 // incorrect for the encrypted data.
-var ErrIncorrectEncryptKeys error = fmt.Errorf("incorrect or missing encrypt keys")
+var ErrIncorrectEncryptKeys = fmt.Errorf("incorrect or missing encrypt keys")
 
 // Crypt manages the account and encryption keys used for encrypting and
 // decrypting.

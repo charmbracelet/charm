@@ -22,7 +22,7 @@ func TestPut(t *testing.T) {
 
 	paths := []string{"/", "///"}
 	for _, path := range paths {
-		err = lfs.Put(charmID, path, buf, fs.FileMode(0644))
+		err = lfs.Put(charmID, path, buf, fs.FileMode(0o644))
 		if err == nil {
 			t.Fatalf("expected error when file path is %s", path)
 		}
@@ -33,7 +33,7 @@ func TestPut(t *testing.T) {
 	path := "/hello.txt"
 	t.Run(path, func(t *testing.T) {
 		buf = bytes.NewBufferString(content)
-		err = lfs.Put(charmID, path, buf, fs.FileMode(0644))
+		err = lfs.Put(charmID, path, buf, fs.FileMode(0o644))
 		if err != nil {
 			t.Fatalf("expected no error when file path is %s, %v", path, err)
 		}
@@ -42,7 +42,7 @@ func TestPut(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error when opening file %s", path)
 		}
-		defer file.Close()
+		defer file.Close() //nolint:errcheck
 
 		fileInfo, err := file.Stat()
 		if err != nil {
@@ -56,7 +56,6 @@ func TestPut(t *testing.T) {
 		read, err := ioutil.ReadAll(file)
 		if err != nil {
 			t.Fatalf("expected no error when reading file %s", path)
-
 		}
 		if string(read) != content {
 			t.Fatalf("expected content to be %s, got %s", content, string(read))
@@ -67,7 +66,7 @@ func TestPut(t *testing.T) {
 	path = "/foo/hello.txt"
 	t.Run(path, func(t *testing.T) {
 		buf = bytes.NewBufferString(content)
-		err = lfs.Put(charmID, path, buf, fs.FileMode(0644))
+		err = lfs.Put(charmID, path, buf, fs.FileMode(0o644))
 		if err != nil {
 			t.Fatalf("expected no error when file path is %s, %v", path, err)
 		}
@@ -76,7 +75,7 @@ func TestPut(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error when opening file %s", path)
 		}
-		defer file.Close()
+		defer file.Close() //nolint:errcheck
 
 		fileInfo, err := file.Stat()
 		if err != nil {
@@ -90,7 +89,6 @@ func TestPut(t *testing.T) {
 		read, err := ioutil.ReadAll(file)
 		if err != nil {
 			t.Fatalf("expected no error when reading file %s", path)
-
 		}
 		if string(read) != content {
 			t.Fatalf("expected content to be %s, got %s", content, string(read))

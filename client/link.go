@@ -14,7 +14,7 @@ func (cc *Client) LinkGen(lh charm.LinkHandler) error {
 	if err != nil {
 		return err
 	}
-	defer s.Close()
+	defer s.Close() // nolint:errcheck
 	out, err := s.StdoutPipe()
 	if err != nil {
 		return err
@@ -83,7 +83,7 @@ func (cc *Client) Link(lh charm.LinkHandler, code string) error {
 	if err != nil {
 		return err
 	}
-	defer s.Close()
+	defer s.Close() // nolint:errcheck
 	out, err := s.StdoutPipe()
 	if err != nil {
 		return err

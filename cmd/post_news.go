@@ -10,11 +10,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var newsSubject string
-var newsTagList string
-
 var (
-	//PostNewsCmd is the cobra.Command to self-host the Charm Cloud.
+	newsTagList string
+	newsSubject string
+
+	// PostNewsCmd is the cobra.Command to self-host the Charm Cloud.
 	PostNewsCmd = &cobra.Command{
 		Use:    "post-news",
 		Hidden: true,
@@ -26,11 +26,11 @@ var (
 				cfg.DataDir = serverDataDir
 			}
 			sp := filepath.Join(cfg.DataDir, ".ssh")
-			kp, err := keygen.NewWithWrite(sp, "charm_server", []byte(""), keygen.Ed25519)
+			kp, err := keygen.NewWithWrite(filepath.Join(sp, "charm_server"), []byte(""), keygen.Ed25519)
 			if err != nil {
 				return err
 			}
-			cfg = cfg.WithKeys(kp.PublicKey, kp.PrivateKeyPEM)
+			cfg = cfg.WithKeys(kp.PublicKey(), kp.PrivateKeyPEM())
 			s, err := server.NewServer(cfg)
 			if err != nil {
 				return err

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -20,7 +21,7 @@ var (
 	serverHealthPort int
 	serverDataDir    string
 
-	//ServeCmd is the cobra.Command to self-host the Charm Cloud.
+	// ServeCmd is the cobra.Command to self-host the Charm Cloud.
 	ServeCmd = &cobra.Command{
 		Use:     "serve",
 		Aliases: []string{"server"},
@@ -46,11 +47,11 @@ var (
 				cfg.DataDir = serverDataDir
 			}
 			sp := filepath.Join(cfg.DataDir, ".ssh")
-			kp, err := keygen.NewWithWrite(sp, "charm_server", []byte(""), keygen.Ed25519)
+			kp, err := keygen.NewWithWrite(filepath.Join(sp, "charm_server"), []byte(""), keygen.Ed25519)
 			if err != nil {
 				return err
 			}
-			cfg = cfg.WithKeys(kp.PublicKey, kp.PrivateKeyPEM)
+			cfg = cfg.WithKeys(kp.PublicKey(), kp.PrivateKeyPEM())
 			s, err := server.NewServer(cfg)
 			if err != nil {
 				return err
@@ -59,7 +60,9 @@ var (
 			done := make(chan os.Signal, 1)
 			signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 			go func() {
-				s.Start()
+				if err := s.Start(); err != nil {
+					log.Fatalf("error starting server: %s", err)
+				}
 			}()
 
 			<-done

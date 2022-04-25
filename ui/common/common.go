@@ -12,7 +12,7 @@ var (
 	checkTTY sync.Once
 )
 
-// Returns true if standard out is a terminal
+// Returns true if standard out is a terminal.
 func IsTTY() bool {
 	checkTTY.Do(func() {
 		isTTY = isatty.IsTerminal(os.Stdout.Fd())

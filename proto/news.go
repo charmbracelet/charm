@@ -2,6 +2,7 @@ package proto
 
 import "time"
 
+// News entity.
 type News struct {
 	ID        string    `json:"id"`
 	Subject   string    `json:"subject"`

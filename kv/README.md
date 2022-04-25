@@ -40,7 +40,7 @@ func main() {
 		opts := badger.DefaultIteratorOptions
 		opts.PrefetchSize = 10
 		it := txn.NewIterator(opts)
-		defer it.Close()
+		defer it.Close() //nolint:errcheck
 		for it.Rewind(); it.Valid(); it.Next() {
 			item := it.Item()
 			k := item.Key()

@@ -1,10 +1,10 @@
 package migration
 
-var (
-	Migration0001 = Migration{
-		ID:   1,
-		Name: "foreign keys",
-		Sql: `
+// Migration0001 is the initial migration.
+var Migration0001 = Migration{
+	ID:   1,
+	Name: "foreign keys",
+	SQL: `
 PRAGMA foreign_keys=off;
 
 /* public_key */
@@ -88,5 +88,4 @@ DROP TABLE _news_tag;
 
 PRAGMA foreign_keys=on;
 `,
-	}
-)
+}

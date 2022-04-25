@@ -20,7 +20,6 @@ func LinkCmd(parentName string) *cobra.Command {
 		Example: indent.String(fmt.Sprintf("%s link\b%s link XXXXXX", parentName, parentName), 2),
 		Args:    cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			// Log to file if specified in the environment
 			cfg := getCharmConfig()
 			if cfg.Logfile != "" {
@@ -28,7 +27,7 @@ func LinkCmd(parentName string) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				defer f.Close()
+				defer f.Close() //nolint:errcheck
 			}
 
 			switch len(args) {

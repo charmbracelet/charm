@@ -39,7 +39,7 @@ var (
 		Use:    "fs",
 		Hidden: false,
 		Short:  "Use the Charm file system.",
-		Long:   paragraph(fmt.Sprintf("Commands to set, get and delete data from your Charm Cloud backed file system.")),
+		Long:   paragraph("Commands to set, get and delete data from your Charm Cloud backed file system."),
 		Args:   cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return nil
@@ -119,7 +119,7 @@ func newLocalRemotePath(rawPath string) localRemotePath {
 	}
 }
 
-func (lrp *localRemotePath) separator() string {
+func (lrp *localRemotePath) separator() string { // nolint:unparam
 	switch lrp.pathType {
 	case localPath:
 		return string(os.PathSeparator)
@@ -173,7 +173,7 @@ func (lrfs *localRemoteFS) write(name string, src fs.File) error {
 			if err != nil {
 				return err
 			}
-			defer f.Close()
+			defer f.Close() // nolint:errcheck
 			_, err = io.Copy(f, src)
 			if err != nil {
 				return err
@@ -194,7 +194,7 @@ func (lrfs *localRemoteFS) copy(srcName string, dstName string, recursive bool) 
 	if err != nil {
 		return err
 	}
-	defer src.Close()
+	defer src.Close() // nolint:errcheck
 	stat, err := src.Stat()
 	if err != nil {
 		return err
@@ -216,7 +216,7 @@ func (lrfs *localRemoteFS) copy(srcName string, dstName string, recursive bool) 
 			if err != nil {
 				return err
 			}
-			defer wsrc.Close()
+			defer wsrc.Close() // nolint:errcheck
 			wp := newLocalRemotePath(wps)
 			wpp := strings.Split(filepath.Clean(wp.path), wp.separator())
 			rp := path.Join(wpp[parents:]...)
@@ -235,17 +235,20 @@ func fsCat(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer f.Close() // nolint:errcheck
+
 	fi, err := f.Stat()
 	if err != nil {
 		return err
 	}
+
 	if fi.IsDir() {
 		fmt.Printf("cat: %s: Is a directory\n", args[0])
-	} else {
-		io.Copy(os.Stdout, f)
+		return nil
 	}
-	return nil
+
+	_, err = io.Copy(os.Stdout, f)
+	return err
 }
 
 func fsMove(cmd *cobra.Command, args []string) error {
@@ -297,7 +300,7 @@ func fsList(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer f.Close() // nolint:errcheck
 	fi, err := f.Stat()
 	if err != nil {
 		return err
@@ -350,8 +353,7 @@ func printDir(f fs.ReadDirFile) error {
 		}
 		fprintFileInfo(w, dfi)
 	}
-	w.Flush()
-	return nil
+	return w.Flush()
 }
 
 func init() {
