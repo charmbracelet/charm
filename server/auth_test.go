@@ -28,6 +28,12 @@ func TestSSHAuthMiddleware(t *testing.T) {
 	}
 
 	go s.Start()
+	t.Cleanup(func() {
+		if err := s.Close(); err != nil {
+			log.Printf("error closing server: %s", err)
+		}
+	})
+
 	t.Run("health-ping", func(t *testing.T) {
 		_, err := fetchURL(fmt.Sprintf("http://localhost:%d", cfg.HealthPort), 3)
 		if err != nil {
@@ -63,12 +69,6 @@ func TestSSHAuthMiddleware(t *testing.T) {
 		// if len(auth.EncryptKeys) == 0 {
 		// 	t.Fatal("auth error, missing EncryptKeys")
 		// }
-	})
-	t.Cleanup(func() {
-		defer s.Close() // nolint:errcheck
-		if err != nil {
-			log.Printf("error closing server: %s", err)
-		}
 	})
 }
 

@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -20,6 +22,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	gap "github.com/muesli/go-app-paths"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/agent"
 )
 
 var nameValidator = regexp.MustCompile("^[a-zA-Z0-9]{1,50}$")
@@ -29,11 +32,12 @@ type Config struct {
 	Host        string `env:"CHARM_HOST" envDefault:"cloud.charm.sh"`
 	SSHPort     int    `env:"CHARM_SSH_PORT" envDefault:"35353"`
 	HTTPPort    int    `env:"CHARM_HTTP_PORT" envDefault:"35354"`
-	Debug       bool   `env:"CHARM_DEBUG" envDefault:"false"`
-	Logfile     string `env:"CHARM_LOGFILE" envDefault:""`
+	Debug       bool   `env:"CHARM_DEBUG"`
+	Logfile     string `env:"CHARM_LOGFILE"`
 	KeyType     string `env:"CHARM_KEY_TYPE" envDefault:"ed25519"`
-	DataDir     string `env:"CHARM_DATA_DIR" envDefault:""`
-	IdentityKey string `env:"CHARM_IDENTITY_KEY" envDefault:""`
+	DataDir     string `env:"CHARM_DATA_DIR"`
+	IdentityKey string `env:"CHARM_IDENTITY_KEY"`
+	UseSSHAgent bool   `env:"CHARM_USE_SSH_AGENT"`
 }
 
 // Client is the Charm client.
@@ -45,7 +49,6 @@ type Client struct {
 	sshConfig            *ssh.ClientConfig
 	httpScheme           string
 	plainTextEncryptKeys []*charm.EncryptKey
-	authKeyPaths         []string
 	encryptKeyLock       *sync.Mutex
 }
 
@@ -71,7 +74,7 @@ func NewClient(cfg *Config) (*Client, error) {
 	var err error
 	if cfg.IdentityKey != "" {
 		sshKeys = []string{cfg.IdentityKey}
-	} else {
+	} else if !cfg.UseSSHAgent {
 		sshKeys, err = cc.findAuthKeys(cfg.KeyType)
 		if err != nil {
 			return nil, err
@@ -92,21 +95,44 @@ func NewClient(cfg *Config) (*Client, error) {
 		}
 	}
 
-	var pkam ssh.AuthMethod
+	var pkam []ssh.AuthMethod
 	for i := 0; i < len(sshKeys); i++ {
-		pkam, err = publicKeyAuthMethod(sshKeys[i])
+		m, err := publicKeyAuthMethod(sshKeys[i])
 		if err != nil && i == len(sshKeys)-1 {
 			return nil, charm.ErrMissingSSHAuth
 		}
+		pkam = append(pkam, m)
 	}
-	cc.authKeyPaths = sshKeys
+	if cfg.UseSSHAgent {
+		m, err := getLocalAgent()
+		if err != nil {
+			return nil, err
+		}
+		pkam = append(pkam, m)
+	}
 
 	cc.sshConfig = &ssh.ClientConfig{
 		User:            "charm",
-		Auth:            []ssh.AuthMethod{pkam},
+		Auth:            pkam,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // nolint
 	}
 	return cc, nil
+}
+
+// getLocalAgent checks if there's a local agent at $SSH_AUTH_SOCK and, if so,
+// returns a connection to it through agent.Agent.
+func getLocalAgent() (ssh.AuthMethod, error) {
+	socket := os.Getenv("SSH_AUTH_SOCK")
+	if socket == "" {
+		return nil, fmt.Errorf("no SSH_AUTH_SOCK set")
+	}
+	conn, err := net.Dial("unix", socket)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to SSH_AUTH_SOCK: %w", err)
+	}
+	agt := agent.NewClient(conn)
+	// TODO: conn.Close
+	return ssh.PublicKeysCallback(agt.Signers), nil
 }
 
 // NewClientWithDefaults creates a new Charm client with default values.
@@ -208,11 +234,6 @@ func (cc *Client) AuthorizedKeysWithMetadata() (*charm.Keys, error) {
 	var k charm.Keys
 	err = json.Unmarshal(b, &k)
 	return &k, err
-}
-
-// AuthKeyPaths returns the full file path of the Charm auth SSH keys.
-func (cc *Client) AuthKeyPaths() []string {
-	return cc.authKeyPaths
 }
 
 // UnlinkAuthorizedKey removes an authorized key from the user's Charm account.
