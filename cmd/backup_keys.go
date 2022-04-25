@@ -60,6 +60,7 @@ var BackupKeysCmd = &cobra.Command{
 		if err := createTar(dd, filename); err != nil {
 			return err
 		}
+
 		fmt.Printf("Done! Saved keys to %s.\n\n", code(filename))
 		return nil
 	},
@@ -110,15 +111,10 @@ func createTar(source string, target string) error {
 	if err != nil {
 		return err
 	}
-	var tarfileErr, tarballErr, closeErr error // errors for deferred funcs
-	defer func() {
-		tarfileErr = tarfile.Close()
-	}()
+	defer tarfile.Close() // nolint:errcheck
 
 	tarball := tar.NewWriter(tarfile)
-	defer func() {
-		tarballErr = tarball.Close()
-	}()
+	defer tarball.Close() // nolint:errcheck
 
 	info, err := os.Stat(source)
 	if err != nil {
@@ -130,53 +126,48 @@ func createTar(source string, target string) error {
 		baseDir = filepath.Base(source)
 	}
 
-	return filepath.Walk(source,
-		func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
+	exp := regexp.MustCompilePOSIX("/charm_(rsa|ed25519)(.pub)?$")
 
-			if !strings.HasSuffix(path, "charm_ed25519") && !strings.HasSuffix(path, "charm_ed25519.pub") {
-				return nil
-			}
+	if err := filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 
-			header, err := tar.FileInfoHeader(info, info.Name())
-			if err != nil {
-				return err
-			}
-
-			if baseDir != "" {
-				header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, source))
-			}
-
-			if err := tarball.WriteHeader(header); err != nil {
-				return err
-			}
-
-			if info.IsDir() {
-				return nil
-			}
-
-			file, err := os.Open(path)
-			if err != nil {
-				return err
-			}
-			defer func() {
-				closeErr = file.Close()
-			}()
-			// check deferred functions for errors
-			if tarfileErr != nil {
-				return tarfileErr
-			}
-			if tarballErr != nil {
-				return tarballErr
-			}
-			if closeErr != nil {
-				return closeErr
-			}
-			if _, err = io.Copy(tarball, file); err != nil {
-				return err
-			}
+		if !exp.MatchString(path) {
 			return nil
-		})
+		}
+
+		header, err := tar.FileInfoHeader(info, info.Name())
+		if err != nil {
+			return err
+		}
+
+		if baseDir != "" {
+			header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, source))
+		}
+
+		if err := tarball.WriteHeader(header); err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		file, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close() // nolint:errcheck
+
+		_, err = io.Copy(tarball, file)
+		return err
+	}); err != nil {
+		return err
+	}
+
+	if err := tarball.Close(); err != nil {
+		return err
+	}
+	return tarfile.Close()
 }
