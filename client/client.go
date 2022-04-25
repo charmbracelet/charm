@@ -4,6 +4,7 @@
 package client
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -74,7 +75,7 @@ func NewClient(cfg *Config) (*Client, error) {
 	var err error
 	if cfg.IdentityKey != "" {
 		sshKeys = []string{cfg.IdentityKey}
-	} else if !cfg.UseSSHAgent {
+	} else {
 		sshKeys, err = cc.findAuthKeys(cfg.KeyType)
 		if err != nil {
 			return nil, err
@@ -95,20 +96,24 @@ func NewClient(cfg *Config) (*Client, error) {
 		}
 	}
 
-	var pkam []ssh.AuthMethod
-	for i := 0; i < len(sshKeys); i++ {
-		m, err := publicKeyAuthMethod(sshKeys[i])
-		if err != nil && i == len(sshKeys)-1 {
-			return nil, charm.ErrMissingSSHAuth
-		}
-		pkam = append(pkam, m)
-	}
+	var pkam []ssh.AuthMethod // nolint:prealloc
 	if cfg.UseSSHAgent {
 		m, err := getLocalAgent()
 		if err != nil {
 			return nil, err
 		}
 		pkam = append(pkam, m)
+	}
+	for _, k := range sshKeys {
+		m, err := publicKeyAuthMethod(k)
+		if err != nil {
+			return nil, err
+		}
+		pkam = append(pkam, m)
+	}
+
+	if len(pkam) == 0 {
+		return nil, charm.ErrMissingSSHAuth
 	}
 
 	cc.sshConfig = &ssh.ClientConfig{
@@ -190,13 +195,18 @@ func (cc *Client) AuthorizedKeys() (string, error) {
 	return string(keys), nil
 }
 
+// LinkKeyToUser links the given authorized key to the current user.
 func (cc *Client) LinkKeyToUser(key string) error {
 	s, err := cc.sshSession()
 	if err != nil {
 		return err
 	}
-	defer s.Close()
-	k := charm.PublicKey{Key: key}
+	defer s.Close() //nolint:errcheck
+	txt, err := keyText(key)
+	if err != nil {
+		return err
+	}
+	k := charm.PublicKey{Key: txt}
 	in, err := s.StdinPipe()
 	if err != nil {
 		return err
@@ -216,6 +226,16 @@ func (cc *Client) LinkKeyToUser(key string) error {
 		return fmt.Errorf("err: %s", string(b))
 	}
 	return nil
+}
+
+// keyText is the base64 encoded public key for authorized key text.
+func keyText(key string) (string, error) {
+	p, _, _, _, err := ssh.ParseAuthorizedKey([]byte(key))
+	if err != nil {
+		return "", err
+	}
+	kb := base64.StdEncoding.EncodeToString(p.Marshal())
+	return fmt.Sprintf("%s %s", p.Type(), kb), nil
 }
 
 // AuthorizedKeysWithMetadata fetches keys linked to a user's account, with metadata.
