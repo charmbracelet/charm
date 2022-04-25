@@ -128,41 +128,42 @@ func createTar(source string, target string) error {
 
 	exp := regexp.MustCompilePOSIX("/charm_(rsa|ed25519)(.pub)?$")
 
-	if err := filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
+	if err := filepath.Walk(source,
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+
+			if !exp.MatchString(path) {
+				return nil
+			}
+
+			header, err := tar.FileInfoHeader(info, info.Name())
+			if err != nil {
+				return err
+			}
+
+			if baseDir != "" {
+				header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, source))
+			}
+
+			if err := tarball.WriteHeader(header); err != nil {
+				return err
+			}
+
+			if info.IsDir() {
+				return nil
+			}
+
+			file, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			defer file.Close() // nolint:errcheck
+
+			_, err = io.Copy(tarball, file)
 			return err
-		}
-
-		if !exp.MatchString(path) {
-			return nil
-		}
-
-		header, err := tar.FileInfoHeader(info, info.Name())
-		if err != nil {
-			return err
-		}
-
-		if baseDir != "" {
-			header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, source))
-		}
-
-		if err := tarball.WriteHeader(header); err != nil {
-			return err
-		}
-
-		if info.IsDir() {
-			return nil
-		}
-
-		file, err := os.Open(path)
-		if err != nil {
-			return err
-		}
-		defer file.Close() // nolint:errcheck
-
-		_, err = io.Copy(tarball, file)
-		return err
-	}); err != nil {
+		}); err != nil {
 		return err
 	}
 
