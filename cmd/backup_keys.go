@@ -161,8 +161,10 @@ func createTar(source string, target string) error {
 			}
 			defer file.Close() // nolint:errcheck
 
-			_, err = io.Copy(tarball, file)
-			return err
+			if _, err := io.Copy(tarball, file); err != nil {
+				return err
+			}
+			return file.Close()
 		}); err != nil {
 		return err
 	}
