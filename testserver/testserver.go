@@ -52,7 +52,7 @@ func SetupTestServer(tb testing.TB) *client.Client {
 
 	go func() {
 		if err := s.Start(); err != nil {
-			tb.Fatalf("failed to start server: %s", err)
+			tb.Logf("failed to start server: %s", err)
 		}
 	}()
 
