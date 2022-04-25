@@ -50,11 +50,7 @@ func SetupTestServer(tb testing.TB) *client.Client {
 	_ = os.Setenv("CHARM_HTTP_PORT", fmt.Sprintf("%d", cfg.HTTPPort))
 	_ = os.Setenv("CHARM_DATA_DIR", clientData)
 
-	go func() {
-		if err := s.Start(); err != nil {
-			tb.Logf("failed to start server: %s", err)
-		}
-	}()
+	go func() { _ = s.Start() }()
 
 	resp, err := FetchURL(fmt.Sprintf("http://localhost:%d", cfg.HealthPort), 3)
 	if err != nil {
