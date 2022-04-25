@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"archive/tar"
+	"io"
 	"os"
 	"testing"
 
@@ -19,11 +21,36 @@ func TestBackupKeysCmd(t *testing.T) {
 	}
 	got := runCobra()
 	got.Execute()
-	fi, err := os.Stat(backupFilePath)
+
+	f, err := os.Open(backupFilePath)
 	if err != nil {
-		t.Errorf("error reading length of tar file")
+		t.Fatalf("error opening tar file: %s", err)
+	}
+	t.Cleanup(func() {
+		_ = f.Close()
+	})
+	fi, err := f.Stat()
+	if err != nil {
+		t.Fatalf("error reading length of tar file: %s", err)
 	}
 	if fi.Size() <= 1024 {
 		t.Errorf("tar file should not be empty")
+	}
+
+	var paths []string
+	r := tar.NewReader(f)
+	for {
+		h, err := r.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Errorf("error opening tar file: %s", err)
+		}
+		paths = append(paths, h.Name)
+	}
+
+	if len(paths) < 2 {
+		t.Errorf("expected at least 2 files (public and private keys), got %d: %v", len(paths), paths)
 	}
 }
