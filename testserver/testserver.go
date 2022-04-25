@@ -2,9 +2,12 @@ package testserver
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -21,32 +24,43 @@ import (
 func SetupTestServer(tb testing.TB) *client.Client {
 	tb.Helper()
 
-	cfg := server.DefaultConfig()
 	td := tb.TempDir()
-	cfg.DataDir = filepath.Join(td, ".data")
 	sp := filepath.Join(td, ".ssh")
+	clientData := filepath.Join(td, ".client-data")
+
+	cfg := server.DefaultConfig()
+	cfg.DataDir = filepath.Join(td, ".data")
+	cfg.SSHPort = randomPort(tb)
+	cfg.HTTPPort = randomPort(tb)
+	cfg.HealthPort = randomPort(tb)
+
 	kp, err := keygen.NewWithWrite(filepath.Join(sp, "charm_server"), []byte(""), keygen.Ed25519)
 	if err != nil {
 		tb.Fatalf("keygen error: %s", err)
 	}
+
 	cfg = cfg.WithKeys(kp.PublicKey(), kp.PrivateKeyPEM())
 	s, err := server.NewServer(cfg)
 	if err != nil {
 		tb.Fatalf("new server error: %s", err)
 	}
 
-	clientData := filepath.Join(td, ".client-data")
-
 	_ = os.Setenv("CHARM_HOST", cfg.Host)
 	_ = os.Setenv("CHARM_SSH_PORT", fmt.Sprintf("%d", cfg.SSHPort))
 	_ = os.Setenv("CHARM_HTTP_PORT", fmt.Sprintf("%d", cfg.HTTPPort))
 	_ = os.Setenv("CHARM_DATA_DIR", clientData)
 
-	go s.Start()
+	go func() {
+		if err := s.Start(); err != nil {
+			tb.Fatalf("failed to start server: %s", err)
+		}
+	}()
 
-	if _, err := FetchURL(fmt.Sprintf("http://localhost:%d", cfg.HealthPort), 3); err != nil {
+	resp, err := FetchURL(fmt.Sprintf("http://localhost:%d", cfg.HealthPort), 3)
+	if err != nil {
 		tb.Fatalf("server likely failed to start: %s", err)
 	}
+	defer resp.Body.Close()
 
 	tb.Cleanup(func() {
 		if err := s.Close(); err != nil {
@@ -63,6 +77,7 @@ func SetupTestServer(tb testing.TB) *client.Client {
 	if err != nil {
 		tb.Fatalf("client config from env error: %s", err)
 	}
+
 	ccfg.Host = cfg.Host
 	ccfg.SSHPort = cfg.SSHPort
 	ccfg.HTTPPort = cfg.HTTPPort
@@ -77,7 +92,7 @@ func SetupTestServer(tb testing.TB) *client.Client {
 
 // Fetch the given URL with N retries.
 func FetchURL(url string, retries int) (*http.Response, error) {
-	resp, err := http.Get(url)
+	resp, err := http.Get(url) // nolint:gosec
 	if err != nil {
 		if retries > 0 {
 			time.Sleep(time.Second)
@@ -89,4 +104,17 @@ func FetchURL(url string, retries int) (*http.Response, error) {
 		return resp, fmt.Errorf("bad http status code: %d", resp.StatusCode)
 	}
 	return resp, nil
+}
+
+func randomPort(tb testing.TB) int {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		tb.Fatalf("could not get a random port: %s", err)
+	}
+	listener.Close()
+
+	addr := listener.Addr().String()
+
+	p, _ := strconv.Atoi(addr[strings.LastIndex(addr, ":")+1:])
+	return p
 }
