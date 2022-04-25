@@ -9,6 +9,7 @@ import (
 	"github.com/calmh/randomart"
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/ui/common"
+	"golang.org/x/crypto/ssh"
 )
 
 var styles = common.DefaultStyles()
@@ -32,30 +33,26 @@ func (f Fingerprint) String() string {
 // FingerprintSHA256 returns the algorithm and SHA256 fingerprint for the given
 // key.
 func FingerprintSHA256(k charm.PublicKey) (Fingerprint, error) {
-	keyParts := strings.Split(k.Key, " ")
-	if len(keyParts) != 2 {
-		return Fingerprint{}, charm.ErrMalformedKey
-	}
-
-	b, err := base64.StdEncoding.DecodeString(keyParts[1])
+	key, _, _, _, err := ssh.ParseAuthorizedKey([]byte(k.Key))
 	if err != nil {
-		return Fingerprint{}, err
+		return Fingerprint{}, fmt.Errorf("failed to parse public key: %w", err)
 	}
-
-	algo := strings.Replace(keyParts[0], "ssh-", "", -1)
-	sha256sum := sha256.Sum256(b)
-	hash := base64.RawStdEncoding.EncodeToString(sha256sum[:])
 
 	return Fingerprint{
-		Algorithm: algo,
+		Algorithm: algo(key.Type()),
 		Type:      "SHA256",
-		Value:     hash,
+		Value:     strings.TrimPrefix(ssh.FingerprintSHA256(key), "SHA256:"),
 	}, nil
 }
 
 // RandomArt returns the randomart for the given key.
 func RandomArt(k charm.PublicKey) (string, error) {
-	keyParts := strings.Split(k.Key, " ")
+	key, _, _, _, err := ssh.ParseAuthorizedKey([]byte(k.Key))
+	if err != nil {
+		return "", fmt.Errorf("failed to parse public key: %w", err)
+	}
+
+	keyParts := strings.Split(string(ssh.MarshalAuthorizedKey(key)), " ")
 	if len(keyParts) != 2 {
 		return "", charm.ErrMalformedKey
 	}
@@ -65,11 +62,47 @@ func RandomArt(k charm.PublicKey) (string, error) {
 		return "", err
 	}
 
-	algo := strings.ToUpper(strings.Replace(keyParts[0], "ssh-", "", -1))
-
-	// TODO: also add bit size of key
 	h := sha256.New()
 	_, _ = h.Write(b)
-	board := randomart.GenerateSubtitled(h.Sum(nil), algo, "SHA256").String()
+	board := randomart.GenerateSubtitled(
+		h.Sum(nil),
+		fmt.Sprintf(
+			"%s %d",
+			strings.ToUpper(algo(key.Type())),
+			bitsize(key.Type()),
+		),
+		"SHA256",
+	).String()
 	return strings.TrimSpace(board), nil
+}
+
+func algo(keyType string) string {
+	if idx := strings.Index(keyType, "@"); idx > 0 {
+		return algo(keyType[0:idx])
+	}
+	parts := strings.Split(keyType, "-")
+	if len(parts) == 2 {
+		return parts[1]
+	}
+	if parts[0] == "sk" {
+		return algo(strings.TrimPrefix(keyType, "sk-"))
+	}
+	return parts[0]
+}
+
+func bitsize(keyType string) int {
+	switch keyType {
+	case ssh.KeyAlgoED25519, ssh.KeyAlgoECDSA256, ssh.KeyAlgoSKECDSA256, ssh.KeyAlgoSKED25519:
+		return 256
+	case ssh.KeyAlgoECDSA384:
+		return 384
+	case ssh.KeyAlgoECDSA521:
+		return 521
+	case ssh.KeyAlgoDSA:
+		return 1024
+	case ssh.KeyAlgoRSA:
+		return 3071 // usually
+	default:
+		return 0
+	}
 }
