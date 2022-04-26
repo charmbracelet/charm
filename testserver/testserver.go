@@ -176,7 +176,7 @@ func randomPort(tb testing.TB) int {
 }
 
 type agentFromKeys struct {
-	keys []ssh.Signer
+	signers []ssh.Signer
 }
 
 var _ agent.Agent = &agentFromKeys{}
@@ -213,8 +213,8 @@ func (a *agentFromKeys) start(tb testing.TB) string {
 }
 
 func (a *agentFromKeys) List() ([]*agent.Key, error) {
-	var result []*agent.Key
-	for _, k := range a.keys {
+	result := make([]*agent.Key, 0, len(a.signers))
+	for _, k := range a.signers {
 		result = append(result, &agent.Key{
 			Format:  k.PublicKey().Type(),
 			Blob:    k.PublicKey().Marshal(),
@@ -226,7 +226,7 @@ func (a *agentFromKeys) List() ([]*agent.Key, error) {
 
 func (a *agentFromKeys) Sign(key ssh.PublicKey, data []byte) (*ssh.Signature, error) {
 	var signer ssh.Signer
-	for _, s := range a.keys {
+	for _, s := range a.signers {
 		if bytes.Equal(s.PublicKey().Marshal(), key.Marshal()) {
 			signer = s
 			break
@@ -239,7 +239,7 @@ func (a *agentFromKeys) Sign(key ssh.PublicKey, data []byte) (*ssh.Signature, er
 }
 
 func (a *agentFromKeys) Signers() ([]ssh.Signer, error) {
-	return a.keys, nil
+	return a.signers, nil
 }
 
 func (a *agentFromKeys) Add(key agent.AddedKey) error   { return nil }
