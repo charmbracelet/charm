@@ -57,10 +57,10 @@ var BackupKeysCmd = &cobra.Command{
 			return err
 		}
 
-		err = createTar(dd, filename)
-		if err != nil {
+		if err := createTar(dd, filename); err != nil {
 			return err
 		}
+
 		fmt.Printf("Done! Saved keys to %s.\n\n", code(filename))
 		return nil
 	},
@@ -126,13 +126,15 @@ func createTar(source string, target string) error {
 		baseDir = filepath.Base(source)
 	}
 
-	return filepath.Walk(source,
+	exp := regexp.MustCompilePOSIX("charm_(rsa|ed25519)(.pub)?$")
+
+	if err := filepath.Walk(source,
 		func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
 
-			if !strings.HasSuffix(path, "charm_rsa") && !strings.HasSuffix(path, "charm_rsa.pub") {
+			if !exp.MatchString(path) {
 				return nil
 			}
 
@@ -158,7 +160,17 @@ func createTar(source string, target string) error {
 				return err
 			}
 			defer file.Close() // nolint:errcheck
-			_, err = io.Copy(tarball, file)
-			return err
-		})
+
+			if _, err := io.Copy(tarball, file); err != nil {
+				return err
+			}
+			return file.Close()
+		}); err != nil {
+		return err
+	}
+
+	if err := tarball.Close(); err != nil {
+		return err
+	}
+	return tarfile.Close()
 }
