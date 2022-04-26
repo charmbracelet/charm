@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"os"
 	"path/filepath"
@@ -30,15 +31,16 @@ var nameValidator = regexp.MustCompile("^[a-zA-Z0-9]{1,50}$")
 
 // Config contains the Charm client configuration.
 type Config struct {
-	Host        string `env:"CHARM_HOST" envDefault:"cloud.charm.sh"`
-	SSHPort     int    `env:"CHARM_SSH_PORT" envDefault:"35353"`
-	HTTPPort    int    `env:"CHARM_HTTP_PORT" envDefault:"35354"`
-	Debug       bool   `env:"CHARM_DEBUG"`
-	Logfile     string `env:"CHARM_LOGFILE"`
-	KeyType     string `env:"CHARM_KEY_TYPE" envDefault:"ed25519"`
-	DataDir     string `env:"CHARM_DATA_DIR"`
-	IdentityKey string `env:"CHARM_IDENTITY_KEY"`
-	UseSSHAgent bool   `env:"CHARM_USE_SSH_AGENT"`
+	Host         string `env:"CHARM_HOST" envDefault:"cloud.charm.sh"`
+	SSHPort      int    `env:"CHARM_SSH_PORT" envDefault:"35353"`
+	HTTPPort     int    `env:"CHARM_HTTP_PORT" envDefault:"35354"`
+	Debug        bool   `env:"CHARM_DEBUG"`
+	Logfile      string `env:"CHARM_LOGFILE"`
+	KeyType      string `env:"CHARM_KEY_TYPE" envDefault:"ed25519"`
+	DataDir      string `env:"CHARM_DATA_DIR"`
+	IdentityKey  string `env:"CHARM_IDENTITY_KEY"`
+	UseSSHAgent  bool   `env:"CHARM_USE_SSH_AGENT"`
+	SSHAgentAddr string `env:"CHARM_SSH_AGENT_ADDR"`
 }
 
 // Client is the Charm client.
@@ -98,12 +100,13 @@ func NewClient(cfg *Config) (*Client, error) {
 
 	var pkam []ssh.AuthMethod // nolint:prealloc
 	if cfg.UseSSHAgent {
-		m, err := getLocalAgent()
+		m, err := getLocalAgent(cfg)
 		if err != nil {
 			return nil, err
 		}
 		pkam = append(pkam, m)
 	}
+
 	for _, k := range sshKeys {
 		m, err := publicKeyAuthMethod(k)
 		if err != nil {
@@ -115,6 +118,7 @@ func NewClient(cfg *Config) (*Client, error) {
 	if len(pkam) == 0 {
 		return nil, charm.ErrMissingSSHAuth
 	}
+	log.Println("KEYS", len(pkam))
 
 	cc.sshConfig = &ssh.ClientConfig{
 		User:            "charm",
@@ -126,8 +130,11 @@ func NewClient(cfg *Config) (*Client, error) {
 
 // getLocalAgent checks if there's a local agent at $SSH_AUTH_SOCK and, if so,
 // returns a connection to it through agent.Agent.
-func getLocalAgent() (ssh.AuthMethod, error) {
-	socket := os.Getenv("SSH_AUTH_SOCK")
+func getLocalAgent(cfg *Config) (ssh.AuthMethod, error) {
+	socket := cfg.SSHAgentAddr
+	if strings.TrimSpace(socket) == "" {
+		socket = os.Getenv("SSH_AUTH_SOCK")
+	}
 	if socket == "" {
 		return nil, fmt.Errorf("no SSH_AUTH_SOCK set")
 	}
@@ -136,6 +143,7 @@ func getLocalAgent() (ssh.AuthMethod, error) {
 		return nil, fmt.Errorf("failed to connect to SSH_AUTH_SOCK: %w", err)
 	}
 	agt := agent.NewClient(conn)
+
 	// TODO: conn.Close
 	return ssh.PublicKeysCallback(agt.Signers), nil
 }
@@ -202,11 +210,7 @@ func (cc *Client) LinkKeyToUser(key ssh.PublicKey) error {
 		return err
 	}
 	defer s.Close() //nolint:errcheck
-	txt, err := keyText(key)
-	if err != nil {
-		return err
-	}
-	k := charm.PublicKey{Key: txt}
+	k := charm.PublicKey{Key: keyText(key)}
 	in, err := s.StdinPipe()
 	if err != nil {
 		return err
@@ -229,9 +233,9 @@ func (cc *Client) LinkKeyToUser(key ssh.PublicKey) error {
 }
 
 // keyText is the base64 encoded public key for authorized key text.
-func keyText(key ssh.PublicKey) (string, error) {
+func keyText(key ssh.PublicKey) string {
 	kb := base64.StdEncoding.EncodeToString(key.Marshal())
-	return fmt.Sprintf("%s %s", key.Type(), kb), nil
+	return fmt.Sprintf("%s %s", key.Type(), kb)
 }
 
 // AuthorizedKeysWithMetadata fetches keys linked to a user's account, with metadata.

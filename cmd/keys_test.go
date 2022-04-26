@@ -1,24 +1,16 @@
 package cmd
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/charmbracelet/charm/testserver"
 	"github.com/charmbracelet/keygen"
+	"golang.org/x/crypto/ssh"
 )
 
 func TestKeys(t *testing.T) {
-	/**
-	test cases:
-	- setup account should create a new local key
-	- setup account using agent should create a new local key anyway
-	- add a key to an existing account
-	- create account and add a key to it
-	- add key from agent into existing account
-	- add key from agent into new account
-	**/
-
 	t.Run("create account", func(t *testing.T) {
 		cli := testserver.SetupTestServer(t)
 		KeysCmd.SetArgs([]string{"-s"})
@@ -88,7 +80,39 @@ func TestKeys(t *testing.T) {
 	})
 
 	t.Run("create account adding existing key from ssh agent", func(t *testing.T) {
-		// TODO: figure out how to run serve a "test agent"
-		// TODO: if agent setting is set, should we add its keys to the user account?
+		key, err := keygen.New(filepath.Join(t.TempDir(), "test"), nil, keygen.Ed25519)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		signer, err := ssh.ParsePrivateKey(key.PrivateKeyPEM())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		cli := testserver.SetupTestServerWithAgent(t, signer)
+
+		if err := cli.NoAgent.LinkKeyToUser(signer.PublicKey()); err != nil {
+			t.Fatal(err)
+		}
+
+		keys, err := cli.Full.AuthorizedKeysWithMetadata()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if l := len(keys.Keys); l != 2 {
+			t.Fatalf("expected 2 key, got %d", l)
+		}
+
+		t.Run("should keep access with agent after deleting the charm-generated keys", func(t *testing.T) {
+			if err := os.RemoveAll(cli.NoAgent.Config.DataDir); err != nil {
+				t.Fatal(err)
+			}
+
+			if _, err := cli.Full.SetName("foo"); err != nil {
+				t.Fatal(err)
+			}
+		})
 	})
 }

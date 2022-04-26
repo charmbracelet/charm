@@ -28,15 +28,15 @@ var KeysCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cc := initCharmClient()
 		if newKey != "" {
-			p, _, _, _, err := ssh.ParseAuthorizedKey([]byte(newKey))
+			key, _, _, _, err := ssh.ParseAuthorizedKey([]byte(newKey))
 			if err != nil {
 				return err
 			}
-			if err := cc.LinkKeyToUser(p); err != nil {
+			if err := cc.LinkKeyToUser(key); err != nil {
 				return err
 			}
 
-			fmt.Printf("Added key %s to your account.\n", gossh.FingerprintSHA256(p))
+			fmt.Printf("Added key %s to your account.\n", gossh.FingerprintSHA256(key))
 			return nil
 		}
 		if common.IsTTY() && !randomart && !simpleOutput {

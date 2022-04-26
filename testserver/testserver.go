@@ -1,7 +1,10 @@
 package testserver
 
 import (
+	"bytes"
+	"crypto/rand"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -14,14 +17,22 @@ import (
 	"github.com/charmbracelet/charm/client"
 	"github.com/charmbracelet/charm/server"
 	"github.com/charmbracelet/keygen"
+	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/agent"
 )
 
-// SetupTestServer starts a test server and sets the needed environment
-// variables so clients pick it up.
+type Clients struct {
+	Full    *client.Client
+	NoAgent *client.Client
+}
+
+// SetupTestServerWithAgent starts a test server and a fake ssh agent with
+// the given signers, and sets the needed environment variables so clients
+// pick it up.
 // It also returns a client forcing these settings in.
 // Unless you use the given client, this is not really thread safe due
 // to setting a bunch of environment variables.
-func SetupTestServer(tb testing.TB) *client.Client {
+func SetupTestServerWithAgent(tb testing.TB, signers ...ssh.Signer) Clients {
 	tb.Helper()
 
 	td := tb.TempDir()
@@ -56,7 +67,17 @@ func SetupTestServer(tb testing.TB) *client.Client {
 	if err != nil {
 		tb.Fatalf("server likely failed to start: %s", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
+
+	tb.Log("server ready!")
+
+	var agentSocket string
+	if len(signers) > 0 {
+		agt := agentFromKeys{signers}
+		agentSocket = agt.start(tb)
+
+		tb.Logf("fake ssh agent ready with %d keys", len(signers))
+	}
 
 	tb.Cleanup(func() {
 		if err := s.Close(); err != nil {
@@ -67,7 +88,13 @@ func SetupTestServer(tb testing.TB) *client.Client {
 		_ = os.Unsetenv("CHARM_SSH_PORT")
 		_ = os.Unsetenv("CHARM_HTTP_PORT")
 		_ = os.Unsetenv("CHARM_DATA_DIR")
+		if len(signers) > 0 {
+			_ = os.Unsetenv("CHARM_USE_SSH_AGENT")
+			_ = os.Unsetenv("CHARM_SSH_AGENT_ADDR")
+		}
 	})
+
+	var clients Clients
 
 	ccfg, err := client.ConfigFromEnv()
 	if err != nil {
@@ -83,7 +110,39 @@ func SetupTestServer(tb testing.TB) *client.Client {
 	if err != nil {
 		tb.Fatalf("new client error: %s", err)
 	}
-	return cl
+	clients.NoAgent = cl
+
+	if len(signers) > 0 {
+		_ = os.Setenv("CHARM_SSH_AGENT_ADDR", agentSocket)
+		_ = os.Setenv("CHARM_USE_SSH_AGENT", "true")
+
+		ccfg, err := client.ConfigFromEnv()
+		if err != nil {
+			tb.Fatalf("client config from env error: %s", err)
+		}
+		ccfg.Host = cfg.Host
+		ccfg.SSHPort = cfg.SSHPort
+		ccfg.HTTPPort = cfg.HTTPPort
+		ccfg.DataDir = clientData
+		ccfg.UseSSHAgent = true
+		ccfg.SSHAgentAddr = agentSocket
+
+		cl, err := client.NewClient(ccfg)
+		if err != nil {
+			tb.Fatalf("new client error: %s", err)
+		}
+		clients.Full = cl
+	}
+	return clients
+}
+
+// SetupTestServer starts a test server and sets the needed environment
+// variables so clients pick it up.
+// It also returns a client forcing these settings in.
+// Unless you use the given client, this is not really thread safe due
+// to setting a bunch of environment variables.
+func SetupTestServer(tb testing.TB) *client.Client {
+	return SetupTestServerWithAgent(tb).NoAgent
 }
 
 // Fetch the given URL with N retries.
@@ -107,10 +166,78 @@ func randomPort(tb testing.TB) int {
 	if err != nil {
 		tb.Fatalf("could not get a random port: %s", err)
 	}
-	listener.Close()
+	_ = listener.Close()
 
 	addr := listener.Addr().String()
 
 	p, _ := strconv.Atoi(addr[strings.LastIndex(addr, ":")+1:])
 	return p
 }
+
+type agentFromKeys struct {
+	keys []ssh.Signer
+}
+
+var _ agent.Agent = &agentFromKeys{}
+
+func (a *agentFromKeys) start(tb testing.TB) string {
+	sock := filepath.Join(tb.TempDir(), "agent.sock")
+	l, err := net.Listen("unix", sock)
+	if err != nil {
+		tb.Fatal("Failed to listen on UNIX socket:", err)
+	}
+
+	tb.Cleanup(func() {
+		_ = l.Close()
+	})
+
+	go func() {
+		for {
+			c, err := l.Accept()
+			if err != nil {
+				tb.Fatal("request failed:", err)
+			}
+			if err := agent.ServeAgent(a, c); err != nil && err != io.EOF {
+				tb.Fatal("failed to serve agent", err)
+			}
+		}
+	}()
+
+	return sock
+}
+
+func (a *agentFromKeys) List() ([]*agent.Key, error) {
+	var result []*agent.Key
+	for _, k := range a.keys {
+		result = append(result, &agent.Key{
+			Format:  k.PublicKey().Type(),
+			Blob:    k.PublicKey().Marshal(),
+			Comment: "",
+		})
+	}
+	return result, nil
+}
+
+func (a *agentFromKeys) Sign(key ssh.PublicKey, data []byte) (*ssh.Signature, error) {
+	var signer ssh.Signer
+	for _, s := range a.keys {
+		if bytes.Equal(s.PublicKey().Marshal(), key.Marshal()) {
+			signer = s
+			break
+		}
+	}
+	if signer == nil {
+		return nil, fmt.Errorf("invalid key: %s", ssh.FingerprintSHA256(key))
+	}
+	return signer.Sign(rand.Reader, data)
+}
+
+func (a *agentFromKeys) Signers() ([]ssh.Signer, error) {
+	return a.keys, nil
+}
+
+func (a *agentFromKeys) Add(key agent.AddedKey) error   { return nil }
+func (a *agentFromKeys) Remove(key ssh.PublicKey) error { return nil }
+func (a *agentFromKeys) RemoveAll() error               { return nil }
+func (a *agentFromKeys) Lock(passphrase []byte) error   { return nil }
+func (a *agentFromKeys) Unlock(passphrase []byte) error { return nil }
