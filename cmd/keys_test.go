@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/charmbracelet/charm/testserver"
@@ -80,6 +81,10 @@ func TestKeys(t *testing.T) {
 	})
 
 	t.Run("create account adding existing key from ssh agent", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("cant bind unix sockets on windows")
+		}
+
 		key, err := keygen.New(filepath.Join(t.TempDir(), "test"), nil, keygen.Ed25519)
 		if err != nil {
 			t.Fatal(err)
