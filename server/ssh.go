@@ -105,8 +105,7 @@ func (me *SSHServer) authHandler(ctx ssh.Context, key ssh.PublicKey) bool {
 
 func (me *SSHServer) handleJWT(s ssh.Session) {
 	var aud []string
-	cmd := s.Command()
-	if len(cmd) > 1 {
+	if cmd := s.Command(); len(cmd) > 1 {
 		aud = cmd[1:]
 	} else {
 		aud = []string{"charm"}
