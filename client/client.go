@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"os"
 	"path/filepath"
@@ -118,7 +117,6 @@ func NewClient(cfg *Config) (*Client, error) {
 	if len(pkam) == 0 {
 		return nil, charm.ErrMissingSSHAuth
 	}
-	log.Println("KEYS", len(pkam))
 
 	cc.sshConfig = &ssh.ClientConfig{
 		User:            "charm",
