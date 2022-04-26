@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -181,7 +182,12 @@ type agentFromKeys struct {
 var _ agent.Agent = &agentFromKeys{}
 
 func (a *agentFromKeys) start(tb testing.TB) string {
-	sock := filepath.Join(tb.TempDir(), "agent.sock")
+	tmp := tb.TempDir()
+	if runtime.GOOS == "darwin" {
+		tmp = "/tmp"
+	}
+	sock := filepath.Join(tmp, "agent.sock")
+
 	l, err := net.Listen("unix", sock)
 	if err != nil {
 		tb.Fatal("Failed to listen on UNIX socket:", err)
