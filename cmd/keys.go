@@ -7,7 +7,9 @@ import (
 	"github.com/charmbracelet/charm/client"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/charmbracelet/charm/ui/keys"
+	"github.com/gliderlabs/ssh"
 	"github.com/spf13/cobra"
+	gossh "golang.org/x/crypto/ssh"
 )
 
 var (
@@ -26,7 +28,16 @@ var KeysCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cc := initCharmClient()
 		if newKey != "" {
-			return cc.LinkKeyToUser(newKey)
+			p, _, _, _, err := ssh.ParseAuthorizedKey([]byte(newKey))
+			if err != nil {
+				return err
+			}
+			if err := cc.LinkKeyToUser(p); err != nil {
+				return err
+			}
+
+			fmt.Printf("Added key %s to your account.\n", gossh.FingerprintSHA256(p))
+			return nil
 		}
 		if common.IsTTY() && !randomart && !simpleOutput {
 			// Log to file, if set

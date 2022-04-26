@@ -196,7 +196,7 @@ func (cc *Client) AuthorizedKeys() (string, error) {
 }
 
 // LinkKeyToUser links the given authorized key to the current user.
-func (cc *Client) LinkKeyToUser(key string) error {
+func (cc *Client) LinkKeyToUser(key ssh.PublicKey) error {
 	s, err := cc.sshSession()
 	if err != nil {
 		return err
@@ -229,13 +229,9 @@ func (cc *Client) LinkKeyToUser(key string) error {
 }
 
 // keyText is the base64 encoded public key for authorized key text.
-func keyText(key string) (string, error) {
-	p, _, _, _, err := ssh.ParseAuthorizedKey([]byte(key))
-	if err != nil {
-		return "", err
-	}
-	kb := base64.StdEncoding.EncodeToString(p.Marshal())
-	return fmt.Sprintf("%s %s", p.Type(), kb), nil
+func keyText(key ssh.PublicKey) (string, error) {
+	kb := base64.StdEncoding.EncodeToString(key.Marshal())
+	return fmt.Sprintf("%s %s", key.Type(), kb), nil
 }
 
 // AuthorizedKeysWithMetadata fetches keys linked to a user's account, with metadata.
