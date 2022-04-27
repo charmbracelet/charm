@@ -142,7 +142,7 @@ charm kv set weather humid
 charm fs tree /
 
 # Encrypt something
-charm encrypt < secretphoto.jpg > encrypted.jpg.json
+charm crypt encrypt < secretphoto.jpg > encrypted.jpg.json
 
 # For more info
 charm help
