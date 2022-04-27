@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/auth0/go-jwt-middleware/v2 v2.0.0-beta
 	github.com/caarlos0/env/v6 v6.9.1
+	github.com/caarlos0/go-sshagent v0.0.1
 	github.com/calmh/randomart v1.1.0
 	github.com/charmbracelet/bubbles v0.10.3
 	github.com/charmbracelet/bubbletea v0.20.0
@@ -26,7 +27,7 @@ require (
 	github.com/prometheus/client_golang v0.9.3
 	github.com/spf13/cobra v1.0.0
 	goji.io v2.0.2+incompatible
-	golang.org/x/crypto v0.0.0-20220307211146-efcb8507fb70
+	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	gopkg.in/square/go-jose.v2 v2.6.0
 	modernc.org/sqlite v1.14.8
@@ -38,6 +39,7 @@ require (
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/beorn7/perks v1.0.0 // indirect
 	github.com/caarlos0/sshmarshal v0.0.0-20220308164159-9ddb9f83c6b3 // indirect
+	github.com/caarlos0/sync v0.0.1 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/containerd/console v1.0.3 // indirect
 	github.com/dgraph-io/ristretto v0.0.4-0.20210122082011-bb5d392ed82d // indirect
@@ -68,7 +70,7 @@ require (
 	go.opencensus.io v0.22.5 // indirect
 	golang.org/x/mod v0.3.0 // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
-	golang.org/x/sys v0.0.0-20211007075335-d3039528d8ac // indirect
+	golang.org/x/sys v0.0.0-20220422013727-9388b58f7150 // indirect
 	golang.org/x/term v0.0.0-20210422114643-f5beecf764ed // indirect
 	golang.org/x/tools v0.0.0-20201124115921-2c860bdd6e78 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect

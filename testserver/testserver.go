@@ -1,25 +1,21 @@
 package testserver
 
 import (
-	"bytes"
-	"crypto/rand"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/caarlos0/go-sshagent"
 	"github.com/charmbracelet/charm/client"
 	"github.com/charmbracelet/charm/server"
 	"github.com/charmbracelet/keygen"
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/agent"
 )
 
 type Clients struct {
@@ -72,10 +68,20 @@ func SetupTestServerWithAgent(tb testing.TB, signers ...ssh.Signer) Clients {
 
 	tb.Log("server ready!")
 
-	var agentSocket string
+	var agt *sshagent.Agent
 	if len(signers) > 0 {
-		agt := agentFromKeys{signers}
-		agentSocket = agt.start(tb)
+		agt = sshagent.New(signers...)
+		go func() {
+			_ = agt.Start()
+		}()
+
+		tb.Cleanup(func() {
+			_ = agt.Close()
+		})
+
+		for !agt.Ready() {
+			time.Sleep(time.Millisecond * 100)
+		}
 
 		tb.Logf("fake ssh agent ready with %d keys", len(signers))
 	}
@@ -113,8 +119,8 @@ func SetupTestServerWithAgent(tb testing.TB, signers ...ssh.Signer) Clients {
 	}
 	clients.NoAgent = cl
 
-	if len(signers) > 0 {
-		_ = os.Setenv("CHARM_SSH_AGENT_ADDR", agentSocket)
+	if agt != nil {
+		_ = os.Setenv("CHARM_SSH_AGENT_ADDR", agt.Socket())
 		_ = os.Setenv("CHARM_USE_SSH_AGENT", "true")
 
 		ccfg, err := client.ConfigFromEnv()
@@ -126,7 +132,7 @@ func SetupTestServerWithAgent(tb testing.TB, signers ...ssh.Signer) Clients {
 		ccfg.HTTPPort = cfg.HTTPPort
 		ccfg.DataDir = clientData
 		ccfg.UseSSHAgent = true
-		ccfg.SSHAgentAddr = agentSocket
+		ccfg.SSHAgentAddr = agt.Socket()
 
 		cl, err := client.NewClient(ccfg)
 		if err != nil {
@@ -174,76 +180,3 @@ func randomPort(tb testing.TB) int {
 	p, _ := strconv.Atoi(addr[strings.LastIndex(addr, ":")+1:])
 	return p
 }
-
-type agentFromKeys struct {
-	signers []ssh.Signer
-}
-
-var _ agent.Agent = &agentFromKeys{}
-
-func (a *agentFromKeys) start(tb testing.TB) string {
-	tmp := tb.TempDir()
-	if runtime.GOOS == "darwin" {
-		tmp = "/tmp"
-	}
-	sock := filepath.Join(tmp, "agent.sock")
-
-	l, err := net.Listen("unix", sock)
-	if err != nil {
-		tb.Fatal("Failed to listen on UNIX socket:", err)
-	}
-
-	tb.Cleanup(func() {
-		_ = l.Close()
-	})
-
-	go func() {
-		for {
-			c, err := l.Accept()
-			if err != nil {
-				tb.Fatal("request failed:", err)
-			}
-			if err := agent.ServeAgent(a, c); err != nil && err != io.EOF {
-				tb.Fatal("failed to serve agent", err)
-			}
-		}
-	}()
-
-	return sock
-}
-
-func (a *agentFromKeys) List() ([]*agent.Key, error) {
-	result := make([]*agent.Key, 0, len(a.signers))
-	for _, k := range a.signers {
-		result = append(result, &agent.Key{
-			Format:  k.PublicKey().Type(),
-			Blob:    k.PublicKey().Marshal(),
-			Comment: "",
-		})
-	}
-	return result, nil
-}
-
-func (a *agentFromKeys) Sign(key ssh.PublicKey, data []byte) (*ssh.Signature, error) {
-	var signer ssh.Signer
-	for _, s := range a.signers {
-		if bytes.Equal(s.PublicKey().Marshal(), key.Marshal()) {
-			signer = s
-			break
-		}
-	}
-	if signer == nil {
-		return nil, fmt.Errorf("invalid key: %s", ssh.FingerprintSHA256(key))
-	}
-	return signer.Sign(rand.Reader, data)
-}
-
-func (a *agentFromKeys) Signers() ([]ssh.Signer, error) {
-	return a.signers, nil
-}
-
-func (a *agentFromKeys) Add(key agent.AddedKey) error   { return nil }
-func (a *agentFromKeys) Remove(key ssh.PublicKey) error { return nil }
-func (a *agentFromKeys) RemoveAll() error               { return nil }
-func (a *agentFromKeys) Lock(passphrase []byte) error   { return nil }
-func (a *agentFromKeys) Unlock(passphrase []byte) error { return nil }
