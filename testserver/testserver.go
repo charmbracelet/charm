@@ -18,8 +18,12 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// Clients may hold one or more clients.
 type Clients struct {
-	Full    *client.Client
+	// Full is a client with everything set, including the ssh agent option.
+	Full *client.Client
+
+	// NoAgent is a client without the ssh agent option set.
 	NoAgent *client.Client
 }
 
@@ -95,7 +99,7 @@ func SetupTestServerWithAgent(tb testing.TB, signers ...ssh.Signer) Clients {
 		_ = os.Unsetenv("CHARM_SSH_PORT")
 		_ = os.Unsetenv("CHARM_HTTP_PORT")
 		_ = os.Unsetenv("CHARM_DATA_DIR")
-		if len(signers) > 0 {
+		if agt != nil {
 			_ = os.Unsetenv("CHARM_USE_SSH_AGENT")
 			_ = os.Unsetenv("CHARM_SSH_AGENT_ADDR")
 		}
