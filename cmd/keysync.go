@@ -16,6 +16,7 @@ var KeySyncCmd = &cobra.Command{
 	Args:   cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cc := initCharmClient()
+		defer cc.Close() //nolint: errcheck
 		return cc.SyncEncryptKeys()
 	},
 }

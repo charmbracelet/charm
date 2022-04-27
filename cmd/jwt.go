@@ -14,6 +14,7 @@ var JWTCmd = &cobra.Command{
 	Args:  cobra.ArbitraryArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cc := initCharmClient()
+		defer cc.Close() //nolint: errcheck
 		jwt, err := cc.JWT(args...)
 		if err != nil {
 			return err

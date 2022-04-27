@@ -47,6 +47,8 @@ var (
 			if err != nil {
 				return err
 			}
+			defer cc.Close() //nolint: errcheck
+
 			dd, err := cc.DataPath()
 			if err != nil {
 				return err

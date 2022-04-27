@@ -24,8 +24,9 @@ import (
 // additional write methods. Data is stored across the network on a Charm Cloud
 // server, with encryption and decryption happening client-side.
 type FS struct {
-	cc    *client.Client
-	crypt *crypt.Crypt
+	cc     *client.Client
+	crypt  *crypt.Crypt
+	closer func() error
 }
 
 // File implements the fs.File interface.
@@ -75,7 +76,9 @@ func NewFS() (*FS, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewFSWithClient(cc)
+	fs, err := NewFSWithClient(cc)
+	fs.closer = cc.Close
+	return fs, err
 }
 
 // NewFSWithClient returns an FS with a custom *client.Client.
@@ -85,6 +88,14 @@ func NewFSWithClient(cc *client.Client) (*FS, error) {
 		return nil, err
 	}
 	return &FS{cc: cc, crypt: crypt}, nil
+}
+
+// Close closes open clients and connections.
+func (cfs *FS) Close() error {
+	if cfs.closer == nil {
+		return nil
+	}
+	return cfs.closer()
 }
 
 // Open implements Open for fs.FS.

@@ -32,6 +32,7 @@ var (
 			if err != nil {
 				return err
 			}
+			defer rsaClient.Close() //nolint: errcheck
 
 			ecfg, err := client.ConfigFromEnv()
 			if err != nil {
@@ -42,6 +43,7 @@ var (
 			if err != nil {
 				return err
 			}
+			defer ed25519Client.Close() //nolint: errcheck
 
 			lc := make(chan string)
 			go func() {

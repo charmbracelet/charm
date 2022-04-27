@@ -27,6 +27,7 @@ var KeysCmd = &cobra.Command{
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cc := initCharmClient()
+		defer cc.Close() //nolint: errcheck
 		if newKey != "" {
 			key, _, _, _, err := ssh.ParseAuthorizedKey([]byte(newKey))
 			if err != nil {

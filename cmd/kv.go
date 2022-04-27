@@ -89,6 +89,7 @@ func kvSet(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close() // nolint: errcheck
 	if len(args) == 2 {
 		return db.Set(k, []byte(args[1]))
 	}
@@ -104,6 +105,7 @@ func kvGet(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close() // nolint: errcheck
 	v, err := db.Get(k)
 	if err != nil {
 		return err
@@ -121,6 +123,7 @@ func kvDelete(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close() // nolint: errcheck
 	return db.Delete(k)
 }
 
@@ -143,6 +146,7 @@ func kvList(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close() // nolint: errcheck
 	if err := db.Sync(); err != nil {
 		return err
 	}
@@ -187,6 +191,7 @@ func kvSync(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close() // nolint: errcheck
 	return db.Sync()
 }
 
@@ -199,6 +204,7 @@ func kvReset(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer db.Close() // nolint: errcheck
 	return db.Reset()
 }
 

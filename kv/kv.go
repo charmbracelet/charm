@@ -23,10 +23,11 @@ import (
 // user's encryption keys. Diffs are also encrypted locally before being synced
 // to the Charm Cloud.
 type KV struct {
-	DB   *badger.DB
-	name string
-	cc   *client.Client
-	fs   *fs.FS
+	DB     *badger.DB
+	name   string
+	cc     *client.Client
+	closer func() error
+	fs     *fs.FS
 }
 
 // Open a Charm Cloud managed Badger DB instance with badger.Options and
@@ -66,7 +67,9 @@ func OpenWithDefaults(name string) (*KV, error) {
 	// large. This will limit the values to 10MB maximum size. If you need more,
 	// please use Open with custom options.
 	opts = opts.WithValueLogFileSize(10000000)
-	return Open(cc, name, opts)
+	kv, err := Open(cc, name, opts)
+	kv.closer = cc.Close
+	return kv, err
 }
 
 // OptionsWithEncryption returns badger.Options with all required encryption
@@ -129,7 +132,13 @@ func (kv *KV) Commit(txn *badger.Txn, callback func(error)) error {
 
 // Close closes the underlying Badger DB.
 func (kv *KV) Close() error {
-	return kv.DB.Close()
+	if err := kv.DB.Close(); err != nil {
+		return err
+	}
+	if kv.closer == nil {
+		return nil
+	}
+	return kv.closer()
 }
 
 // Set is a convenience method for setting a key and value. It creates and

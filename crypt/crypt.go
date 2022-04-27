@@ -41,6 +41,7 @@ func NewCrypt() (*Crypt, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer cc.Close() //nolint: errcheck
 	eks, err := cc.EncryptKeys()
 	if err != nil {
 		return nil, err

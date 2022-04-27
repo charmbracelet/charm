@@ -100,6 +100,7 @@ func newLocalRemoteFS() (*localRemoteFS, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer ccfs.Close() //nolint: errcheck
 	return &localRemoteFS{cfs: ccfs}, nil
 }
 
@@ -231,6 +232,7 @@ func fsCat(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer lsfs.Close() //nolint: errcheck
 	f, err := lsfs.Open(args[0])
 	if err != nil {
 		return err
@@ -263,6 +265,7 @@ func fsRemove(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer lsfs.Close() //nolint: errcheck
 	return lsfs.Remove(args[0])
 }
 
@@ -296,6 +299,7 @@ func fsList(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer lsfs.Close() //nolint: errcheck
 	f, err := lsfs.Open(args[0])
 	if err != nil {
 		return err
@@ -321,6 +325,7 @@ func fsTree(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer lsfs.Close() //nolint: errcheck
 	err = fs.WalkDir(lsfs, args[0], func(path string, d fs.DirEntry, err error) error {
 		fmt.Println(path)
 		return nil

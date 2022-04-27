@@ -52,6 +52,7 @@ type Client struct {
 	httpScheme           string
 	plainTextEncryptKeys []*charm.EncryptKey
 	encryptKeyLock       *sync.Mutex
+	closer               func() error
 }
 
 // ConfigFromEnv loads the configuration from the environment.
@@ -99,11 +100,12 @@ func NewClient(cfg *Config) (*Client, error) {
 
 	var pkam []ssh.AuthMethod // nolint:prealloc
 	if cfg.UseSSHAgent {
-		m, err := getLocalAgent(cfg)
+		conn, err := getLocalAgentConn(cfg)
 		if err != nil {
 			return nil, err
 		}
-		pkam = append(pkam, m)
+		cc.closer = conn.Close
+		pkam = append(pkam, ssh.PublicKeysCallback(agent.NewClient(conn).Signers))
 	}
 
 	for _, k := range sshKeys {
@@ -126,9 +128,9 @@ func NewClient(cfg *Config) (*Client, error) {
 	return cc, nil
 }
 
-// getLocalAgent checks if there's a local agent at $SSH_AUTH_SOCK and, if so,
+// getLocalAgentConn checks if there's a local agent at $SSH_AUTH_SOCK and, if so,
 // returns a connection to it through agent.Agent.
-func getLocalAgent(cfg *Config) (ssh.AuthMethod, error) {
+func getLocalAgentConn(cfg *Config) (net.Conn, error) {
 	socket := cfg.SSHAgentAddr
 	if strings.TrimSpace(socket) == "" {
 		socket = os.Getenv("SSH_AUTH_SOCK")
@@ -140,10 +142,7 @@ func getLocalAgent(cfg *Config) (ssh.AuthMethod, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to SSH_AUTH_SOCK: %w", err)
 	}
-	agt := agent.NewClient(conn)
-
-	// TODO: conn.Close
-	return ssh.PublicKeysCallback(agt.Signers), nil
+	return conn, nil
 }
 
 // NewClientWithDefaults creates a new Charm client with default values.
@@ -157,6 +156,14 @@ func NewClientWithDefaults() (*Client, error) {
 		return nil, err
 	}
 	return cc, nil
+}
+
+// Close cleans up.
+func (cc *Client) Close() error {
+	if cc.closer == nil {
+		return nil
+	}
+	return cc.closer()
 }
 
 // JWT returns a JSON web token for the user.

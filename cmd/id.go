@@ -14,6 +14,7 @@ var IDCmd = &cobra.Command{
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cc := initCharmClient()
+		defer cc.Close() //nolint: errcheck
 		id, err := cc.ID()
 		if err != nil {
 			return err

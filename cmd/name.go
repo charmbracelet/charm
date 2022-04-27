@@ -19,6 +19,7 @@ var NameCmd = &cobra.Command{
 	Example: indent.String("charm name\ncharm name beatrix", 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cc := initCharmClient()
+		defer cc.Close() //nolint: errcheck
 		switch len(args) {
 		case 0:
 			u, err := cc.Bio()

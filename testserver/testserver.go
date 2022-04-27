@@ -121,6 +121,9 @@ func SetupTestServerWithAgent(tb testing.TB, signers ...ssh.Signer) Clients {
 	if err != nil {
 		tb.Fatalf("new client error: %s", err)
 	}
+	tb.Cleanup(func() {
+		_ = cl.Close()
+	})
 	clients.NoAgent = cl
 
 	if agt != nil {
@@ -142,6 +145,9 @@ func SetupTestServerWithAgent(tb testing.TB, signers ...ssh.Signer) Clients {
 		if err != nil {
 			tb.Fatalf("new client error: %s", err)
 		}
+		tb.Cleanup(func() {
+			_ = cl.Close()
+		})
 		clients.Full = cl
 	}
 	return clients
