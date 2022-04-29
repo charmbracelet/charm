@@ -73,7 +73,7 @@ func OpenWithDefaults(name string) (*KV, error) {
 // settings enabled for a given encryption key.
 func OptionsWithEncryption(opt badger.Options, encKey []byte, cacheSize int64) (badger.Options, error) {
 	if cacheSize <= 0 {
-		return opt, fmt.Errorf("You must set an index cache size to use encrypted workloads in Badger v3")
+		return opt, fmt.Errorf("you must set an index cache size to use encrypted workloads in Badger v3")
 	}
 	return opt.WithEncryptionKey(encKey).WithIndexCacheSize(cacheSize), nil
 }

@@ -24,7 +24,7 @@ func (cc *Client) KeyForID(gid string) (*charm.EncryptKey, error) {
 	}
 	if gid == "" {
 		if len(cc.plainTextEncryptKeys) == 0 {
-			return nil, fmt.Errorf("No keys stored")
+			return nil, fmt.Errorf("no keys stored")
 		}
 		return cc.plainTextEncryptKeys[0], nil
 	}
@@ -33,7 +33,7 @@ func (cc *Client) KeyForID(gid string) (*charm.EncryptKey, error) {
 			return k, nil
 		}
 	}
-	return nil, fmt.Errorf("Key not found for id %s", gid)
+	return nil, fmt.Errorf("key not found for id %s", gid)
 }
 
 // DefaultEncryptKey returns the default EncryptKey for an authed user.
