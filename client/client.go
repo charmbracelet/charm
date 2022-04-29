@@ -256,7 +256,7 @@ func (cc *Client) Bio() (*charm.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	if u == nil {
+	if (*u == charm.User{}) {
 		return nil, errors.New("no user data received")
 	}
 	return u, nil
