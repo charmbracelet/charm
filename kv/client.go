@@ -52,7 +52,7 @@ func (f *kvFileInfo) Sys() interface{} {
 
 func (f *kvFile) Stat() (fs.FileInfo, error) {
 	if f.info == nil {
-		return nil, fmt.Errorf("File info not set")
+		return nil, fmt.Errorf("file info not set")
 	}
 	return f.info, nil
 }
@@ -154,7 +154,7 @@ func (kv *KV) syncFrom(mv uint64) error {
 func encryptKeyToBadgerKey(k *charm.EncryptKey) ([]byte, error) {
 	ek := []byte(k.Key)
 	if len(ek) < 32 {
-		return nil, fmt.Errorf("Encryption key is too short")
+		return nil, fmt.Errorf("encryption key is too short")
 	}
 	return ek[0:32], nil
 }

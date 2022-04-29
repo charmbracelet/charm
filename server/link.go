@@ -222,7 +222,7 @@ func (me *SSHServer) LinkRequest(lt charm.LinkTransport, key string, token strin
 	if err != nil || !me.linkQueue.ValidateLinkRequest(l.Token) {
 		l.Status = charm.LinkStatusInvalidTokenRequest
 		lt.RequestInvalidToken(l)
-		return fmt.Errorf("Invalid token '%s'", token)
+		return fmt.Errorf("invalid token '%s'", token)
 	}
 	l.Status = charm.LinkStatusValidTokenRequest
 	lt.RequestValidToken(l)
@@ -384,7 +384,7 @@ func (s *channelLinkQueue) ValidateLinkRequest(t charm.Token) bool {
 func (s *channelLinkQueue) WaitLinkRequest(t charm.Token) (chan *charm.Link, error) {
 	lr, ok := s.linkRequests[t]
 	if !ok {
-		return nil, fmt.Errorf("No link request for token: %s", t)
+		return nil, fmt.Errorf("no link request for token: %s", t)
 	}
 	return lr, nil
 }

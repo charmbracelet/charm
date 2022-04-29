@@ -182,7 +182,7 @@ func (me *DB) AddEncryptKeyForPublicKey(u *charm.User, pk string, gid string, ek
 			return err
 		}
 		if u2.ID != u.ID {
-			return fmt.Errorf("Trying to add encrypted key for unauthorized user")
+			return fmt.Errorf("trying to add encrypted key for unauthorized user")
 		}
 
 		r := me.selectEncryptKey(tx, u2.PublicKey.ID, gid)
