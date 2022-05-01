@@ -40,10 +40,6 @@ var (
 		Hidden: false,
 		Short:  "Use the Charm file system.",
 		Long:   paragraph("Commands to set, get and delete data from your Charm Cloud backed file system."),
-		Args:   cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return nil
-		},
 	}
 
 	fsCatCmd = &cobra.Command{
