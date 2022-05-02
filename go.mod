@@ -3,6 +3,7 @@ module github.com/charmbracelet/charm
 go 1.17
 
 require (
+	bazil.org/fuse v0.0.0-20200524192727-fb710f7dfd05
 	github.com/auth0/go-jwt-middleware/v2 v2.0.0-beta
 	github.com/caarlos0/env/v6 v6.9.1
 	github.com/calmh/randomart v1.1.0
@@ -27,6 +28,7 @@ require (
 	github.com/spf13/cobra v1.0.0
 	goji.io v2.0.2+incompatible
 	golang.org/x/crypto v0.0.0-20220307211146-efcb8507fb70
+	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	gopkg.in/square/go-jose.v2 v2.6.0
 	modernc.org/sqlite v1.14.8
@@ -67,7 +69,6 @@ require (
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	go.opencensus.io v0.22.5 // indirect
 	golang.org/x/mod v0.3.0 // indirect
-	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
 	golang.org/x/sys v0.0.0-20211007075335-d3039528d8ac // indirect
 	golang.org/x/term v0.0.0-20210422114643-f5beecf764ed // indirect
 	golang.org/x/tools v0.0.0-20201124115921-2c860bdd6e78 // indirect
