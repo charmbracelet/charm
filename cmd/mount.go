@@ -252,7 +252,7 @@ func (d *Dir) ReadDirAll(_ context.Context) ([]fuse.Dirent, error) {
 // Attr returns this node's filesystem attributes.
 func (f *File) Attr(_ context.Context, a *fuse.Attr) error {
 	// fmt.Println("Attr:", f.Path())
-	// a.Inode = node.Inode
+	// a.Inode = f.Inode
 
 	/*
 		st, err := fs.Stat(f.Mount.lsfs, f.Path())
@@ -270,7 +270,7 @@ func (f *File) Attr(_ context.Context, a *fuse.Attr) error {
 	a.Uid = uint32(os.Getuid())
 	a.Gid = uint32(os.Getgid())
 	if a.Mode == 0 {
-		a.Mode = 0600
+		a.Mode = 0644
 	}
 
 	return nil
@@ -385,6 +385,28 @@ func (nf *NodeFile) Close() error {
 	return nil
 }
 
+func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir bfs.Node) error {
+	f, ok := d.Items[req.OldName]
+	if !ok {
+		return fuse.ENOENT
+	}
+
+	ff := f.(*File)
+
+	dst := filepath.Join(newDir.(*Dir).Path(), req.NewName)
+	fmt.Printf("Renaming %s to %s\n", ff.Path(), dst)
+
+	ff.ReadAll(ctx)
+
+	if err := d.Mount.lsfs.WriteFile(dst, &NodeFile{ff, bytes.NewReader(ff.data)}); err != nil {
+		return err
+	}
+
+	d.Items[req.OldName] = nil
+
+	return d.Mount.lsfs.Remove(ff.Path())
+}
+
 func (f *File) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 	if req.Flags.IsReadOnly() {
 		// we don't need to track read-only handles
@@ -405,6 +427,7 @@ func (f *File) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 func (f *File) ReadAll(_ context.Context) ([]byte, error) {
 	fmt.Println("ReadAll:", f.Path())
 	if f.Mount.cache && len(f.data) > 0 {
+		fmt.Println("ReadAll cached!")
 		return f.data, nil
 	}
 
@@ -448,21 +471,28 @@ func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.Wri
 var _ = bfs.HandleFlusher(&File{})
 
 func (f *File) Flush(ctx context.Context, req *fuse.FlushRequest) error {
-	fmt.Printf("Flushing %s\n", f.Path())
+	fmt.Printf("Flushing %s %d %d\n", f.Path(), len(f.data), f.writers)
 	if f.writers == 0 {
 		// Read-only handles also get flushes. Make sure we don't
 		// overwrite valid file contents with a nil buffer.
 		return nil
 	}
 
+	if err := f.Mount.lsfs.WriteFile(f.Path(), &NodeFile{f, bytes.NewReader(f.data)}); err != nil {
+		return err
+	}
 	f.Size = uint64(len(f.data))
 
-	return f.Mount.lsfs.WriteFile(f.Path(), &NodeFile{f, bytes.NewReader(f.data)})
+	return nil
 }
 
 var _ = bfs.NodeSetattrer(&File{})
 
 func (f *File) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fuse.SetattrResponse) error {
+	fmt.Println("Setattr for", f.Path(), req.String())
+	if req.Valid.Mode() {
+		f.Mode = req.Mode
+	}
 	if req.Valid.Size() {
 		fmt.Printf("Setattr %d bytes for %s\n", req.Size, f.Path())
 		if req.Size > uint64(maxInt) {
@@ -475,7 +505,13 @@ func (f *File) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fuse
 		case newLen < len(f.data):
 			f.data = f.data[:newLen]
 		}
+		f.Size = req.Size
 	}
+	return nil
+}
+
+func (f *File) Fsync(ctx context.Context, req *fuse.FsyncRequest) error {
+	fmt.Println("Fsync for", f.Path(), req.String())
 	return nil
 }
 
@@ -505,7 +541,7 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 		Mount:   d.Mount,
 		Parent:  d,
 		Name:    req.Name,
-		Mode:    0600,
+		Mode:    0644,
 		writers: 1,
 	}
 	d.Items[req.Name] = f
