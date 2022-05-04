@@ -45,7 +45,7 @@ type File struct {
 // FileInfo implements the fs.FileInfo interface.
 type FileInfo struct {
 	charm.FileInfo
-	sys interface{}
+	sys *sysFuture
 }
 
 type readDirFileFS interface {
@@ -238,7 +238,7 @@ func (cfs *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 			e.Name = n
 			dirs = append(dirs, &FileInfo{
 				FileInfo: e,
-				sys: sysFuture{
+				sys: &sysFuture{
 					fs:   cfs,
 					path: path.Join(name, e.Name),
 				},
