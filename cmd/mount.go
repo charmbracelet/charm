@@ -88,23 +88,23 @@ func (d *Dir) Path() string {
 		return "/"
 	}
 
-	r := "/"
+	r := ""
 	p := d.Parent
 	for p != nil {
 		r = filepath.Join(p.Name, r)
 		p = p.Parent
 	}
-	return filepath.Join(r, d.Name)
+	return filepath.Join("/", r, d.Name)
 }
 
 func (f *File) Path() string {
-	r := "/"
+	r := ""
 	p := f.Parent
 	for p != nil {
 		r = filepath.Join(p.Name, r)
 		p = p.Parent
 	}
-	return filepath.Join(r, f.Name)
+	return filepath.Join("/", r, f.Name)
 }
 
 func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
