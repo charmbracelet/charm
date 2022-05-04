@@ -500,23 +500,6 @@ func (cfs *FS) DecryptPath(path string) (string, error) {
 	return strings.Join(dps, "/"), nil
 }
 
-func (sf sysFuture) resolve() ([]fs.DirEntry, error) {
-	f, err := sf.fs.Open(sf.path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close() // nolint:errcheck
-	fi, err := f.Stat()
-	if err != nil {
-		return nil, err
-	}
-	sys := fi.Sys()
-	if sys == nil {
-		return nil, fmt.Errorf("missing dir entry results")
-	}
-	return sys.([]fs.DirEntry), nil
-}
-
 func pathError(op, path string, err error) *fs.PathError {
 	return &fs.PathError{
 		Op:   op,
