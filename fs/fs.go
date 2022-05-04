@@ -4,6 +4,7 @@ package fs
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -18,6 +19,13 @@ import (
 	"github.com/charmbracelet/charm/client"
 	"github.com/charmbracelet/charm/crypt"
 	charm "github.com/charmbracelet/charm/proto"
+)
+
+var (
+	// ErrIsDir is returned when trying to read a directory.
+	ErrIsDir = errors.New("is a directory")
+	// ErrNotDir is returned when trying to read a file that is not a directory.
+	ErrNotDir = errors.New("not a directory")
 )
 
 // FS is an implementation of fs.FS, fs.ReadFileFS and fs.ReadDirFS with
@@ -40,8 +48,13 @@ type FileInfo struct {
 	sys interface{}
 }
 
+type readDirFileFS interface {
+	fs.ReadDirFS
+	fs.ReadFileFS
+}
+
 type sysFuture struct {
-	fs   fs.FS
+	fs   readDirFileFS
 	path string
 }
 
@@ -87,100 +100,159 @@ func NewFSWithClient(cc *client.Client) (*FS, error) {
 	return &FS{cc: cc, crypt: crypt}, nil
 }
 
-// Open implements Open for fs.FS.
-func (cfs *FS) Open(name string) (fs.File, error) {
-	f := &File{
-		info: &FileInfo{},
+// Stat returns an fs.FileInfo that describes the file. Implements fs.StatFS.
+func (cfs *FS) Stat(name string) (fs.FileInfo, error) {
+	info := &FileInfo{
+		sys: &sysFuture{
+			fs:   cfs,
+			path: name,
+		},
 	}
 	ep, err := cfs.EncryptPath(name)
 	if err != nil {
-		return nil, pathError(name, err)
+		return nil, pathError("stat", name, err)
+	}
+	p := fmt.Sprintf("/v1/fs/%s", ep)
+	resp, err := cfs.cc.AuthedRawRequest("HEAD", p)
+	if resp != nil && resp.StatusCode == http.StatusNotFound {
+		return nil, fs.ErrNotExist
+	} else if err != nil {
+		return nil, pathError("stat", name, err)
+	}
+	defer resp.Body.Close() // nolint:errcheck
+	fileName := resp.Header.Get("X-Name")
+	if fileName == "" {
+		fileName = name
+	}
+	fileMode := resp.Header.Get("X-File-Mode")
+	mode, _ := strconv.ParseInt(fileMode, 10, 64)
+	isDir := resp.Header.Get("X-Is-Dir")
+	lastModified := resp.Header.Get("X-Last-Modified")
+	if lastModified == "" {
+		lastModified = resp.Header.Get("Last-Modified")
+	}
+	modTime, err := time.Parse(http.TimeFormat, lastModified)
+	if err != nil {
+		return nil, pathError("stat", name, err)
+	}
+	fileSize := resp.Header.Get("X-Size")
+	size, _ := strconv.ParseInt(fileSize, 10, 64)
+	info.FileInfo = charm.FileInfo{
+		Name:    path.Base(fileName),
+		Mode:    fs.FileMode(mode),
+		IsDir:   isDir == "true",
+		ModTime: modTime,
+		Size:    size,
+	}
+	return info, nil
+}
+
+// Open implements Open for fs.FS.
+func (cfs *FS) Open(name string) (fs.File, error) {
+	f := &File{}
+	info, err := cfs.Stat(name)
+	if err != nil {
+		return nil, err
+	}
+	f.info = info.(*FileInfo)
+	return f, nil
+}
+
+// ReadFile implements fs.ReadFileFS.
+func (cfs *FS) ReadFile(name string) ([]byte, error) {
+	info, err := cfs.Stat(name)
+	if err != nil {
+		return nil, err
+	}
+	if info.IsDir() {
+		return nil, pathError("open", name, ErrIsDir)
+	}
+	ep, err := cfs.EncryptPath(name)
+	if err != nil {
+		return nil, pathError("open", name, err)
 	}
 	p := fmt.Sprintf("/v1/fs/%s", ep)
 	resp, err := cfs.cc.AuthedRawRequest("GET", p)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		return nil, fs.ErrNotExist
 	} else if err != nil {
-		return nil, pathError(name, err)
+		return nil, pathError("open", name, err)
 	}
 	defer resp.Body.Close() // nolint:errcheck
-
 	switch resp.Header.Get("Content-Type") {
-	case "application/json":
-		dir := &charm.FileInfo{}
-		dec := json.NewDecoder(resp.Body)
-		err = dec.Decode(&dir)
-		if err != nil {
-			return nil, pathError(name, err)
-		}
-		f.info.FileInfo = *dir
-		var des []fs.DirEntry
-		for _, de := range dir.Files {
-			p := fmt.Sprintf("%s/%s", strings.Trim(ep, "/"), de.Name)
-			sf := sysFuture{
-				fs:   cfs,
-				path: p,
-			}
-			dn, err := cfs.crypt.DecryptLookupField(de.Name)
-			if err != nil {
-				return nil, pathError(name, err)
-			}
-			dei := FileInfo{
-				FileInfo: de,
-				sys:      sf,
-			}
-			dei.FileInfo.Name = dn
-			des = append(des, &dei)
-		}
-		f.info.sys = des
 	case "application/octet-stream":
-		f.info.FileInfo.Name = path.Base(name)
-		m, err := strconv.ParseUint(resp.Header.Get("X-File-Mode"), 10, 32)
-		if err != nil {
-			return nil, pathError(name, err)
-		}
-		f.info.FileInfo.Mode = fs.FileMode(m)
 		b := bytes.NewBuffer(nil)
 		dec, err := cfs.crypt.NewDecryptedReader(resp.Body)
 		if err != nil {
-			return nil, pathError(name, err)
+			return nil, pathError("open", name, err)
 		}
 		_, err = io.Copy(b, dec)
 		if err != nil {
 			return nil, err
 		}
-		modTime, err := time.Parse(http.TimeFormat, resp.Header.Get("Last-Modified"))
-		if err != nil {
-			return nil, pathError(name, err)
-		}
-		f.data = io.NopCloser(b)
-		f.info.FileInfo.Size = int64(b.Len())
-		f.info.FileInfo.ModTime = modTime
-		f.info.FileInfo.IsDir = false
+		return b.Bytes(), nil
 	default:
-		return nil, pathError(name, fmt.Errorf("invalid content-type returned from server"))
+		return nil, pathError("open", name, fmt.Errorf("invalid content-type returned from server"))
 	}
-	return f, nil
 }
 
-// ReadFile implements fs.ReadFileFS.
-func (cfs *FS) ReadFile(name string) ([]byte, error) {
-	buf := bytes.NewBuffer(nil)
+// ReadDir reads the named directory and returns a list of directory entries.
+func (cfs *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 	f, err := cfs.Open(name)
 	if err != nil {
 		return nil, err
 	}
-	_, err = io.Copy(buf, f)
+	info, err := f.Stat()
 	if err != nil {
-		return nil, err
+		return nil, pathError("open", name, err)
 	}
-	return buf.Bytes(), nil
+	if !info.IsDir() {
+		return nil, pathError("open", name, ErrNotDir)
+	}
+	ep, err := cfs.EncryptPath(name)
+	if err != nil {
+		return nil, pathError("open", name, err)
+	}
+	p := fmt.Sprintf("/v1/fs/%s", ep)
+	resp, err := cfs.cc.AuthedRawRequest("GET", p)
+	if resp != nil && resp.StatusCode == http.StatusNotFound {
+		return nil, fs.ErrNotExist
+	} else if err != nil {
+		return nil, pathError("open", name, err)
+	}
+	defer resp.Body.Close() // nolint:errcheck
+	switch resp.Header.Get("Content-Type") {
+	case "application/json":
+		dirs := []fs.DirEntry{}
+		dir := &charm.FileInfo{}
+		dec := json.NewDecoder(resp.Body)
+		err = dec.Decode(&dir)
+		if err != nil {
+			return nil, pathError("open", name, err)
+		}
+		for _, e := range dir.Files {
+			n, err := cfs.crypt.DecryptLookupField(e.Name)
+			if err != nil {
+				return nil, pathError("open", name, err)
+			}
+			e.Name = n
+			dirs = append(dirs, &FileInfo{
+				FileInfo: e,
+				sys: sysFuture{
+					fs:   cfs,
+					path: path.Join(name, e.Name),
+				},
+			})
+		}
+		return dirs, nil
+	default:
+		return nil, pathError("open", name, fmt.Errorf("invalid content-type returned from server"))
+	}
 }
 
-// WriteFile encrypts data from the src io.Reader and stores it on the
-// configured Charm Cloud server. The fs.FileMode is retained. If the file is
-// in a directory that doesn't exist, it and any needed subdirectories are
-// created.
+// WriteFile encrypts data from data and stores it on the configured Charm Cloud
+// server. The fs.FileMode is retained. If the file is in a directory that
+// doesn't exist, it and any needed subdirectories are created.
 func (cfs *FS) WriteFile(name string, data []byte, perm fs.FileMode) error {
 	src := bytes.NewBuffer(data)
 	ebuf := bytes.NewBuffer(nil)
@@ -254,12 +326,19 @@ func (cfs *FS) WriteFile(name string, data []byte, perm fs.FileMode) error {
 	if err != nil {
 		return err
 	}
-	path := fmt.Sprintf("/v1/fs/%s?mode=%d", ep, perm)
+	// Deprecated: remove mode from request query in favor of X-File-Mode
+	// header.
+	rp := fmt.Sprintf("/v1/fs/%s?mode=%d", ep, perm)
 	headers := http.Header{
 		"Content-Type":   {w.FormDataContentType()},
 		"Content-Length": {fmt.Sprintf("%d", contentLength)},
+		"X-File-Mode":    {fmt.Sprintf("%d", perm)},
+		// These headers are ignored by the server but implemented for consistency purposes.
+		"X-Is-Dir":        {"false"},
+		"X-Last-Modified": {time.Now().Format(http.TimeFormat)},
+		"X-Size":          {fmt.Sprintf("%d", ebuf.Len())},
 	}
-	resp, err := cfs.cc.AuthedRequest("POST", path, headers, rr)
+	resp, err := cfs.cc.AuthedRequest("POST", rp, headers, rr)
 	if err != nil {
 		return err
 	}
@@ -280,19 +359,6 @@ func (cfs *FS) Remove(name string) error {
 	return resp.Body.Close()
 }
 
-// ReadDir reads the named directory and returns a list of directory entries.
-func (cfs *FS) ReadDir(name string) ([]fs.DirEntry, error) {
-	f, err := cfs.Open(name)
-	if err == fs.ErrNotExist {
-		return []fs.DirEntry{}, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close() // nolint:errcheck
-	return f.(*File).ReadDir(0)
-}
-
 // Client returns the underlying *client.Client.
 func (cfs *FS) Client() *client.Client {
 	return cfs.cc
@@ -306,46 +372,60 @@ func (f *File) Stat() (fs.FileInfo, error) {
 // Read reads bytes from the file returning number of bytes read or an error.
 // The error io.EOF will be returned when there is nothing else to read.
 func (f *File) Read(b []byte) (int, error) {
+	if f.data == nil {
+		sys := f.info.Sys().(*sysFuture)
+		b, err := sys.fs.ReadFile(sys.path)
+		if err != nil {
+			return 0, err
+		}
+		f.data = io.NopCloser(bytes.NewBuffer(b))
+	}
 	return f.data.Read(b)
 }
 
 // ReadDir returns the directory entries for the directory file. If needed, the
 // directory listing will be resolved from the Charm Cloud server.
 func (f *File) ReadDir(n int) ([]fs.DirEntry, error) {
+	var dirs []fs.DirEntry
 	fi, err := f.Stat()
 	if err != nil {
 		return nil, err
 	}
 	if !fi.IsDir() {
-		return nil, fmt.Errorf("file is not a directory")
+		return nil, ErrNotDir
 	}
-	sys := fi.Sys()
-	if sys == nil {
-		return nil, fmt.Errorf("missing underlying directory data")
-	}
-	var des []fs.DirEntry
-	switch v := sys.(type) {
-	case sysFuture:
-		des, err = v.resolve()
+	if f.data == nil {
+		sys := f.info.Sys().(*sysFuture)
+		dirs, err = sys.fs.ReadDir(sys.path)
 		if err != nil {
 			return nil, err
 		}
-		f.info.sys = des
-	case []fs.DirEntry:
-		des = v
-	default:
-		return nil, fmt.Errorf("invalid FileInfo sys type")
+		data := bytes.NewBuffer(nil)
+		err = json.NewEncoder(data).Encode(dirs)
+		if err != nil {
+			return nil, err
+		}
+		f.data = io.NopCloser(data)
+	} else {
+		err = json.NewDecoder(f.data).Decode(&dirs)
+		if err != nil {
+			return nil, err
+		}
 	}
-	if n > 0 && n < len(des) {
-		return des[:n], nil
+	if n > 0 && n < len(dirs) {
+		return dirs[:n], nil
 	}
-	return des, nil
+	return dirs, nil
 }
 
 // Close closes the underlying file datasource.
 func (f *File) Close() error {
+<<<<<<< Updated upstream
 	// directories won't have data
 	if f.data == nil {
+=======
+	if f.Data == nil {
+>>>>>>> Stashed changes
 		return nil
 	}
 	return f.data.Close()
@@ -437,9 +517,9 @@ func (sf sysFuture) resolve() ([]fs.DirEntry, error) {
 	return sys.([]fs.DirEntry), nil
 }
 
-func pathError(path string, err error) *fs.PathError {
+func pathError(op, path string, err error) *fs.PathError {
 	return &fs.PathError{
-		Op:   "open",
+		Op:   op,
 		Path: path,
 		Err:  err,
 	}
