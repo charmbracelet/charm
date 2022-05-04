@@ -147,6 +147,7 @@ func NewServer(cfg *Config) (*Server, error) {
 	s.http = hs
 	if cfg.EnableMetrics {
 		s.stats = prometheus.NewStats(cfg.DB, cfg.StatsPort)
+		cfg.Stats = s.stats
 	}
 	return s, nil
 }
@@ -205,7 +206,7 @@ func (srv *Server) Close() error {
 func (srv *Server) init(cfg *Config) {
 	if cfg.DB == nil {
 		dp := filepath.Join(cfg.DataDir, "db")
-		err := storage.EnsureDir(dp, 0700)
+		err := storage.EnsureDir(dp, 0o700)
 		if err != nil {
 			log.Fatalf("could not init sqlite path: %s", err)
 		}

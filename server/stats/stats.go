@@ -19,5 +19,7 @@ type Stats interface {
 	GetNewsList()
 	GetNews()
 	PostNews()
+	FSFileRead(id string, size int64)
+	FSFileWritten(id string, size int64)
 	Close() error
 }

@@ -306,12 +306,12 @@ func (s *HTTPServer) handlePostFile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	err = s.cfg.FileStore.Put(u.CharmID, path, f, fs.FileMode(m))
-	if err != nil {
+	if err := s.cfg.FileStore.Put(u.CharmID, path, f, fs.FileMode(m)); err != nil {
 		log.Printf("cannot post file: %s", err)
 		s.renderError(w)
 		return
 	}
+	s.cfg.Stats.FSFileWritten(u.CharmID, fh.Size)
 }
 
 func (s *HTTPServer) handleGetFile(w http.ResponseWriter, r *http.Request) {
@@ -341,6 +341,7 @@ func (s *HTTPServer) handleGetFile(w http.ResponseWriter, r *http.Request) {
 	default:
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("Last-Modified", fi.ModTime().Format(http.TimeFormat))
+		s.cfg.Stats.FSFileRead(u.CharmID, fi.Size())
 	}
 	w.Header().Set("X-File-Mode", fmt.Sprintf("%d", fi.Mode()))
 	_, err = io.Copy(w, f)

@@ -31,6 +31,10 @@ type Stats struct {
 	getNews             prometheus.Counter
 	postNews            prometheus.Counter
 	getNewsList         prometheus.Counter
+	fsBytesRead         *prometheus.CounterVec
+	fsBytesWritten      *prometheus.CounterVec
+	fsReads             *prometheus.CounterVec
+	fsWritten           *prometheus.CounterVec
 	users               prometheus.Gauge
 	userNames           prometheus.Gauge
 	db                  db.DB
@@ -85,6 +89,8 @@ func NewStats(db db.DB, port int) *Stats {
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
+
+	fsLabels := []string{"charm_id"}
 	return &Stats{
 		apiLinkGenCalls:     newCounter("charm_id_api_link_gen_total", "Total API link gen calls"),
 		apiLinkRequestCalls: newCounter("charm_id_api_link_request_total", "Total api link request calls"),
@@ -102,6 +108,10 @@ func NewStats(db db.DB, port int) *Stats {
 		getNews:             newCounter("charm_news_get_news_total", "Total get news calls"),
 		postNews:            newCounter("charm_news_post_news_total", "Total post news calls"),
 		getNewsList:         newCounter("charm_news_get_news_list_total", "Total get news list calls"),
+		fsBytesRead:         newCounterWithLabels("charm_fs_bytes_read_total", "Total bytes read", fsLabels),
+		fsBytesWritten:      newCounterWithLabels("charm_fs_bytes_written_total", "Total bytes written", fsLabels),
+		fsReads:             newCounterWithLabels("charm_fs_files_read_total", "Total files read", fsLabels),
+		fsWritten:           newCounterWithLabels("charm_fs_files_written_total", "Total files read", fsLabels),
 		users:               newGauge("charm_bio_users", "Total users"),
 		userNames:           newGauge("charm_bio_users_names", "Total usernames"),
 		db:                  db,
@@ -190,11 +200,30 @@ func (ps *Stats) GetNewsList() {
 	ps.getNewsList.Inc()
 }
 
+// FSFileRead reports metrics on a read file by a given charm_id.
+func (ps *Stats) FSFileRead(id string, size int64) {
+	ps.fsReads.WithLabelValues(id).Inc()
+	ps.fsBytesRead.WithLabelValues(id).Add(float64(size))
+}
+
+// FSFileWritten reports metrics on a written file by a given charm_id.
+func (ps *Stats) FSFileWritten(id string, size int64) {
+	ps.fsWritten.WithLabelValues(id).Inc()
+	ps.fsBytesWritten.WithLabelValues(id).Add(float64(size))
+}
+
 func newCounter(name string, help string) prometheus.Counter {
 	return promauto.NewCounter(prometheus.CounterOpts{
 		Name: name,
 		Help: help,
 	})
+}
+
+func newCounterWithLabels(name string, help string, labels []string) *prometheus.CounterVec {
+	return promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: name,
+		Help: help,
+	}, labels)
 }
 
 func newGauge(name string, help string) prometheus.Gauge {

@@ -157,6 +157,16 @@ func (s *Stats) GetNewsList() {
 	s.increment("get_news_list")
 }
 
+// FSFileRead reports metrics on a read file.
+func (s *Stats) FSFileRead(_ string, _ int64) {
+	s.increment("fs_files_read")
+}
+
+// FSFileWritten reports metrics on a written file.
+func (s *Stats) FSFileWritten(_ string, _ int64) {
+	s.increment("fs_files_written")
+}
+
 // Close SQLite DB.
 func (s *Stats) Close() error {
 	return s.db.Close()
