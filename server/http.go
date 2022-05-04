@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 
-	charmfs "github.com/charmbracelet/charm/fs"
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/server/db"
 	"github.com/charmbracelet/charm/server/storage"
@@ -93,7 +92,7 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 	mux.HandleFunc(pat.Get("/v1/bio/:name"), s.handleGetUser)
 	mux.HandleFunc(pat.Post("/v1/bio"), s.handlePostUser)
 	mux.HandleFunc(pat.Post("/v1/encrypt-key"), s.handlePostEncryptKey)
-	mux.HandleFunc(pat.Head("/v1/fs/*"), s.handleHeadFile)
+	// NOTE: pat.Get handles both GET and HEAD requests.
 	mux.HandleFunc(pat.Get("/v1/fs/*"), s.handleGetFile)
 	mux.HandleFunc(pat.Post("/v1/fs/*"), s.handlePostFile)
 	mux.HandleFunc(pat.Delete("/v1/fs/*"), s.handleDeleteFile)
@@ -320,65 +319,54 @@ func (s *HTTPServer) handlePostFile(w http.ResponseWriter, r *http.Request) {
 	s.cfg.Stats.FSFileWritten(u.CharmID, fh.Size)
 }
 
-func (s *HTTPServer) writeFileHeaders(w http.ResponseWriter, f fs.FileInfo) {
-	w.Header().Set("X-Name", f.Name())
-	w.Header().Set("X-File-Mode", fmt.Sprintf("%d", f.Mode()))
-	w.Header().Set("X-Is-Dir", fmt.Sprintf("%t", f.IsDir()))
-	w.Header().Set("X-Last-Modified", f.ModTime().Format(http.TimeFormat))
-	w.Header().Set("X-Size", fmt.Sprintf("%d", f.Size()))
-	// Backwards compatibility with old clients
-	w.Header().Set("Last-Modified", f.ModTime().Format(http.TimeFormat))
-}
-
-func (s *HTTPServer) handleHeadFile(w http.ResponseWriter, r *http.Request) {
-	u := s.charmUserFromRequest(w, r)
-	path := pattern.Path(r.Context())
-	f, err := s.cfg.FileStore.Stat(u.CharmID, path)
-	if errors.Is(err, fs.ErrNotExist) {
-		s.renderCustomError(w, "file not found", http.StatusNotFound)
-		return
-	}
-	if err != nil {
-		log.Printf("cannot get file: %s", err)
-		s.renderError(w)
-		return
-	}
-	s.writeFileHeaders(w, f)
-}
-
 func (s *HTTPServer) handleGetFile(w http.ResponseWriter, r *http.Request) {
 	u := s.charmUserFromRequest(w, r)
 	path := filepath.Clean(pattern.Path(r.Context()))
-	f, err := s.cfg.FileStore.Get(u.CharmID, path)
+	fi, err := s.cfg.FileStore.Stat(u.CharmID, path)
 	if errors.Is(err, fs.ErrNotExist) {
 		s.renderCustomError(w, "file not found", http.StatusNotFound)
 		return
 	}
-	if err != nil {
-		log.Printf("cannot get file: %s", err)
-		s.renderError(w)
-		return
-	}
-	defer f.Close() // nolint:errcheck
-	fi, err := f.Stat()
 	if err != nil {
 		log.Printf("cannot get file info: %s", err)
 		s.renderError(w)
 		return
 	}
-
-	switch f.(type) {
-	case *charmfs.DirFile:
+	w.Header().Set("X-Name", fi.Name())
+	w.Header().Set("X-File-Mode", fmt.Sprintf("%d", fi.Mode()))
+	w.Header().Set("X-Is-Dir", fmt.Sprintf("%t", fi.IsDir()))
+	w.Header().Set("X-Last-Modified", fi.ModTime().Format(http.TimeFormat))
+	w.Header().Set("X-Size", fmt.Sprintf("%d", fi.Size()))
+	// Backwards compatibility with old clients
+	w.Header().Set("Last-Modified", fi.ModTime().Format(http.TimeFormat))
+	if fi.IsDir() {
 		w.Header().Set("Content-Type", "application/json")
-	default:
+	} else {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("Last-Modified", fi.ModTime().Format(http.TimeFormat))
 		s.cfg.Stats.FSFileRead(u.CharmID, fi.Size())
 	}
-	s.writeFileHeaders(w, fi)
-	_, err = io.Copy(w, f)
-	if err != nil {
-		log.Printf("cannot copy file: %s", err)
+	switch r.Method {
+	case "HEAD":
+	case "GET":
+		f, err := s.cfg.FileStore.Get(u.CharmID, path)
+		if errors.Is(err, fs.ErrNotExist) {
+			s.renderCustomError(w, "file not found", http.StatusNotFound)
+			return
+		}
+		if err != nil {
+			log.Printf("cannot get file: %s", err)
+			s.renderError(w)
+			return
+		}
+		defer f.Close() // nolint:errcheck
+		_, err = io.Copy(w, f)
+		if err != nil {
+			log.Printf("cannot copy file: %s", err)
+			s.renderError(w)
+			return
+		}
+	default:
 		s.renderError(w)
 		return
 	}

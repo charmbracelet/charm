@@ -110,14 +110,12 @@ func (lfs *LocalFileStore) Get(charmID string, path string) (fs.File, error) {
 			Files:   fis,
 		}
 		buf := bytes.NewBuffer(nil)
-		enc := json.NewEncoder(buf)
-		err = enc.Encode(dir)
-		if err != nil {
+		if err := json.NewEncoder(buf).Encode(dir); err != nil {
 			return nil, err
 		}
-		return &charmfs.DirFile{
-			Buffer:   buf,
-			FileInfo: info,
+		return &charmfs.File{
+			Data: io.NopCloser(buf),
+			Info: info,
 		}, nil
 	}
 	return f, nil

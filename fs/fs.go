@@ -38,8 +38,8 @@ type FS struct {
 
 // File implements the fs.File interface.
 type File struct {
-	data io.ReadCloser
-	info *FileInfo
+	Data io.ReadCloser
+	Info fs.FileInfo
 }
 
 // FileInfo implements the fs.FileInfo interface.
@@ -56,30 +56,6 @@ type readDirFileFS interface {
 type sysFuture struct {
 	fs   readDirFileFS
 	path string
-}
-
-// DirFile is a fs.File that represents a directory entry.
-type DirFile struct {
-	Buffer   *bytes.Buffer
-	FileInfo fs.FileInfo
-}
-
-// Stat returns a fs.FileInfo.
-func (df *DirFile) Stat() (fs.FileInfo, error) {
-	if df.FileInfo == nil {
-		return nil, fmt.Errorf("missing file info")
-	}
-	return df.FileInfo, nil
-}
-
-// Read reads from the DirFile and satisfies fs.FS.
-func (df *DirFile) Read(buf []byte) (int, error) {
-	return df.Buffer.Read(buf)
-}
-
-// Close is a no-op but satisfies fs.FS.
-func (df *DirFile) Close() error {
-	return nil
 }
 
 // NewFS returns an FS with the default configuration.
@@ -154,7 +130,7 @@ func (cfs *FS) Open(name string) (fs.File, error) {
 	if err != nil {
 		return nil, err
 	}
-	f.info = info.(*FileInfo)
+	f.Info = info.(*FileInfo)
 	return f, nil
 }
 
@@ -225,9 +201,7 @@ func (cfs *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 	case "application/json":
 		dirs := []fs.DirEntry{}
 		dir := &charm.FileInfo{}
-		dec := json.NewDecoder(resp.Body)
-		err = dec.Decode(&dir)
-		if err != nil {
+		if err := json.NewDecoder(resp.Body).Decode(&dir); err != nil {
 			return nil, pathError("open", name, err)
 		}
 		for _, e := range dir.Files {
@@ -366,21 +340,21 @@ func (cfs *FS) Client() *client.Client {
 
 // Stat returns an fs.FileInfo that describes the file.
 func (f *File) Stat() (fs.FileInfo, error) {
-	return f.info, nil
+	return f.Info, nil
 }
 
 // Read reads bytes from the file returning number of bytes read or an error.
 // The error io.EOF will be returned when there is nothing else to read.
 func (f *File) Read(b []byte) (int, error) {
-	if f.data == nil {
-		sys := f.info.Sys().(*sysFuture)
+	if f.Data == nil {
+		sys := f.Info.Sys().(*sysFuture)
 		b, err := sys.fs.ReadFile(sys.path)
 		if err != nil {
 			return 0, err
 		}
-		f.data = io.NopCloser(bytes.NewBuffer(b))
+		f.Data = io.NopCloser(bytes.NewBuffer(b))
 	}
-	return f.data.Read(b)
+	return f.Data.Read(b)
 }
 
 // ReadDir returns the directory entries for the directory file. If needed, the
@@ -394,8 +368,8 @@ func (f *File) ReadDir(n int) ([]fs.DirEntry, error) {
 	if !fi.IsDir() {
 		return nil, ErrNotDir
 	}
-	if f.data == nil {
-		sys := f.info.Sys().(*sysFuture)
+	if f.Data == nil {
+		sys := f.Info.Sys().(*sysFuture)
 		dirs, err = sys.fs.ReadDir(sys.path)
 		if err != nil {
 			return nil, err
@@ -405,9 +379,9 @@ func (f *File) ReadDir(n int) ([]fs.DirEntry, error) {
 		if err != nil {
 			return nil, err
 		}
-		f.data = io.NopCloser(data)
+		f.Data = io.NopCloser(data)
 	} else {
-		err = json.NewDecoder(f.data).Decode(&dirs)
+		err = json.NewDecoder(f.Data).Decode(&dirs)
 		if err != nil {
 			return nil, err
 		}
@@ -420,15 +394,10 @@ func (f *File) ReadDir(n int) ([]fs.DirEntry, error) {
 
 // Close closes the underlying file datasource.
 func (f *File) Close() error {
-<<<<<<< Updated upstream
-	// directories won't have data
-	if f.data == nil {
-=======
 	if f.Data == nil {
->>>>>>> Stashed changes
 		return nil
 	}
-	return f.data.Close()
+	return f.Data.Close()
 }
 
 // Name returns the file name.
