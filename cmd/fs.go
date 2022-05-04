@@ -89,14 +89,6 @@ var (
 		Args:   cobra.ExactArgs(1),
 		RunE:   fsTree,
 	}
-
-	fsMountCmd = &cobra.Command{
-		Use:    "mount PATH",
-		Hidden: false,
-		Short:  "Mount Charm file system at path.",
-		Args:   cobra.ExactArgs(1),
-		RunE:   fsMount,
-	}
 )
 
 func newLocalRemoteFS() (*localRemoteFS, error) {
@@ -370,5 +362,4 @@ func init() {
 	FSCmd.AddCommand(fsMoveCmd)
 	FSCmd.AddCommand(fsListCmd)
 	FSCmd.AddCommand(fsTreeCmd)
-	FSCmd.AddCommand(fsMountCmd)
 }
