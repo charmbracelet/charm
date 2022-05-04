@@ -33,6 +33,8 @@ const (
 	get_news integer NOT NULL DEFAULT 0,
 	post_news integer NOT NULL DEFAULT 0,
 	get_news_list integer NOT NULL DEFAULT 0,
+	fs_files_read integer NOT NULL DEFAULT 0,
+	fs_files_written integer NOT NULL DEFAULT 0,
 	created_at timestamp default current_timestamp
 	)`
 )
