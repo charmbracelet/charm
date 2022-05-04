@@ -2,8 +2,8 @@ package localstorage
 
 import (
 	"bytes"
+	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -53,7 +53,7 @@ func TestPut(t *testing.T) {
 			t.Fatalf("expected file %s to be a regular file", path)
 		}
 
-		read, err := ioutil.ReadAll(file)
+		read, err := io.ReadAll(file)
 		if err != nil {
 			t.Fatalf("expected no error when reading file %s", path)
 		}
@@ -86,7 +86,7 @@ func TestPut(t *testing.T) {
 			t.Fatalf("expected file %s to be a regular file", path)
 		}
 
-		read, err := ioutil.ReadAll(file)
+		read, err := io.ReadAll(file)
 		if err != nil {
 			t.Fatalf("expected no error when reading file %s", path)
 		}

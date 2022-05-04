@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -80,7 +79,7 @@ func validateDirectory(path string) error {
 			return fmt.Errorf("%v is not a directory, but it should be", path)
 		}
 
-		files, err := ioutil.ReadDir(path)
+		files, err := os.ReadDir(path)
 		if err != nil {
 			return err
 		}

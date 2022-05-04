@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"ioutil"
 	"os"
 
 	charmfs "github.com/charmbracelet/charm/fs"
@@ -24,7 +23,7 @@ func main() {
 	}
 	// Write a file
 	data := []byte("some data")
-	err = ioutil.WriteFile("/tmp/data", data, 0644)
+	err = os.WriteFile("/tmp/data", data, 0644)
 	if err != nil {
 		panic(err)
 	}
