@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sync"
 	"syscall"
 	"time"
 
@@ -60,6 +61,8 @@ type File struct {
 	writers uint
 	// only valid if writers > 0
 	data []byte
+
+	mu sync.Mutex
 }
 
 func (m *Mount) Root() (bfs.Node, error) {
@@ -263,7 +266,7 @@ func (d *Dir) ReadDirAll(_ context.Context) ([]fuse.Dirent, error) {
 }
 
 // Attr returns this node's filesystem attributes.
-func (f *File) Attr(_ context.Context, a *fuse.Attr) error {
+func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
 	// fmt.Println("Attr:", f.Path(), f.Size)
 	// a.Inode = f.Inode
 
@@ -276,6 +279,9 @@ func (f *File) Attr(_ context.Context, a *fuse.Attr) error {
 		a.Mode = st.Mode()
 		a.Size = uint64(st.Size())
 	*/
+
+	f.mu.Lock()
+	defer f.mu.Unlock()
 
 	a.Mode = f.Mode
 	a.Size = f.Size
@@ -409,7 +415,10 @@ func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir bfs.No
 	dst := filepath.Join(newDir.(*Dir).Path(), req.NewName)
 	fmt.Printf("Renaming %s to %s\n", ff.Path(), dst)
 
-	ff.ReadAll(ctx)
+	ff.ReadItAll(ctx)
+
+	ff.mu.Lock()
+	defer ff.mu.Unlock()
 
 	if err := d.Mount.lsfs.WriteFile(dst, &NodeFile{ff, bytes.NewReader(ff.data)}); err != nil {
 		return err
@@ -426,18 +435,57 @@ func (f *File) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 		return nil
 	}
 
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	fmt.Printf("Releasing %s %d\n", f.Path(), len(f.data))
 
 	f.writers--
 	if f.writers == 0 {
 		//TODO: uncache?
-		//		node.data = nil
+		// f.data = nil
 	}
 	return nil
 }
 
+func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	fn := func(b []byte) {
+		fuseutil.HandleRead(req, resp, b)
+	}
+
+	if len(f.data) == 0 {
+		fm, err := f.Mount.lsfs.Open(f.Path())
+		if err != nil {
+			return err
+		}
+		defer fm.Close()
+
+		fi, err := fm.Stat()
+		if err != nil {
+			return err
+		}
+		if fi.IsDir() {
+			return fmt.Errorf("cat: %s: Is a directory", f.Path())
+		}
+
+		f.data, err = io.ReadAll(fm)
+		if err != nil {
+			return err
+		}
+	}
+
+	fn(f.data)
+	return nil
+}
+
 // ReadAll reads an entire archive's content.
-func (f *File) ReadAll(_ context.Context) ([]byte, error) {
+func (f *File) ReadItAll(_ context.Context) ([]byte, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	fmt.Println("ReadAll:", f.Path())
 	if f.Mount.cache && len(f.data) > 0 {
 		fmt.Println("ReadAll cached!")
@@ -465,6 +513,9 @@ func (f *File) ReadAll(_ context.Context) ([]byte, error) {
 const maxInt = int(^uint(0) >> 1)
 
 func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	fmt.Printf("Writing %d bytes to %s\n", len(req.Data), f.Path())
 	// expand the buffer if necessary
 	newLen := req.Offset + int64(len(req.Data))
@@ -484,6 +535,9 @@ func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.Wri
 var _ = bfs.HandleFlusher(&File{})
 
 func (f *File) Flush(ctx context.Context, req *fuse.FlushRequest) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	fmt.Printf("Flushing %s %d %d\n", f.Path(), len(f.data), f.writers)
 	if f.writers == 0 {
 		// Read-only handles also get flushes. Make sure we don't
@@ -502,6 +556,9 @@ func (f *File) Flush(ctx context.Context, req *fuse.FlushRequest) error {
 var _ = bfs.NodeSetattrer(&File{})
 
 func (f *File) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fuse.SetattrResponse) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	fmt.Println("Setattr for", f.Path(), req.String())
 	if req.Valid.Mode() {
 		f.Mode = req.Mode
