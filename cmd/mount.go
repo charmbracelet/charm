@@ -597,6 +597,16 @@ func (f *File) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fuse
 
 func (f *File) Fsync(ctx context.Context, req *fuse.FsyncRequest) error {
 	fmt.Println("Fsync for", f.Path(), req.String())
+
+	if f.writers == 0 {
+		// Read-only handles also get flushes. Make sure we don't
+		// overwrite valid file contents with a nil buffer.
+		return nil
+	}
+
+	if err := f.Mount.lsfs.WriteFile(f.Path(), &NodeFile{f, bytes.NewReader(f.data)}); err != nil {
+		return err
+	}
 	f.Size = uint64(len(f.data))
 	return nil
 }
