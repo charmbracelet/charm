@@ -1,5 +1,5 @@
-//go:build !openbsd && !windows
-// +build !openbsd,!windows
+//go:build !openbsd && !windows && !darwin
+// +build !openbsd,!windows,!darwin
 
 package cmd
 
@@ -132,7 +132,8 @@ func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
 
 // Lookup is used to stat items.
 func (d *Dir) Lookup(_ context.Context, name string) (bfs.Node, error) {
-	fmt.Println("Lookup:", filepath.Join(d.Path(), name))
+	path := filepath.Join(d.Path(), name)
+	fmt.Println("Lookup:", path)
 
 	if d.Mount.cache {
 		if item, ok := d.Items[name]; ok {
@@ -149,20 +150,21 @@ func (d *Dir) Lookup(_ context.Context, name string) (bfs.Node, error) {
 		}
 	}
 
-	st, err := fs.Stat(d.Mount.lsfs, filepath.Join(d.Path(), name))
+	st, err := fs.Stat(d.Mount.lsfs, path)
 	if err != nil {
 		d.Items[name] = nil
 		return nil, fuse.ENOENT
 	}
 
 	if st.IsDir() {
-		return &Dir{
+		dir := &Dir{
 			Mount:  d.Mount,
 			Parent: d,
 			Name:   name,
 			Mode:   st.Mode(),
 			Items:  make(map[string]interface{}),
-		}, nil
+		}
+		return dir, nil
 	}
 
 	return &File{
@@ -189,6 +191,7 @@ func (d *Dir) ReadDirAll(_ context.Context) ([]fuse.Dirent, error) {
 					Type: fuse.DT_Dir,
 				})
 			case *File:
+				// fmt.Println("Adding file:", item.(*File).Path(), item.(*File).Size)
 				entries = append(entries, fuse.Dirent{
 					Name: name,
 					Type: fuse.DT_File,
@@ -251,7 +254,7 @@ func (d *Dir) ReadDirAll(_ context.Context) ([]fuse.Dirent, error) {
 
 // Attr returns this node's filesystem attributes.
 func (f *File) Attr(_ context.Context, a *fuse.Attr) error {
-	// fmt.Println("Attr:", f.Path())
+	// fmt.Println("Attr:", f.Path(), f.Size)
 	// a.Inode = f.Inode
 
 	/*
@@ -512,6 +515,7 @@ func (f *File) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fuse
 
 func (f *File) Fsync(ctx context.Context, req *fuse.FsyncRequest) error {
 	fmt.Println("Fsync for", f.Path(), req.String())
+	f.Size = uint64(len(f.data))
 	return nil
 }
 
