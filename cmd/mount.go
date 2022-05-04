@@ -432,10 +432,16 @@ func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir bfs.No
 	if err := d.Mount.lsfs.WriteFile(dst, &NodeFile{ff, bytes.NewReader(ff.data)}); err != nil {
 		return err
 	}
+	if err := d.Mount.lsfs.Remove(ff.Path()); err != nil {
+		return err
+	}
 
 	d.Items[req.OldName] = nil
+	ff.Name = req.NewName
+	ff.Parent = newDir.(*Dir)
+	newDir.(*Dir).Items[req.NewName] = ff
 
-	return d.Mount.lsfs.Remove(ff.Path())
+	return nil
 }
 
 func (f *File) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
