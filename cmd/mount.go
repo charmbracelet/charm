@@ -21,6 +21,16 @@ import (
 	"golang.org/x/net/context"
 )
 
+var (
+	fsMountCmd = &cobra.Command{
+		Use:    "mount PATH",
+		Hidden: false,
+		Short:  "Mount Charm file system at path.",
+		Args:   cobra.ExactArgs(1),
+		RunE:   fsMount,
+	}
+)
+
 type Mount struct {
 	lsfs  *cfs.FS
 	cache bool
@@ -561,4 +571,8 @@ func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
 	d.Items[req.Name] = nil
 
 	return d.Mount.lsfs.Remove(filepath.Join(d.Path(), req.Name))
+}
+
+func init() {
+	FSCmd.AddCommand(fsMountCmd)
 }
