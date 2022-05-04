@@ -181,11 +181,8 @@ func (cfs *FS) ReadFile(name string) ([]byte, error) {
 // configured Charm Cloud server. The fs.FileMode is retained. If the file is
 // in a directory that doesn't exist, it and any needed subdirectories are
 // created.
-func (cfs *FS) WriteFile(name string, src fs.File) error {
-	info, err := src.Stat()
-	if err != nil {
-		return err
-	}
+func (cfs *FS) WriteFile(name string, data []byte, perm fs.FileMode) error {
+	src := bytes.NewBuffer(data)
 	ebuf := bytes.NewBuffer(nil)
 	eb, err := cfs.crypt.NewEncryptedWriter(ebuf)
 	if err != nil {
@@ -257,7 +254,7 @@ func (cfs *FS) WriteFile(name string, src fs.File) error {
 	if err != nil {
 		return err
 	}
-	path := fmt.Sprintf("/v1/fs/%s?mode=%d", ep, info.Mode())
+	path := fmt.Sprintf("/v1/fs/%s?mode=%d", ep, perm)
 	headers := http.Header{
 		"Content-Type":   {w.FormDataContentType()},
 		"Content-Length": {fmt.Sprintf("%d", contentLength)},

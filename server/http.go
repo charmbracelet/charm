@@ -281,7 +281,12 @@ func (s *HTTPServer) handlePostSeq(w http.ResponseWriter, r *http.Request) {
 func (s *HTTPServer) handlePostFile(w http.ResponseWriter, r *http.Request) {
 	u := s.charmUserFromRequest(w, r)
 	path := filepath.Clean(pattern.Path(r.Context()))
-	ms := r.URL.Query().Get("mode")
+	ms := r.Header.Get("X-File-Mode")
+	if ms == "" {
+		// Deprecated: remove in next release
+		ms = r.URL.Query().Get("mode")
+		log.Printf("deprecated: use X-File-Mode header instead of mode query param. Please update your client.")
+	}
 	m, err := strconv.ParseUint(ms, 10, 32)
 	if err != nil {
 		log.Printf("file mode not a number: %s", err)
