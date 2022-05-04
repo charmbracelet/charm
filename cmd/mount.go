@@ -17,6 +17,7 @@ import (
 
 	"bazil.org/fuse"
 	bfs "bazil.org/fuse/fs"
+	"bazil.org/fuse/fuseutil"
 	cfs "github.com/charmbracelet/charm/fs"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
@@ -353,13 +354,21 @@ func (f *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenR
 		return f, nil
 	}
 
-	if f.writers == 0 {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	if f.writers == 0 && f.data == nil {
+		f.mu.Unlock()
+
 		// load data
 		var err error
-		f.data, err = f.ReadAll(ctx)
+		f.data, err = f.ReadItAll(ctx)
 		if err != nil {
 			return nil, err
 		}
+		f.Size = uint64(len(f.data))
+
+		f.mu.Lock()
 	}
 
 	f.writers++
