@@ -35,6 +35,8 @@ var (
 
 type Mount struct {
 	lsfs  *cfs.FS
+	uid   uint32
+	gid   uint32
 	cache bool
 }
 
@@ -135,8 +137,8 @@ func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
 		a.Size = uint64(st.Size())
 	*/
 
-	a.Uid = uint32(os.Getuid())
-	a.Gid = uint32(os.Getgid())
+	a.Uid = d.Mount.uid
+	a.Gid = d.Mount.gid
 	if a.Mode == 0 {
 		a.Mode = os.ModeDir | 0700
 	}
@@ -287,8 +289,8 @@ func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Mode = f.Mode
 	a.Size = f.Size
 
-	a.Uid = uint32(os.Getuid())
-	a.Gid = uint32(os.Getgid())
+	a.Uid = f.Mount.uid
+	a.Gid = f.Mount.gid
 	if a.Mode == 0 {
 		a.Mode = 0644
 	}
