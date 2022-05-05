@@ -1,8 +1,12 @@
 package stats
 
+import "context"
+
 // Stats provides an interface that different stats backend can implement to
 // track server usage.
 type Stats interface {
+	Start() error
+	Shutdown(context.Context) error
 	APILinkGen()
 	APILinkRequest()
 	APIUnlink()
