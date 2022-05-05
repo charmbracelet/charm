@@ -125,6 +125,10 @@ new ones. Users can also easily link multiple machines to their account, and
 linked machines will seamlessly gain access to their owners Charm data. Of
 course, users can revoke machines’ access too.
 
+### Backups
+
+You can use `charm backup-keys` to backup your account keys. Your account can be recovered using `charm import-keys charm-keys-backup.tar`
+
 ## Charm Client
 
 The [`charm`][releases] binary also includes easy access to a lot of the functionality
@@ -227,7 +231,7 @@ To set up TLS, you should set `CHARM_SERVER_USE_TLS` to `true`, and specify
 
 * [Glow][glow]: Render markdown on the CLI, with pizzazz! 💅🏻
 * [Skate][skate]: A personal key-value store 🛼
-* Your app here! Let us know what you build: [vt100@charm.sh](mailto:vt100@charm.sh)
+* Your app here! [Let us know what you build](https://twitter.com/charmcli)
 
 ## Feedback
 
