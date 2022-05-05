@@ -96,12 +96,22 @@ func (cfs *FS) Stat(name string) (fs.FileInfo, error) {
 		return nil, pathError("stat", name, err)
 	}
 	defer resp.Body.Close() // nolint:errcheck
+	eName := path.Base(ep)
+	if eName == "." {
+		eName = ""
+	}
+	// Error if the header file name doesn't match the expected encrypted name.
+	// This is a sanity check to ensure that the server is using the right
+	// version.
 	fileName := resp.Header.Get("X-Name")
-	if fileName == "" {
-		fileName = name
+	if fileName != eName {
+		return nil, pathError("stat", name, fs.ErrInvalid)
 	}
 	fileMode := resp.Header.Get("X-File-Mode")
-	mode, _ := strconv.ParseInt(fileMode, 10, 64)
+	mode, err := strconv.ParseInt(fileMode, 10, 64)
+	if err != nil {
+		return nil, pathError("stat", name, err)
+	}
 	isDir := resp.Header.Get("X-Is-Dir")
 	lastModified := resp.Header.Get("X-Last-Modified")
 	if lastModified == "" {
@@ -112,7 +122,10 @@ func (cfs *FS) Stat(name string) (fs.FileInfo, error) {
 		return nil, pathError("stat", name, err)
 	}
 	fileSize := resp.Header.Get("X-Size")
-	size, _ := strconv.ParseInt(fileSize, 10, 64)
+	size, err := strconv.ParseInt(fileSize, 10, 64)
+	if err != nil {
+		return nil, pathError("stat", name, err)
+	}
 	info.FileInfo = charm.FileInfo{
 		Name:    path.Base(fileName),
 		Mode:    fs.FileMode(mode),
@@ -441,14 +454,21 @@ func (fi *FileInfo) Info() (fs.FileInfo, error) {
 }
 
 // EncryptPath returns the encrypted path for a given path.
-func (cfs *FS) EncryptPath(path string) (string, error) {
+func (cfs *FS) EncryptPath(p string) (string, error) {
 	eps := make([]string, 0)
-	path = strings.TrimPrefix(path, "charm:")
-	ps := strings.Split(path, "/")
+	p = strings.TrimPrefix(p, "charm:")
+	p = path.Clean(p)
+	if p == "." || p == "/" {
+		p = ""
+	}
+	ps := strings.Split(p, "/")
 	for _, p := range ps {
 		ep, err := cfs.crypt.EncryptLookupField(p)
 		if err != nil {
 			return "", err
+		}
+		if ep == "" {
+			continue
 		}
 		eps = append(eps, ep)
 	}
