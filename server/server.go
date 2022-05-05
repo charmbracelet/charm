@@ -149,9 +149,11 @@ func NewServer(cfg *Config) (*Server, error) {
 // Start starts the HTTP, SSH and health HTTP servers for the Charm Cloud.
 func (srv *Server) Start() error {
 	errg := errgroup.Group{}
-	errg.Go(func() error {
-		return srv.Config.Stats.Start()
-	})
+	if srv.Config.Stats != nil {
+		errg.Go(func() error {
+			return srv.Config.Stats.Start()
+		})
+	}
 	errg.Go(func() error {
 		return srv.http.Start()
 	})
@@ -163,8 +165,10 @@ func (srv *Server) Start() error {
 
 // Shutdown shuts down the HTTP, and SSH and health HTTP servers for the Charm Cloud.
 func (srv *Server) Shutdown(ctx context.Context) error {
-	if err := srv.Config.Stats.Shutdown(ctx); err != nil {
-		return err
+	if srv.Config.Stats != nil {
+		if err := srv.Config.Stats.Shutdown(ctx); err != nil {
+			return err
+		}
 	}
 	if err := srv.ssh.Shutdown(ctx); err != nil {
 		return err
