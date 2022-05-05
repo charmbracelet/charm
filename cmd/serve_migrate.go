@@ -33,7 +33,6 @@ var ServeMigrationCmd = &cobra.Command{
 		db := sqlite.NewDB(dp)
 		for _, m := range []migration.Migration{
 			migration.Migration0001,
-			migration.Migration0002,
 		} {
 			log.Printf("Running migration: %04d %s\n", m.ID, m.Name)
 			err = db.WrapTransaction(func(tx *sql.Tx) error {
