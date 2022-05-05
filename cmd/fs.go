@@ -322,6 +322,9 @@ func fsTree(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	err = fs.WalkDir(lsfs, args[0], func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
 		fmt.Println(path)
 		return nil
 	})
