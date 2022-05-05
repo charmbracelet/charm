@@ -14,6 +14,7 @@ import (
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/server/db"
 	"github.com/charmbracelet/charm/server/db/sqlite"
+	"github.com/charmbracelet/charm/server/stats"
 	"github.com/charmbracelet/charm/server/stats/prometheus"
 	"github.com/charmbracelet/charm/server/storage"
 	lfs "github.com/charmbracelet/charm/server/storage/local"
@@ -41,7 +42,7 @@ type Config struct {
 	PrivateKey     []byte
 	DB             db.DB
 	FileStore      storage.FileStore
-	Stats          *prometheus.Stats
+	Stats          stats.Stats
 	linkQueue      charm.LinkQueue
 	tlsConfig      *tls.Config
 	jwtKeyPair     JSONWebKeyPair
@@ -79,7 +80,7 @@ func (cfg *Config) WithFileStore(fs storage.FileStore) *Config {
 }
 
 // WithStats returns a Config with the provided Stats implementation.
-func (cfg *Config) WithStats(s *prometheus.Stats) *Config {
+func (cfg *Config) WithStats(s stats.Stats) *Config {
 	cfg.Stats = s
 	return cfg
 }
