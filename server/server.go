@@ -16,7 +16,6 @@ import (
 	"github.com/charmbracelet/charm/server/db/sqlite"
 	"github.com/charmbracelet/charm/server/stats"
 	"github.com/charmbracelet/charm/server/stats/prometheus"
-	sls "github.com/charmbracelet/charm/server/stats/sqlite"
 	"github.com/charmbracelet/charm/server/storage"
 	lfs "github.com/charmbracelet/charm/server/storage/local"
 	gossh "golang.org/x/crypto/ssh"
@@ -55,7 +54,6 @@ type Server struct {
 	Config *Config
 	ssh    *SSHServer
 	http   *HTTPServer
-	stats  *prometheus.Stats
 }
 
 // DefaultConfig returns a Config with the values populated with the defaults
@@ -145,19 +143,15 @@ func NewServer(cfg *Config) (*Server, error) {
 		return nil, err
 	}
 	s.http = hs
-	if cfg.EnableMetrics {
-		s.stats = prometheus.NewStats(cfg.DB, cfg.StatsPort)
-		cfg.Stats = s.stats
-	}
 	return s, nil
 }
 
 // Start starts the HTTP, SSH and health HTTP servers for the Charm Cloud.
 func (srv *Server) Start() error {
-	errg, _ := errgroup.WithContext(context.Background())
-	if srv.stats != nil {
+	errg := errgroup.Group{}
+	if srv.Config.Stats != nil {
 		errg.Go(func() error {
-			return srv.stats.Start()
+			return srv.Config.Stats.Start()
 		})
 	}
 	errg.Go(func() error {
@@ -171,8 +165,8 @@ func (srv *Server) Start() error {
 
 // Shutdown shuts down the HTTP, and SSH and health HTTP servers for the Charm Cloud.
 func (srv *Server) Shutdown(ctx context.Context) error {
-	if srv.stats != nil {
-		if err := srv.stats.Shutdown(ctx); err != nil {
+	if srv.Config.Stats != nil {
+		if err := srv.Config.Stats.Shutdown(ctx); err != nil {
 			return err
 		}
 	}
@@ -221,10 +215,6 @@ func (srv *Server) init(cfg *Config) {
 		srv.Config = cfg.WithFileStore(fs)
 	}
 	if cfg.Stats == nil {
-		sts, err := sls.NewStats(filepath.Join(cfg.DataDir, "stats"))
-		if err != nil {
-			log.Fatalf("could not init stats db: %s", err)
-		}
-		srv.Config = cfg.WithStats(sts)
+		srv.Config = cfg.WithStats(prometheus.NewStats(cfg.DB, cfg.StatsPort))
 	}
 }
