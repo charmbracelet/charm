@@ -352,7 +352,7 @@ func (nf *NodeFile) Name() string {
 
 // Size returns the size of the file.
 func (nf *NodeFile) Size() int64 {
-	return int64(nf.node.Size)
+	return int64(len(nf.node.data))
 }
 
 // Mode returns the file mode bits.
