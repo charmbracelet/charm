@@ -188,6 +188,9 @@ func (cfs *FS) ReadFile(name string) ([]byte, error) {
 // ReadDir reads the named directory and returns a list of directory entries.
 func (cfs *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 	f, err := cfs.Open(name)
+	if errors.Is(err, fs.ErrNotExist) {
+		return []fs.DirEntry{}, nil
+	}
 	if err != nil {
 		return nil, err
 	}
