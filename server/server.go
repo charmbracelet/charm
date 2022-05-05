@@ -14,9 +14,7 @@ import (
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/server/db"
 	"github.com/charmbracelet/charm/server/db/sqlite"
-	"github.com/charmbracelet/charm/server/stats"
 	"github.com/charmbracelet/charm/server/stats/prometheus"
-	sls "github.com/charmbracelet/charm/server/stats/sqlite"
 	"github.com/charmbracelet/charm/server/storage"
 	lfs "github.com/charmbracelet/charm/server/storage/local"
 	gossh "golang.org/x/crypto/ssh"
@@ -43,7 +41,7 @@ type Config struct {
 	PrivateKey     []byte
 	DB             db.DB
 	FileStore      storage.FileStore
-	Stats          stats.Stats
+	Stats          *prometheus.Stats
 	linkQueue      charm.LinkQueue
 	tlsConfig      *tls.Config
 	jwtKeyPair     JSONWebKeyPair
@@ -55,7 +53,6 @@ type Server struct {
 	Config *Config
 	ssh    *SSHServer
 	http   *HTTPServer
-	stats  *prometheus.Stats
 }
 
 // DefaultConfig returns a Config with the values populated with the defaults
@@ -82,7 +79,7 @@ func (cfg *Config) WithFileStore(fs storage.FileStore) *Config {
 }
 
 // WithStats returns a Config with the provided Stats implementation.
-func (cfg *Config) WithStats(s stats.Stats) *Config {
+func (cfg *Config) WithStats(s *prometheus.Stats) *Config {
 	cfg.Stats = s
 	return cfg
 }
@@ -145,20 +142,15 @@ func NewServer(cfg *Config) (*Server, error) {
 		return nil, err
 	}
 	s.http = hs
-	if cfg.EnableMetrics {
-		s.stats = prometheus.NewStats(cfg.DB, cfg.StatsPort)
-	}
 	return s, nil
 }
 
 // Start starts the HTTP, SSH and health HTTP servers for the Charm Cloud.
 func (srv *Server) Start() error {
-	errg, _ := errgroup.WithContext(context.Background())
-	if srv.stats != nil {
-		errg.Go(func() error {
-			return srv.stats.Start()
-		})
-	}
+	errg := errgroup.Group{}
+	errg.Go(func() error {
+		return srv.Config.Stats.Start()
+	})
 	errg.Go(func() error {
 		return srv.http.Start()
 	})
@@ -170,10 +162,8 @@ func (srv *Server) Start() error {
 
 // Shutdown shuts down the HTTP, and SSH and health HTTP servers for the Charm Cloud.
 func (srv *Server) Shutdown(ctx context.Context) error {
-	if srv.stats != nil {
-		if err := srv.stats.Shutdown(ctx); err != nil {
-			return err
-		}
+	if err := srv.Config.Stats.Shutdown(ctx); err != nil {
+		return err
 	}
 	if err := srv.ssh.Shutdown(ctx); err != nil {
 		return err
@@ -205,7 +195,7 @@ func (srv *Server) Close() error {
 func (srv *Server) init(cfg *Config) {
 	if cfg.DB == nil {
 		dp := filepath.Join(cfg.DataDir, "db")
-		err := storage.EnsureDir(dp, 0700)
+		err := storage.EnsureDir(dp, 0o700)
 		if err != nil {
 			log.Fatalf("could not init sqlite path: %s", err)
 		}
@@ -220,10 +210,6 @@ func (srv *Server) init(cfg *Config) {
 		srv.Config = cfg.WithFileStore(fs)
 	}
 	if cfg.Stats == nil {
-		sts, err := sls.NewStats(filepath.Join(cfg.DataDir, "stats"))
-		if err != nil {
-			log.Fatalf("could not init stats db: %s", err)
-		}
-		srv.Config = cfg.WithStats(sts)
+		srv.Config = cfg.WithStats(prometheus.NewStats(cfg.DB, cfg.StatsPort))
 	}
 }
