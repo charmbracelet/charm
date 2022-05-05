@@ -41,9 +41,13 @@ func (lfs *LocalFileStore) Stat(charmID, path string) (fs.FileInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+	name := i.Name()
+	if name == charmID {
+		name = ""
+	}
 	in := &charmfs.FileInfo{
 		FileInfo: charm.FileInfo{
-			Name:    i.Name(),
+			Name:    name,
 			IsDir:   i.IsDir(),
 			Size:    i.Size(),
 			ModTime: i.ModTime(),
@@ -69,7 +73,7 @@ func (lfs *LocalFileStore) Stat(charmID, path string) (fs.FileInfo, error) {
 // Get returns an fs.File for the given Charm ID and path.
 func (lfs *LocalFileStore) Get(charmID string, path string) (fs.File, error) {
 	fp := filepath.Join(lfs.Path, charmID, path)
-	info, err := os.Stat(fp)
+	info, err := lfs.Stat(charmID, path)
 	if os.IsNotExist(err) {
 		return nil, fs.ErrNotExist
 	}
@@ -103,8 +107,8 @@ func (lfs *LocalFileStore) Get(charmID string, path string) (fs.File, error) {
 		}
 		dir := charm.FileInfo{
 			Name:    info.Name(),
-			IsDir:   true,
-			Size:    0,
+			IsDir:   info.IsDir(),
+			Size:    info.Size(),
 			ModTime: info.ModTime(),
 			Mode:    info.Mode(),
 			Files:   fis,
