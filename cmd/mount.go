@@ -33,6 +33,7 @@ var (
 	}
 )
 
+// Mount is a charmfs FUSE mount.
 type Mount struct {
 	lsfs  *cfs.FS
 	uid   uint32
@@ -68,6 +69,7 @@ type File struct {
 	mu sync.Mutex
 }
 
+// Root returns the root directory.
 func (m *Mount) Root() (bfs.Node, error) {
 	return &Dir{
 		Mount: m,
@@ -75,6 +77,7 @@ func (m *Mount) Root() (bfs.Node, error) {
 	}, nil
 }
 
+// Statfs is called to obtain file system metadata.
 func (m *Mount) Statfs(ctx context.Context, req *fuse.StatfsRequest, resp *fuse.StatfsResponse) error {
 	/*
 		Blocks  uint64 // Total data blocks in file system.
@@ -99,6 +102,7 @@ func (m *Mount) Statfs(ctx context.Context, req *fuse.StatfsRequest, resp *fuse.
 	return nil
 }
 
+// Path returns the full path in the Charm Cloud to the dir.
 func (d *Dir) Path() string {
 	if d.Parent == nil {
 		return "/"
@@ -113,6 +117,7 @@ func (d *Dir) Path() string {
 	return filepath.Join("/", r, d.Name)
 }
 
+// Path returns the full path in the Charm Cloud to the file.
 func (f *File) Path() string {
 	r := ""
 	p := f.Parent
@@ -123,6 +128,7 @@ func (f *File) Path() string {
 	return filepath.Join("/", r, f.Name)
 }
 
+// Attr returns the file attributes.
 func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
 	// fmt.Println("Attr:", d.Path())
 	// a.Inode = node.Inode
@@ -298,6 +304,336 @@ func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
 	return nil
 }
 
+// Open opens a file.
+func (f *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (bfs.Handle, error) {
+	fmt.Printf("Opening %s\n", f.Path())
+
+	if req.Flags.IsReadOnly() {
+		// we don't need to track read-only handles
+		return f, nil
+	}
+
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	if f.writers == 0 && f.data == nil {
+		f.mu.Unlock()
+
+		// load data
+		var err error
+		f.data, err = f.ReadItAll(ctx)
+		if err != nil {
+			return nil, err
+		}
+		f.Size = uint64(len(f.data))
+
+		f.mu.Lock()
+	}
+
+	f.writers++
+	return f, nil
+}
+
+// NodeFile is a wrapper around a File that implements the fs.File interface.
+type NodeFile struct {
+	node *File
+	*bytes.Reader
+}
+
+// Stat returns the FileInfo for this node.
+func (nf *NodeFile) Stat() (fs.FileInfo, error) {
+	return nf, nil
+}
+
+// Name returns the name of the file.
+func (nf *NodeFile) Name() string {
+	return nf.node.Name
+}
+
+// Size returns the size of the file.
+func (nf *NodeFile) Size() int64 {
+	return int64(nf.node.Size)
+}
+
+// Mode returns the file mode bits.
+func (nf *NodeFile) Mode() fs.FileMode {
+	return nf.node.Mode
+}
+
+// ModTime returns the modification time.
+func (nf *NodeFile) ModTime() time.Time {
+	//TODO: implement
+	return time.Now()
+}
+
+// IsDir returns false for files.
+func (nf *NodeFile) IsDir() bool {
+	return false
+}
+
+// Sys is not implemented.
+func (nf *NodeFile) Sys() interface{} {
+	return nil
+}
+
+// Close closes the handle.
+func (nf *NodeFile) Close() error {
+	return nil
+}
+
+// Rename moves a file to a new directory.
+func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir bfs.Node) error {
+	f, ok := d.Items[req.OldName]
+	if !ok {
+		return fuse.ENOENT
+	}
+
+	ff := f.(*File)
+
+	dst := filepath.Join(newDir.(*Dir).Path(), req.NewName)
+	fmt.Printf("Renaming %s to %s\n", ff.Path(), dst)
+
+	// buffer file data
+	_, _ = ff.ReadItAll(ctx)
+
+	ff.mu.Lock()
+	defer ff.mu.Unlock()
+
+	if err := d.Mount.lsfs.WriteFile(dst, &NodeFile{ff, bytes.NewReader(ff.data)}); err != nil {
+		return err
+	}
+	if err := d.Mount.lsfs.Remove(ff.Path()); err != nil {
+		return err
+	}
+
+	d.Items[req.OldName] = nil
+	ff.Name = req.NewName
+	ff.Parent = newDir.(*Dir)
+	newDir.(*Dir).Items[req.NewName] = ff
+
+	return nil
+}
+
+// Release closes a file handle.
+func (f *File) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
+	if req.Flags.IsReadOnly() {
+		// we don't need to track read-only handles
+		return nil
+	}
+
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	fmt.Printf("Releasing %s %d\n", f.Path(), len(f.data))
+
+	f.writers--
+	if f.writers == 0 {
+		//TODO: uncache?
+		// f.data = nil
+	}
+	return nil
+}
+
+// Read reads data from the file.
+func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	fn := func(b []byte) {
+		fuseutil.HandleRead(req, resp, b)
+	}
+
+	if len(f.data) == 0 {
+		fm, err := f.Mount.lsfs.Open(f.Path())
+		if err != nil {
+			return err
+		}
+		defer fm.Close() // nolint: errcheck
+
+		fi, err := fm.Stat()
+		if err != nil {
+			return err
+		}
+		if fi.IsDir() {
+			return fmt.Errorf("cat: %s: Is a directory", f.Path())
+		}
+
+		f.data, err = io.ReadAll(fm)
+		if err != nil {
+			return err
+		}
+	}
+
+	fn(f.data)
+	return nil
+}
+
+// ReadItAll reads an entire archive's content.
+func (f *File) ReadItAll(_ context.Context) ([]byte, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	fmt.Println("ReadAll:", f.Path())
+	if f.Mount.cache && len(f.data) > 0 {
+		fmt.Println("ReadAll cached!")
+		return f.data, nil
+	}
+
+	fm, err := f.Mount.lsfs.Open(f.Path())
+	if err != nil {
+		return nil, err
+	}
+	defer fm.Close() // nolint: errcheck
+
+	fi, err := fm.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if fi.IsDir() {
+		return nil, fmt.Errorf("cat: %s: Is a directory", f.Path())
+	}
+
+	f.data, err = io.ReadAll(fm)
+	return f.data, err
+}
+
+const maxInt = int(^uint(0) >> 1)
+
+// Write writes to a file.
+func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	fmt.Printf("Writing %d bytes to %s\n", len(req.Data), f.Path())
+	// expand the buffer if necessary
+	newLen := req.Offset + int64(len(req.Data))
+	if newLen > int64(maxInt) {
+		return fuse.Errno(syscall.EFBIG)
+	}
+
+	if newLen := int(newLen); newLen > len(f.data) {
+		f.data = append(f.data, make([]byte, newLen-len(f.data))...)
+	}
+
+	n := copy(f.data[req.Offset:], req.Data)
+	resp.Size = n
+	return nil
+}
+
+var _ = bfs.HandleFlusher(&File{})
+
+// Flush fluhes the internal buffer to the charm cloud.
+func (f *File) Flush(ctx context.Context, req *fuse.FlushRequest) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	fmt.Printf("Flushing %s %d %d\n", f.Path(), len(f.data), f.writers)
+	if f.writers == 0 {
+		// Read-only handles also get flushes. Make sure we don't
+		// overwrite valid file contents with a nil buffer.
+		return nil
+	}
+
+	if err := f.Mount.lsfs.WriteFile(f.Path(), &NodeFile{f, bytes.NewReader(f.data)}); err != nil {
+		return err
+	}
+	f.Size = uint64(len(f.data))
+
+	return nil
+}
+
+var _ = bfs.NodeSetattrer(&File{})
+
+// Setattr changes file attributes.
+func (f *File) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fuse.SetattrResponse) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	fmt.Println("Setattr for", f.Path(), req.String())
+	if req.Valid.Mode() {
+		f.Mode = req.Mode
+	}
+	if req.Valid.Size() {
+		fmt.Printf("Setattr %d bytes for %s\n", req.Size, f.Path())
+		if req.Size > uint64(maxInt) {
+			return fuse.Errno(syscall.EFBIG)
+		}
+		newLen := int(req.Size)
+		switch {
+		case newLen > len(f.data):
+			f.data = append(f.data, make([]byte, newLen-len(f.data))...)
+		case newLen < len(f.data):
+			f.data = f.data[:newLen]
+		}
+		f.Size = req.Size
+	}
+	return nil
+}
+
+// Fsync syncs the internal buffer state with the charm cloud.
+func (f *File) Fsync(ctx context.Context, req *fuse.FsyncRequest) error {
+	fmt.Println("Fsync for", f.Path(), req.String())
+
+	if f.writers == 0 {
+		// Read-only handles also get flushes. Make sure we don't
+		// overwrite valid file contents with a nil buffer.
+		return nil
+	}
+
+	if err := f.Mount.lsfs.WriteFile(f.Path(), &NodeFile{f, bytes.NewReader(f.data)}); err != nil {
+		return err
+	}
+	f.Size = uint64(len(f.data))
+	return nil
+}
+
+var _ = bfs.NodeMkdirer(&Dir{})
+
+// Mkdir creates a new directory.
+func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (bfs.Node, error) {
+	fmt.Printf("Creating dir in %s: %s\n", d.Path(), req.Name)
+
+	dir := &Dir{
+		Mount:  d.Mount,
+		Parent: d,
+		Name:   req.Name,
+		Mode:   0700,
+		Items:  make(map[string]interface{}),
+	}
+	d.Items[req.Name] = dir
+
+	return dir, nil
+}
+
+var _ = bfs.NodeCreater(&Dir{})
+
+// Create creates a file.
+func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (bfs.Node, bfs.Handle, error) {
+	fmt.Printf("Creating file in %s: %s\n", d.Path(), req.Name)
+
+	f := &File{
+		Mount:   d.Mount,
+		Parent:  d,
+		Name:    req.Name,
+		Mode:    0644,
+		writers: 1,
+	}
+	d.Items[req.Name] = f
+
+	return f, f, nil
+}
+
+var _ = bfs.NodeRemover(&Dir{})
+
+// Remove deletes a file.
+func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
+	fmt.Printf("Removing file in %s: %s\n", d.Path(), req.Name)
+
+	d.Items[req.Name] = nil
+
+	return d.Mount.lsfs.Remove(filepath.Join(d.Path(), req.Name))
+}
+
 func fsMount(cmd *cobra.Command, args []string) error {
 	mountpoint := args[0]
 
@@ -314,6 +650,8 @@ func fsMount(cmd *cobra.Command, args []string) error {
 	}
 	m := &Mount{
 		cache: true,
+		uid:   uint32(os.Getuid()),
+		gid:   uint32(os.Getgid()),
 	}
 	m.lsfs, err = cfs.NewFS()
 	if err != nil {
@@ -345,316 +683,6 @@ func fsMount(cmd *cobra.Command, args []string) error {
 		}
 		return c.Close()
 	}
-}
-
-// Open opens a file.
-func (f *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (bfs.Handle, error) {
-	fmt.Printf("Opening %s\n", f.Path())
-
-	if req.Flags.IsReadOnly() {
-		// we don't need to track read-only handles
-		return f, nil
-	}
-
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	if f.writers == 0 && f.data == nil {
-		f.mu.Unlock()
-
-		// load data
-		var err error
-		f.data, err = f.ReadItAll(ctx)
-		if err != nil {
-			return nil, err
-		}
-		f.Size = uint64(len(f.data))
-
-		f.mu.Lock()
-	}
-
-	f.writers++
-	return f, nil
-}
-
-type NodeFile struct {
-	node *File
-	*bytes.Reader
-}
-
-func (nf *NodeFile) Stat() (fs.FileInfo, error) {
-	return nf, nil
-}
-
-func (nf *NodeFile) Name() string {
-	return nf.node.Name
-}
-
-func (nf *NodeFile) Size() int64 {
-	return int64(nf.node.Size)
-}
-
-func (nf *NodeFile) Mode() fs.FileMode {
-	return nf.node.Mode
-}
-
-func (nf *NodeFile) ModTime() time.Time {
-	//TODO: implement
-	return time.Now()
-}
-
-func (nf *NodeFile) IsDir() bool {
-	return false
-}
-
-func (nf *NodeFile) Sys() interface{} {
-	return nil
-}
-
-func (nf *NodeFile) Close() error {
-	return nil
-}
-
-func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir bfs.Node) error {
-	f, ok := d.Items[req.OldName]
-	if !ok {
-		return fuse.ENOENT
-	}
-
-	ff := f.(*File)
-
-	dst := filepath.Join(newDir.(*Dir).Path(), req.NewName)
-	fmt.Printf("Renaming %s to %s\n", ff.Path(), dst)
-
-	ff.ReadItAll(ctx)
-
-	ff.mu.Lock()
-	defer ff.mu.Unlock()
-
-	if err := d.Mount.lsfs.WriteFile(dst, &NodeFile{ff, bytes.NewReader(ff.data)}); err != nil {
-		return err
-	}
-	if err := d.Mount.lsfs.Remove(ff.Path()); err != nil {
-		return err
-	}
-
-	d.Items[req.OldName] = nil
-	ff.Name = req.NewName
-	ff.Parent = newDir.(*Dir)
-	newDir.(*Dir).Items[req.NewName] = ff
-
-	return nil
-}
-
-func (f *File) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
-	if req.Flags.IsReadOnly() {
-		// we don't need to track read-only handles
-		return nil
-	}
-
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	fmt.Printf("Releasing %s %d\n", f.Path(), len(f.data))
-
-	f.writers--
-	if f.writers == 0 {
-		//TODO: uncache?
-		// f.data = nil
-	}
-	return nil
-}
-
-func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	fn := func(b []byte) {
-		fuseutil.HandleRead(req, resp, b)
-	}
-
-	if len(f.data) == 0 {
-		fm, err := f.Mount.lsfs.Open(f.Path())
-		if err != nil {
-			return err
-		}
-		defer fm.Close()
-
-		fi, err := fm.Stat()
-		if err != nil {
-			return err
-		}
-		if fi.IsDir() {
-			return fmt.Errorf("cat: %s: Is a directory", f.Path())
-		}
-
-		f.data, err = io.ReadAll(fm)
-		if err != nil {
-			return err
-		}
-	}
-
-	fn(f.data)
-	return nil
-}
-
-// ReadAll reads an entire archive's content.
-func (f *File) ReadItAll(_ context.Context) ([]byte, error) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	fmt.Println("ReadAll:", f.Path())
-	if f.Mount.cache && len(f.data) > 0 {
-		fmt.Println("ReadAll cached!")
-		return f.data, nil
-	}
-
-	fm, err := f.Mount.lsfs.Open(f.Path())
-	if err != nil {
-		return nil, err
-	}
-	defer fm.Close()
-
-	fi, err := fm.Stat()
-	if err != nil {
-		return nil, err
-	}
-	if fi.IsDir() {
-		return nil, fmt.Errorf("cat: %s: Is a directory", f.Path())
-	}
-
-	f.data, err = io.ReadAll(fm)
-	return f.data, err
-}
-
-const maxInt = int(^uint(0) >> 1)
-
-func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse) error {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	fmt.Printf("Writing %d bytes to %s\n", len(req.Data), f.Path())
-	// expand the buffer if necessary
-	newLen := req.Offset + int64(len(req.Data))
-	if newLen > int64(maxInt) {
-		return fuse.Errno(syscall.EFBIG)
-	}
-
-	if newLen := int(newLen); newLen > len(f.data) {
-		f.data = append(f.data, make([]byte, newLen-len(f.data))...)
-	}
-
-	n := copy(f.data[req.Offset:], req.Data)
-	resp.Size = n
-	return nil
-}
-
-var _ = bfs.HandleFlusher(&File{})
-
-func (f *File) Flush(ctx context.Context, req *fuse.FlushRequest) error {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	fmt.Printf("Flushing %s %d %d\n", f.Path(), len(f.data), f.writers)
-	if f.writers == 0 {
-		// Read-only handles also get flushes. Make sure we don't
-		// overwrite valid file contents with a nil buffer.
-		return nil
-	}
-
-	if err := f.Mount.lsfs.WriteFile(f.Path(), &NodeFile{f, bytes.NewReader(f.data)}); err != nil {
-		return err
-	}
-	f.Size = uint64(len(f.data))
-
-	return nil
-}
-
-var _ = bfs.NodeSetattrer(&File{})
-
-func (f *File) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fuse.SetattrResponse) error {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	fmt.Println("Setattr for", f.Path(), req.String())
-	if req.Valid.Mode() {
-		f.Mode = req.Mode
-	}
-	if req.Valid.Size() {
-		fmt.Printf("Setattr %d bytes for %s\n", req.Size, f.Path())
-		if req.Size > uint64(maxInt) {
-			return fuse.Errno(syscall.EFBIG)
-		}
-		newLen := int(req.Size)
-		switch {
-		case newLen > len(f.data):
-			f.data = append(f.data, make([]byte, newLen-len(f.data))...)
-		case newLen < len(f.data):
-			f.data = f.data[:newLen]
-		}
-		f.Size = req.Size
-	}
-	return nil
-}
-
-func (f *File) Fsync(ctx context.Context, req *fuse.FsyncRequest) error {
-	fmt.Println("Fsync for", f.Path(), req.String())
-
-	if f.writers == 0 {
-		// Read-only handles also get flushes. Make sure we don't
-		// overwrite valid file contents with a nil buffer.
-		return nil
-	}
-
-	if err := f.Mount.lsfs.WriteFile(f.Path(), &NodeFile{f, bytes.NewReader(f.data)}); err != nil {
-		return err
-	}
-	f.Size = uint64(len(f.data))
-	return nil
-}
-
-var _ = bfs.NodeMkdirer(&Dir{})
-
-func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (bfs.Node, error) {
-	fmt.Printf("Creating dir in %s: %s\n", d.Path(), req.Name)
-
-	dir := &Dir{
-		Mount:  d.Mount,
-		Parent: d,
-		Name:   req.Name,
-		Mode:   0700,
-		Items:  make(map[string]interface{}),
-	}
-	d.Items[req.Name] = dir
-
-	return dir, nil
-}
-
-var _ = bfs.NodeCreater(&Dir{})
-
-func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (bfs.Node, bfs.Handle, error) {
-	fmt.Printf("Creating file in %s: %s\n", d.Path(), req.Name)
-
-	f := &File{
-		Mount:   d.Mount,
-		Parent:  d,
-		Name:    req.Name,
-		Mode:    0644,
-		writers: 1,
-	}
-	d.Items[req.Name] = f
-
-	return f, f, nil
-}
-
-var _ = bfs.NodeRemover(&Dir{})
-
-func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
-	fmt.Printf("Removing file in %s: %s\n", d.Path(), req.Name)
-
-	d.Items[req.Name] = nil
-
-	return d.Mount.lsfs.Remove(filepath.Join(d.Path(), req.Name))
 }
 
 func init() {
