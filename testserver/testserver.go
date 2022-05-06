@@ -1,6 +1,7 @@
 package testserver
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/charmbracelet/charm/client"
 	"github.com/charmbracelet/charm/server"
+	"github.com/charmbracelet/charm/server/stats"
 	"github.com/charmbracelet/keygen"
 )
 
@@ -39,7 +41,7 @@ func SetupTestServer(tb testing.TB) *client.Client {
 		tb.Fatalf("keygen error: %s", err)
 	}
 
-	cfg = cfg.WithKeys(kp.PublicKey(), kp.PrivateKeyPEM())
+	cfg = cfg.WithKeys(kp.PublicKey(), kp.PrivateKeyPEM()).WithStats(noopStats{})
 	s, err := server.NewServer(cfg)
 	if err != nil {
 		tb.Fatalf("new server error: %s", err)
@@ -107,10 +109,35 @@ func randomPort(tb testing.TB) int {
 	if err != nil {
 		tb.Fatalf("could not get a random port: %s", err)
 	}
-	listener.Close()
+	listener.Close() //nolint:errcheck
 
 	addr := listener.Addr().String()
 
 	p, _ := strconv.Atoi(addr[strings.LastIndex(addr, ":")+1:])
 	return p
 }
+
+type noopStats struct{}
+
+var _ stats.Stats = noopStats{}
+
+func (noopStats) APILinkGen()     {}
+func (noopStats) APILinkRequest() {}
+func (noopStats) APIUnlink()      {}
+func (noopStats) APIAuth()        {}
+func (noopStats) APIKeys()        {}
+func (noopStats) LinkGen()        {}
+func (noopStats) LinkRequest()    {}
+func (noopStats) Keys()           {}
+func (noopStats) ID()             {}
+func (noopStats) JWT()            {}
+func (noopStats) GetUserByID()    {}
+func (noopStats) GetUser()        {}
+func (noopStats) SetUserName()    {}
+func (noopStats) GetNewsList()    {}
+func (noopStats) GetNews()        {}
+func (noopStats) PostNews()       {}
+func (noopStats) Start() error    { return nil }
+func (noopStats) Close() error    { return nil }
+
+func (noopStats) Shutdown(_ context.Context) error { return nil }
