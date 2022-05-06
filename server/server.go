@@ -214,10 +214,14 @@ func (srv *Server) init(cfg *Config) {
 		}
 		srv.Config = cfg.WithFileStore(fs)
 	}
-	if cfg.EnableMetrics && cfg.Stats == nil {
-		srv.Config = cfg.WithStats(prometheus.NewStats(cfg.DB, cfg.StatsPort))
-	}
 	if cfg.Stats == nil {
-		srv.Config = cfg.WithStats(noop.Stats{})
+		srv.Config = cfg.WithStats(getStatsImpl(cfg))
 	}
+}
+
+func getStatsImpl(cfg *Config) stats.Stats {
+	if cfg.EnableMetrics {
+		return prometheus.NewStats(cfg.DB, cfg.StatsPort)
+	}
+	return noop.Stats{}
 }
