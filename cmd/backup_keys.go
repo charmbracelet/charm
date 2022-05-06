@@ -17,7 +17,7 @@ import (
 var backupOutputFile string
 
 func init() {
-	BackupKeysCmd.Flags().StringVarP(&backupOutputFile, "ouput", "o", "charm-keys-backup.tar", "keys backup filepath")
+	BackupKeysCmd.Flags().StringVarP(&backupOutputFile, "output", "o", "charm-keys-backup.tar", "keys backup filepath")
 }
 
 // BackupKeysCmd is the cobra.Command to back up a user's account SSH keys.
@@ -62,7 +62,7 @@ var BackupKeysCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			fmt.Print(string(bts))
+			_, _ = fmt.Fprint(cmd.OutOrStdout(), string(bts))
 			return nil
 		}
 
