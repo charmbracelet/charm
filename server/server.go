@@ -15,6 +15,7 @@ import (
 	"github.com/charmbracelet/charm/server/db"
 	"github.com/charmbracelet/charm/server/db/sqlite"
 	"github.com/charmbracelet/charm/server/stats"
+	"github.com/charmbracelet/charm/server/stats/noop"
 	"github.com/charmbracelet/charm/server/stats/prometheus"
 	"github.com/charmbracelet/charm/server/storage"
 	lfs "github.com/charmbracelet/charm/server/storage/local"
@@ -189,8 +190,7 @@ func (srv *Server) Close() error {
 		return fmt.Errorf("db close error: %s", err)
 	}
 	if srv.Config.Stats != nil {
-		err := srv.Config.Stats.Close()
-		if err != nil {
+		if err := srv.Config.Stats.Close(); err != nil {
 			return fmt.Errorf("db close error: %s", err)
 		}
 	}
@@ -214,7 +214,14 @@ func (srv *Server) init(cfg *Config) {
 		}
 		srv.Config = cfg.WithFileStore(fs)
 	}
-	if cfg.EnableMetrics && cfg.Stats == nil {
-		srv.Config = cfg.WithStats(prometheus.NewStats(cfg.DB, cfg.StatsPort))
+	if cfg.Stats == nil {
+		srv.Config = cfg.WithStats(getStatsImpl(cfg))
 	}
+}
+
+func getStatsImpl(cfg *Config) stats.Stats {
+	if cfg.EnableMetrics {
+		return prometheus.NewStats(cfg.DB, cfg.StatsPort)
+	}
+	return noop.Stats{}
 }

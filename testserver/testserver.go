@@ -107,7 +107,7 @@ func randomPort(tb testing.TB) int {
 	if err != nil {
 		tb.Fatalf("could not get a random port: %s", err)
 	}
-	listener.Close()
+	listener.Close() //nolint:errcheck
 
 	addr := listener.Addr().String()
 
