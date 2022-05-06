@@ -29,6 +29,8 @@ func (Stats) SetUserName()                     {}
 func (Stats) GetNewsList()                     {}
 func (Stats) GetNews()                         {}
 func (Stats) PostNews()                        {}
+func (Stats) FSFileRead(_ string, _ int64)     {}
+func (Stats) FSFileWritten(_ string, _ int64)  {}
 func (Stats) Start() error                     { return nil }
 func (Stats) Close() error                     { return nil }
 func (Stats) Shutdown(_ context.Context) error { return nil }
