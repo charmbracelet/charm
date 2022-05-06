@@ -1,4 +1,4 @@
-package testserver
+package cmd
 
 import (
 	"log"
@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/charm/client"
 	"github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/server"
+	"github.com/charmbracelet/charm/testserver"
 )
 
 var (
@@ -19,7 +20,7 @@ var (
 func setup(t *testing.T) {
 	backupFilePath := "./charm-keys-backup.tar"
 	_ = os.RemoveAll(backupFilePath)
-	_ = SetupTestServer(t)
+	_ = testserver.SetupTestServer(t)
 
 	// run actual tests here
 }
@@ -45,14 +46,11 @@ func ConfigFromEnv() {
 	panic("unimplemented")
 }
 
-// create mock linkHandler
+// create mock linkHandlerTest
 
 // TestLinkGen
 func TestLinkGen(t *testing.T) {
-	var linkError bool
-	backupFilePath := "./charm-keys-backup.tar"
-	_ = os.RemoveAll(backupFilePath)
-	_ = SetupTestServer(t)
+	_ = testserver.SetupTestServer(t)
 	ecfg, err := client.ConfigFromEnv()
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
@@ -66,66 +64,69 @@ func TestLinkGen(t *testing.T) {
 		t.Errorf("error creating second client: %v", err)
 	}
 	lc := make(chan string)
-	go func() {
-		lh := &linkHandler{desc: "client1", linkChan: lc}
-		client1.LinkGen(lh)
-	}()
+	t.Run("link client 1", func(t *testing.T) {
+		lh := &linkHandlerTest{desc: "client1", linkChan: lc}
+		err := client1.LinkGen(lh)
+		if err != nil {
+			t.Fatalf("failed to link in go routine: %v", err)
+		}
+	})
 	tok := <-lc
-	lh := &linkHandler{desc: "client1", linkChan: lc}
-	client2.Link(lh, tok)
-	if linkError {
-		t.Errorf("got a link error: %v", err)
+	lh := &linkHandlerTest{desc: "client1", linkChan: lc}
+	err = client2.Link(lh, tok)
+	if err != nil {
+		t.Fatalf("failed to link in go routine: %v", err)
 	}
 }
 
-type linkHandler struct {
+type linkHandlerTest struct {
 	desc     string
 	linkChan chan string
 }
 
-func (lh *linkHandler) TokenCreated(l *proto.Link) {
+func (lh *linkHandlerTest) TokenCreated(l *proto.Link) {
 	lh.printDebug("token created", l)
 	lh.linkChan <- string(l.Token)
 	lh.printDebug("token created sent to chan", l)
 }
 
-func (lh *linkHandler) TokenSent(l *proto.Link) {
+func (lh *linkHandlerTest) TokenSent(l *proto.Link) {
 	lh.printDebug("token sent", l)
 }
 
-func (lh *linkHandler) ValidToken(l *proto.Link) {
+func (lh *linkHandlerTest) ValidToken(l *proto.Link) {
 	lh.printDebug("valid token", l)
 }
 
-func (lh *linkHandler) InvalidToken(l *proto.Link) {
+func (lh *linkHandlerTest) InvalidToken(l *proto.Link) {
 	lh.printDebug("invalid token", l)
 }
 
-func (lh *linkHandler) Request(l *proto.Link) bool {
+func (lh *linkHandlerTest) Request(l *proto.Link) bool {
 	lh.printDebug("request", l)
 	return true
 }
 
-func (lh *linkHandler) RequestDenied(l *proto.Link) {
+func (lh *linkHandlerTest) RequestDenied(l *proto.Link) {
 	lh.printDebug("request denied", l)
 }
 
-func (lh *linkHandler) SameUser(l *proto.Link) {
+func (lh *linkHandlerTest) SameUser(l *proto.Link) {
 	lh.printDebug("same user", l)
 }
 
-func (lh *linkHandler) Success(l *proto.Link) {
+func (lh *linkHandlerTest) Success(l *proto.Link) {
 	lh.printDebug("success", l)
 }
 
-func (lh *linkHandler) Timeout(l *proto.Link) {
+func (lh *linkHandlerTest) Timeout(l *proto.Link) {
 	lh.printDebug("timeout", l)
 }
 
-func (lh linkHandler) Error(l *proto.Link) {
+func (lh linkHandlerTest) Error(l *proto.Link) {
 	lh.printDebug("error", l)
 }
 
-func (lh *linkHandler) printDebug(msg string, l *proto.Link) {
+func (lh *linkHandlerTest) printDebug(msg string, l *proto.Link) {
 	log.Printf("%s %s:\t%v\n", lh.desc, msg, l)
 }
