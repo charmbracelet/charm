@@ -214,7 +214,7 @@ func (srv *Server) init(cfg *Config) {
 		}
 		srv.Config = cfg.WithFileStore(fs)
 	}
-	if cfg.Stats == nil {
+	if cfg.EnableMetrics && cfg.Stats == nil {
 		srv.Config = cfg.WithStats(prometheus.NewStats(cfg.DB, cfg.StatsPort))
 	}
 }
