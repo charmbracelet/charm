@@ -56,7 +56,7 @@ func SetupTestServer(tb testing.TB) *client.Client {
 	if err != nil {
 		tb.Fatalf("server likely failed to start: %s", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 
 	tb.Cleanup(func() {
 		if err := s.Close(); err != nil {
