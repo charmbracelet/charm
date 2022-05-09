@@ -68,13 +68,13 @@ var (
 			}
 			if !empty && !forceImportOverwrite {
 				if common.IsTTY() {
-					return newImportConfirmationTUI(path, dd).Start()
+					return newImportConfirmationTUI(cmd.InOrStdin(), path, dd).Start()
 				}
 				return fmt.Errorf("not overwriting the existing keys in %s; to force, use -f", dd)
 			}
 
 			if isStdin(path) {
-				if err := restoreFromStdin(dd); err != nil {
+				if err := restoreFromReader(cmd.InOrStdin(), dd); err != nil {
 					return err
 				}
 			} else {
@@ -94,10 +94,10 @@ func isStdin(path string) bool {
 	return (fi.Mode()&os.ModeNamedPipe) != 0 || path == "-"
 }
 
-func restoreCmd(path, dataPath string) tea.Cmd {
+func restoreCmd(r io.Reader, path, dataPath string) tea.Cmd {
 	return func() tea.Msg {
 		if isStdin(path) {
-			if err := restoreFromStdin(dataPath); err != nil {
+			if err := restoreFromReader(r, dataPath); err != nil {
 				return confirmationErrMsg{err}
 			}
 			return confirmationSuccessMsg{}
@@ -111,6 +111,7 @@ func restoreCmd(path, dataPath string) tea.Cmd {
 }
 
 type confirmationTUI struct {
+	reader         io.Reader
 	state          confirmationState
 	yes            bool
 	err            error
@@ -135,14 +136,14 @@ func (m confirmationTUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if m.yes {
 				m.state = confirmed
-				return m, restoreCmd(m.path, m.dataPath)
+				return m, restoreCmd(m.reader, m.path, m.dataPath)
 			}
 			m.state = cancelling
 			return m, tea.Quit
 		case "y":
 			m.yes = true
 			m.state = confirmed
-			return m, restoreCmd(m.path, m.dataPath)
+			return m, restoreCmd(m.reader, m.path, m.dataPath)
 		default:
 			if m.state == ready {
 				m.yes = false
@@ -192,8 +193,8 @@ func isEmpty(name string) (bool, error) {
 	return false, err
 }
 
-func restoreFromStdin(dd string) error {
-	bts, err := io.ReadAll(os.Stdin)
+func restoreFromReader(r io.Reader, dd string) error {
+	bts, err := io.ReadAll(r)
 	if err != nil {
 		return err
 	}
@@ -279,8 +280,9 @@ func untar(tarball, targetDir string) error {
 
 // Import Confirmation TUI
 
-func newImportConfirmationTUI(tarPath, dataPath string) *tea.Program {
+func newImportConfirmationTUI(r io.Reader, tarPath, dataPath string) *tea.Program {
 	return tea.NewProgram(confirmationTUI{
+		reader:   r,
 		state:    ready,
 		path:     tarPath,
 		dataPath: dataPath,
