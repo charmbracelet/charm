@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/charm/client"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/spf13/cobra"
+	"golang.org/x/crypto/ssh"
 )
 
 type (
@@ -36,7 +37,7 @@ var (
 		Hidden:                false,
 		Short:                 "Import previously backed up Charm account keys.",
 		Long:                  paragraph(fmt.Sprintf("%s previously backed up Charm account keys.", keyword("Import"))),
-		Args:                  cobra.ExactArgs(1),
+		Args:                  cobra.MaximumNArgs(1),
 		DisableFlagsInUseLine: false,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := client.ConfigFromEnv()
@@ -61,26 +62,48 @@ var (
 				return err
 			}
 
+			path := "-"
+			if len(args) > 0 {
+				path = args[0]
+			}
 			if !empty && !forceImportOverwrite {
 				if common.IsTTY() {
-					return newImportConfirmationTUI(args[0], dd).Start()
+					return newImportConfirmationTUI(path, dd).Start()
 				}
 				return fmt.Errorf("not overwriting the existing keys in %s; to force, use -f", dd)
 			}
 
-			err = untar(args[0], dd)
-			if err != nil {
-				return err
+			if isStdin(path) {
+				if err := restoreFromStdin(dd); err != nil {
+					return err
+				}
+			} else {
+				if err := untar(path, dd); err != nil {
+					return err
+				}
 			}
+
 			paragraph(fmt.Sprintf("Done! Keys imported to %s", code(dd)))
 			return nil
 		},
 	}
 )
 
-func untarCmd(tarPath, dataPath string) tea.Cmd {
+func isStdin(path string) bool {
+	fi, _ := os.Stdin.Stat()
+	return (fi.Mode()&os.ModeNamedPipe) != 0 || path == "-"
+}
+
+func restoreCmd(path, dataPath string) tea.Cmd {
 	return func() tea.Msg {
-		if err := untar(tarPath, dataPath); err != nil {
+		if isStdin(path) {
+			if err := restoreFromStdin(dataPath); err != nil {
+				return confirmationErrMsg{err}
+			}
+			return confirmationSuccessMsg{}
+		}
+
+		if err := untar(path, dataPath); err != nil {
 			return confirmationErrMsg{err}
 		}
 		return confirmationSuccessMsg{}
@@ -88,10 +111,10 @@ func untarCmd(tarPath, dataPath string) tea.Cmd {
 }
 
 type confirmationTUI struct {
-	state             confirmationState
-	yes               bool
-	err               error
-	tarPath, dataPath string
+	state          confirmationState
+	yes            bool
+	err            error
+	path, dataPath string
 }
 
 func (m confirmationTUI) Init() tea.Cmd {
@@ -112,14 +135,14 @@ func (m confirmationTUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if m.yes {
 				m.state = confirmed
-				return m, untarCmd(m.tarPath, m.dataPath)
+				return m, restoreCmd(m.path, m.dataPath)
 			}
 			m.state = cancelling
 			return m, tea.Quit
 		case "y":
 			m.yes = true
 			m.state = confirmed
-			return m, untarCmd(m.tarPath, m.dataPath)
+			return m, restoreCmd(m.path, m.dataPath)
 		default:
 			if m.state == ready {
 				m.yes = false
@@ -167,6 +190,33 @@ func isEmpty(name string) (bool, error) {
 		return true, nil
 	}
 	return false, err
+}
+
+func restoreFromStdin(dd string) error {
+	bts, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		return err
+	}
+
+	signer, err := ssh.ParsePrivateKey(bts)
+	if err != nil {
+		return fmt.Errorf("invalid private key: %w", err)
+	}
+
+	keypath := filepath.Join(dd, "charm_ed25519")
+	if err := os.WriteFile(keypath, bts, 0o640); err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(
+		keypath+".pub",
+		ssh.MarshalAuthorizedKey(signer.PublicKey()),
+		0o644,
+	); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func untar(tarball, targetDir string) error {
@@ -228,7 +278,7 @@ func untar(tarball, targetDir string) error {
 func newImportConfirmationTUI(tarPath, dataPath string) *tea.Program {
 	return tea.NewProgram(confirmationTUI{
 		state:    ready,
-		tarPath:  tarPath,
+		path:     tarPath,
 		dataPath: dataPath,
 	})
 }
