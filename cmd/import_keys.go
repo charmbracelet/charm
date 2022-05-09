@@ -203,15 +203,19 @@ func restoreFromStdin(dd string) error {
 		return fmt.Errorf("invalid private key: %w", err)
 	}
 
+	if signer.PublicKey().Type() != "ssh-ed25519" {
+		return fmt.Errorf("only ed25519 keys are allowed, yours is %s", signer.PublicKey().Type())
+	}
+
 	keypath := filepath.Join(dd, "charm_ed25519")
-	if err := os.WriteFile(keypath, bts, 0o640); err != nil {
+	if err := os.WriteFile(keypath, bts, 0o600); err != nil {
 		return err
 	}
 
 	if err := os.WriteFile(
 		keypath+".pub",
 		ssh.MarshalAuthorizedKey(signer.PublicKey()),
-		0o644,
+		0o600,
 	); err != nil {
 		return err
 	}
