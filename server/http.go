@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -204,7 +203,7 @@ func (s *HTTPServer) handlePostUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	u := &charm.User{}
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("cannot read request body: %s", err)
 		s.renderError(w)
@@ -231,7 +230,7 @@ func (s *HTTPServer) handlePostUser(w http.ResponseWriter, r *http.Request) {
 func (s *HTTPServer) handlePostEncryptKey(w http.ResponseWriter, r *http.Request) {
 	u := s.charmUserFromRequest(w, r)
 	ek := &charm.EncryptKey{}
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("cannot read request body: %s", err)
 		s.renderError(w)

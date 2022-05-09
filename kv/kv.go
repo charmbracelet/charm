@@ -4,7 +4,6 @@ package kv
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"math"
 	"os"
@@ -153,7 +152,7 @@ func (kv *KV) Set(key []byte, value []byte) error {
 // SetReader is a convenience method to set the value for a key to the data
 // read from the provided io.Reader.
 func (kv *KV) SetReader(key []byte, value io.Reader) error {
-	v, err := ioutil.ReadAll(value)
+	v, err := io.ReadAll(value)
 	if err != nil {
 		return err
 	}
