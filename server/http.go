@@ -343,7 +343,6 @@ func (s *HTTPServer) handleGetFile(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 	} else {
 		w.Header().Set("Content-Type", "application/octet-stream")
-		w.Header().Set("Last-Modified", fi.ModTime().Format(http.TimeFormat))
 		s.cfg.Stats.FSFileRead(u.CharmID, fi.Size())
 	}
 	switch r.Method {

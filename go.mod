@@ -21,12 +21,12 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/muesli/go-app-paths v0.2.1
 	github.com/muesli/reflow v0.3.0
-	github.com/muesli/sasquatch v0.0.0-20200811221207-66979d92330a
+	github.com/muesli/sasquatch v0.0.0-20220506035923-a0043c9268b2
 	github.com/muesli/toktok v0.1.0
 	github.com/prometheus/client_golang v0.9.3
 	github.com/spf13/cobra v1.0.0
 	goji.io v2.0.2+incompatible
-	golang.org/x/crypto v0.0.0-20220307211146-efcb8507fb70
+	golang.org/x/crypto v0.0.0-20220427172511-eb4f295cb31f
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	gopkg.in/square/go-jose.v2 v2.6.0
 	modernc.org/sqlite v1.14.8
@@ -68,8 +68,8 @@ require (
 	go.opencensus.io v0.22.5 // indirect
 	golang.org/x/mod v0.3.0 // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
-	golang.org/x/sys v0.0.0-20211007075335-d3039528d8ac // indirect
-	golang.org/x/term v0.0.0-20210422114643-f5beecf764ed // indirect
+	golang.org/x/sys v0.0.0-20220503163025-988cb79eb6c6 // indirect
+	golang.org/x/term v0.0.0-20220411215600-e5f449aeb171 // indirect
 	golang.org/x/tools v0.0.0-20201124115921-2c860bdd6e78 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect

@@ -2,6 +2,7 @@ package localstorage
 
 import (
 	"bytes"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 	charmfs "github.com/charmbracelet/charm/fs"
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/server/storage"
+	"github.com/muesli/sasquatch"
 )
 
 // LocalFileStore is a FileStore implementation that stores files locally in a
@@ -41,18 +43,17 @@ func (lfs *LocalFileStore) Stat(charmID, path string) (fs.FileInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	name := i.Name()
-	if name == charmID {
-		name = ""
-	}
 	in := &charmfs.FileInfo{
 		FileInfo: charm.FileInfo{
-			Name:    name,
+			Name:    i.Name(),
 			IsDir:   i.IsDir(),
 			Size:    i.Size(),
 			ModTime: i.ModTime(),
 			Mode:    i.Mode(),
 		},
+	}
+	if i.Name() == charmID {
+		in.FileInfo.Name = ""
 	}
 	// Get the actual size of the files in a directory
 	if i.IsDir() {
@@ -61,11 +62,48 @@ func (lfs *LocalFileStore) Stat(charmID, path string) (fs.FileInfo, error) {
 			if info.IsDir() {
 				return nil
 			}
-			in.FileInfo.Size += info.Size()
+			f, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			md, err := sasquatch.Metadata(f)
+			if err != nil {
+				return err
+			}
+			var fi charm.FileInfo
+			err = gob.NewDecoder(bytes.NewReader(md)).Decode(&fi)
+			if err != nil && err == io.EOF {
+				// No metadata, use the actual file size instead.
+				in.FileInfo.Size = info.Size()
+				return nil
+			}
+			if err != nil {
+				return err
+			}
+			in.FileInfo.Size += fi.Size
 			return nil
 		}); err != nil {
 			return nil, err
 		}
+	} else {
+		f, err := os.Open(fp)
+		if err != nil {
+			return nil, err
+		}
+		md, err := sasquatch.Metadata(f)
+		if err != nil {
+			return nil, err
+		}
+		var fi charm.FileInfo
+		err = gob.NewDecoder(bytes.NewReader(md)).Decode(&fi)
+		if err != nil && err != io.EOF {
+			return nil, err
+		}
+		if err != io.EOF {
+			// Metadata found, use it.
+			in.FileInfo = fi
+		}
+		in.FileInfo.Name = i.Name() // override the name
 	}
 	return in, nil
 }
@@ -92,9 +130,29 @@ func (lfs *LocalFileStore) Get(charmID string, path string) (fs.File, error) {
 		}
 		fis := make([]charm.FileInfo, 0)
 		for _, v := range rds {
+			ff, err := os.Open(filepath.Join(fp, v.Name()))
+			if err != nil {
+				return nil, err
+			}
 			fi, err := v.Info()
 			if err != nil {
 				return nil, err
+			}
+			if !v.IsDir() {
+				md, err := sasquatch.Metadata(ff)
+				if err != nil {
+					return nil, err
+				}
+				var cfi charm.FileInfo
+				err = gob.NewDecoder(bytes.NewReader(md)).Decode(&cfi)
+				if err != nil && err != io.EOF {
+					return nil, err
+				}
+				if err != io.EOF {
+					fi = &charmfs.FileInfo{
+						FileInfo: cfi,
+					}
+				}
 			}
 			fin := charm.FileInfo{
 				Name:    v.Name(),

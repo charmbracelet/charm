@@ -3,6 +3,7 @@ package fs
 
 import (
 	"bytes"
+	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -246,7 +247,23 @@ func (cfs *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 func (cfs *FS) WriteFile(name string, data []byte, perm fs.FileMode) error {
 	src := bytes.NewBuffer(data)
 	ebuf := bytes.NewBuffer(nil)
-	eb, err := cfs.crypt.NewEncryptedWriter(ebuf)
+	ep, err := cfs.EncryptPath(name)
+	if err != nil {
+		return err
+	}
+	fi := charm.FileInfo{
+		Name:    path.Base(ep), // NOTE this is not the actual file name
+		IsDir:   false,
+		Size:    int64(len(data)),
+		Mode:    perm,
+		ModTime: time.Now(),
+	}
+
+	md := bytes.NewBuffer(nil)
+	if err = gob.NewEncoder(md).Encode(fi); err != nil {
+		return err
+	}
+	eb, err := cfs.crypt.NewEncryptedWriterWithMetadata(ebuf, md.Bytes())
 	if err != nil {
 		return err
 	}
@@ -281,6 +298,10 @@ func (cfs *FS) WriteFile(name string, data []byte, perm fs.FileMode) error {
 	if _, err := databuf.Read(boun); err != nil {
 		return err
 	}
+	// TODO: stream the encrypted data to the server, we need to calculate the
+	// content length manually.  That is [multipart header length] + [encrypted
+	// data length] + [multipart footer length].
+	//
 	// headlen is the length of the multipart part header, bounlen is the length of the multipart boundary footer.
 	contentLength := int64(headlen) + int64(ebuf.Len()) + int64(bounlen)
 	// pipe the multipart request to the server
@@ -312,21 +333,13 @@ func (cfs *FS) WriteFile(name string, data []byte, perm fs.FileMode) error {
 			return
 		}
 	}()
-	ep, err := cfs.EncryptPath(name)
-	if err != nil {
-		return err
-	}
-	// Deprecated: remove mode from request query in favor of X-File-Mode
-	// header.
+	// Deprecated: remove mode from request query in favor of sasquatch
+	// metadata.
 	rp := fmt.Sprintf("/v1/fs/%s?mode=%d", ep, perm)
 	headers := http.Header{
 		"Content-Type":   {w.FormDataContentType()},
 		"Content-Length": {fmt.Sprintf("%d", contentLength)},
 		"X-File-Mode":    {fmt.Sprintf("%d", perm)},
-		// These headers are ignored by the server but implemented for consistency purposes.
-		"X-Is-Dir":        {"false"},
-		"X-Last-Modified": {time.Now().Format(http.TimeFormat)},
-		"X-Size":          {fmt.Sprintf("%d", ebuf.Len())},
 	}
 	resp, err := cfs.cc.AuthedRequest("POST", rp, headers, rr)
 	if err != nil {
