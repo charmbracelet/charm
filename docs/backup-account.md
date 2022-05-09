@@ -23,12 +23,4 @@ Example usage:
 charm backup-keys -o - | melt
 ```
 
-## Restoring from a backup
-
-To restore your account, you can use the `import-keys` command:
-
-```shell
-charm import-keys charm-keys-backup.tar
-```
-
-TODO: import from STDIN
+Also worth reading [./docs/restore-account.md](./docs/restore-account.md).
