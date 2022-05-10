@@ -12,4 +12,4 @@ You can also import a private key from STDIN from another tool, such as [melt](h
 cat seed.txt | melt restore - | charm import-keys
 ```
 
-Also worth reading [./docs/backup-account.md](./docs/backup-account.md).
+Also worth reading [./docs/backup-account.md](./backup-account.md).

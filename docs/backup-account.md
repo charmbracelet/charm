@@ -23,4 +23,4 @@ Example usage:
 charm backup-keys -o - | melt
 ```
 
-Also worth reading [./docs/restore-account.md](./docs/restore-account.md).
+Also worth reading [./docs/restore-account.md](./restore-account.md).
