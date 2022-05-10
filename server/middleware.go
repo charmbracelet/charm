@@ -14,11 +14,10 @@ import (
 )
 
 type contextKey string
-type contextPublic string
 
 var (
-	ctxUserKey contextKey    = "charmUser"
-	ctxPublic  contextPublic = "public"
+	ctxUserKey contextKey = "charmUser"
+	ctxPublic  contextKey = "public"
 )
 
 // MaxFSRequestSize is the maximum size of a request body for fs endpoints.
