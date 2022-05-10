@@ -176,13 +176,14 @@ func (lrfs *localRemoteFS) write(name string, src fs.File) error {
 			}
 		}
 	case remotePath:
-		if !stat.IsDir() {
-			buf, err := io.ReadAll(src)
-			if err != nil {
-				return err
-			}
-			return lrfs.cfs.WriteFile(p.path, buf, stat.Mode())
+		if stat.IsDir() {
+			return lrfs.cfs.MkdirAll(p.path, stat.Mode())
 		}
+		buf, err := io.ReadAll(src)
+		if err != nil {
+			return err
+		}
+		return lrfs.cfs.WriteFile(p.path, buf, stat.Mode())
 	default:
 		return fmt.Errorf("invalid path type")
 	}

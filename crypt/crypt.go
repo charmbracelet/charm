@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"log"
 
 	"github.com/charmbracelet/charm/client"
 	charm "github.com/charmbracelet/charm/proto"
@@ -149,8 +148,6 @@ func (cr *Crypt) Decrypt(b []byte) ([]byte, error) {
 		pt, err = siv.Decrypt([]byte(k.Key[:32]), b, nil)
 		if err == nil {
 			break
-		} else {
-			log.Print(err)
 		}
 	}
 	if len(pt) == 0 {

@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/fs"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -294,14 +295,19 @@ func (s *HTTPServer) handlePostFile(w http.ResponseWriter, r *http.Request) {
 		s.renderError(w)
 		return
 	}
-	f, fh, err := r.FormFile("data")
-	if err != nil {
-		log.Printf("cannot parse form data: %s", err)
-		s.renderError(w)
-		return
+	mode := fs.FileMode(m)
+	var f multipart.File
+	var fh *multipart.FileHeader
+	if !mode.IsDir() {
+		f, fh, err = r.FormFile("data")
+		if err != nil {
+			log.Printf("cannot parse form data: %s", err)
+			s.renderError(w)
+			return
+		}
+		defer f.Close() // nolint:errcheck
 	}
-	defer f.Close() // nolint:errcheck
-	if s.cfg.UserMaxStorage > 0 {
+	if s.cfg.UserMaxStorage > 0 && fh != nil {
 		stat, err := s.cfg.FileStore.Stat(u.CharmID, "")
 		if err != nil {
 			log.Printf("cannot stat user storage: %s", err)
@@ -313,12 +319,14 @@ func (s *HTTPServer) handlePostFile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if err := s.cfg.FileStore.Put(u.CharmID, path, f, fs.FileMode(m)); err != nil {
+	if err := s.cfg.FileStore.Put(u.CharmID, path, f, mode); err != nil {
 		log.Printf("cannot post file: %s", err)
 		s.renderError(w)
 		return
 	}
-	s.cfg.Stats.FSFileWritten(u.CharmID, fh.Size)
+	if fh != nil {
+		s.cfg.Stats.FSFileWritten(u.CharmID, fh.Size)
+	}
 }
 
 func (s *HTTPServer) handleGetFile(w http.ResponseWriter, r *http.Request) {

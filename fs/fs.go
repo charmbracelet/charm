@@ -329,7 +329,6 @@ func (cfs *FS) WriteFile(name string, data []byte, perm fs.FileMode) error {
 	if err := w.Close(); err != nil {
 		return err
 	}
-	w.Close() //nolint:errcheck
 	bounlen := databuf.Len()
 	boun := make([]byte, bounlen)
 	if _, err := databuf.Read(boun); err != nil {
@@ -393,6 +392,28 @@ func (cfs *FS) Remove(name string) error {
 	}
 	path := fmt.Sprintf("/v1/fs/%s", ep)
 	resp, err := cfs.cc.AuthedRequest("DELETE", path, nil, nil)
+	if err != nil {
+		return err
+	}
+	return resp.Body.Close()
+}
+
+// MkdirAll creates a directory on the configured Charm Cloud server.
+func (cfs *FS) MkdirAll(path string, perm fs.FileMode) error {
+	ep, err := cfs.EncryptPath(path)
+	if err != nil {
+		return err
+	}
+	if !perm.IsDir() {
+		return fmt.Errorf("%q is not a directory", path)
+	}
+	// Deprecated: remove mode from request query in favor of sasquatch
+	// metadata.
+	rp := fmt.Sprintf("/v1/fs/%s?mode=%d", ep, perm)
+	headers := http.Header{
+		"X-File-Mode": {fmt.Sprintf("%d", perm)},
+	}
+	resp, err := cfs.cc.AuthedRequest("POST", rp, headers, nil)
 	if err != nil {
 		return err
 	}
