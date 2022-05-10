@@ -165,7 +165,7 @@ func (lfs *LocalFileStore) Put(charmID string, path string, r io.Reader, mode fs
 	if mode.IsDir() {
 		return storage.EnsureDir(fp, mode)
 	}
-	err := storage.EnsureDir(filepath.Dir(fp), mode)
+	err := storage.EnsureDir(filepath.Dir(fp), 0o755)
 	if err != nil {
 		return err
 	}
