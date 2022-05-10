@@ -3,6 +3,7 @@ package fs
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/gob"
 	"encoding/json"
 	"errors"
@@ -134,6 +135,24 @@ func (cfs *FS) Stat(name string) (fs.FileInfo, error) {
 		ModTime: modTime,
 		Size:    size,
 	}
+	metadata := resp.Header.Get("X-Metadata")
+	if metadata != "" {
+		b64, err := base64.StdEncoding.DecodeString(metadata)
+		if err != nil {
+			return nil, pathError("stat", name, err)
+		}
+		md, err := cfs.crypt.Decrypt(b64)
+		if err == nil {
+			var fi charm.FileInfo
+			err = gob.NewDecoder(bytes.NewBuffer(md)).Decode(&fi)
+			if err != nil && err != io.EOF {
+				return nil, pathError("stat", name, err)
+			}
+			if err != io.EOF {
+				info.FileInfo = fi
+			}
+		}
+	}
 	return info, nil
 }
 
@@ -226,12 +245,26 @@ func (cfs *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 			if err != nil {
 				return nil, pathError("open", name, err)
 			}
-			e.Name = n
+			fi := e
+			fi.Name = n
+			if !e.IsDir && e.Metadata != nil {
+				md, err := cfs.crypt.Decrypt(e.Metadata)
+				if err == nil {
+					var ei charm.FileInfo
+					err = gob.NewDecoder(bytes.NewBuffer(md)).Decode(&ei)
+					if err != nil && err != io.EOF {
+						return nil, pathError("open", name, err)
+					}
+					if err != io.EOF {
+						fi = ei
+					}
+				}
+			}
 			dirs = append(dirs, &FileInfo{
-				FileInfo: e,
+				FileInfo: fi,
 				sys: &sysFuture{
 					fs:   cfs,
-					path: path.Join(name, e.Name),
+					path: path.Join(name, fi.Name),
 				},
 			})
 		}
@@ -252,7 +285,7 @@ func (cfs *FS) WriteFile(name string, data []byte, perm fs.FileMode) error {
 		return err
 	}
 	fi := charm.FileInfo{
-		Name:    path.Base(ep), // NOTE this is not the actual file name
+		Name:    path.Base(name),
 		IsDir:   false,
 		Size:    int64(len(data)),
 		Mode:    perm,
@@ -263,7 +296,11 @@ func (cfs *FS) WriteFile(name string, data []byte, perm fs.FileMode) error {
 	if err = gob.NewEncoder(md).Encode(fi); err != nil {
 		return err
 	}
-	eb, err := cfs.crypt.NewEncryptedWriterWithMetadata(ebuf, md.Bytes())
+	mde, err := cfs.crypt.Encrypt(md.Bytes())
+	if err != nil {
+		return err
+	}
+	eb, err := cfs.crypt.NewEncryptedWriterWithMetadata(ebuf, mde)
 	if err != nil {
 		return err
 	}

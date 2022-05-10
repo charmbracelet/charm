@@ -2,7 +2,6 @@ package localstorage
 
 import (
 	"bytes"
-	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -36,24 +35,37 @@ func NewLocalFileStore(path string) (*LocalFileStore, error) {
 // Stat returns the FileInfo for the given Charm ID and path.
 func (lfs *LocalFileStore) Stat(charmID, path string) (fs.FileInfo, error) {
 	fp := filepath.Join(lfs.Path, charmID, path)
-	i, err := os.Stat(fp)
+	f, err := os.Open(fp)
 	if os.IsNotExist(err) {
 		return nil, fs.ErrNotExist
 	}
 	if err != nil {
 		return nil, err
 	}
+	i, err := f.Stat()
+	if err != nil {
+		return nil, err
+	}
+	var md []byte
+	if !i.IsDir() {
+		md, err = sasquatch.Metadata(f)
+		if err != nil {
+			return nil, err
+		}
+	}
+	name := i.Name()
+	if name == charmID {
+		name = ""
+	}
 	in := &charmfs.FileInfo{
 		FileInfo: charm.FileInfo{
-			Name:    i.Name(),
-			IsDir:   i.IsDir(),
-			Size:    i.Size(),
-			ModTime: i.ModTime(),
-			Mode:    i.Mode(),
+			Name:     name,
+			IsDir:    i.IsDir(),
+			Size:     i.Size(),
+			ModTime:  i.ModTime(),
+			Mode:     i.Mode(),
+			Metadata: md,
 		},
-	}
-	if i.Name() == charmID {
-		in.FileInfo.Name = ""
 	}
 	// Get the actual size of the files in a directory
 	if i.IsDir() {
@@ -62,54 +74,18 @@ func (lfs *LocalFileStore) Stat(charmID, path string) (fs.FileInfo, error) {
 			if info.IsDir() {
 				return nil
 			}
-			f, err := os.Open(path)
-			if err != nil {
-				return err
-			}
-			md, err := sasquatch.Metadata(f)
-			if err != nil {
-				return err
-			}
-			var fi charm.FileInfo
-			err = gob.NewDecoder(bytes.NewReader(md)).Decode(&fi)
-			if err != nil && err == io.EOF {
-				// No metadata, use the actual file size instead.
-				in.FileInfo.Size = info.Size()
-				return nil
-			}
-			if err != nil {
-				return err
-			}
-			in.FileInfo.Size += fi.Size
+			in.FileInfo.Size += info.Size()
 			return nil
 		}); err != nil {
 			return nil, err
 		}
-	} else {
-		f, err := os.Open(fp)
-		if err != nil {
-			return nil, err
-		}
-		md, err := sasquatch.Metadata(f)
-		if err != nil {
-			return nil, err
-		}
-		var fi charm.FileInfo
-		err = gob.NewDecoder(bytes.NewReader(md)).Decode(&fi)
-		if err != nil && err != io.EOF {
-			return nil, err
-		}
-		if err != io.EOF {
-			// Metadata found, use it.
-			in.FileInfo = fi
-		}
-		in.FileInfo.Name = i.Name() // override the name
 	}
 	return in, nil
 }
 
 // Get returns an fs.File for the given Charm ID and path.
 func (lfs *LocalFileStore) Get(charmID string, path string) (fs.File, error) {
+	data := bytes.NewBuffer(nil)
 	fp := filepath.Join(lfs.Path, charmID, path)
 	info, err := lfs.Stat(charmID, path)
 	if os.IsNotExist(err) {
@@ -130,36 +106,28 @@ func (lfs *LocalFileStore) Get(charmID string, path string) (fs.File, error) {
 		}
 		fis := make([]charm.FileInfo, 0)
 		for _, v := range rds {
-			ff, err := os.Open(filepath.Join(fp, v.Name()))
-			if err != nil {
-				return nil, err
-			}
 			fi, err := v.Info()
 			if err != nil {
 				return nil, err
 			}
+			var md []byte
 			if !v.IsDir() {
-				md, err := sasquatch.Metadata(ff)
+				sf, err := os.Open(filepath.Join(fp, v.Name()))
 				if err != nil {
 					return nil, err
 				}
-				var cfi charm.FileInfo
-				err = gob.NewDecoder(bytes.NewReader(md)).Decode(&cfi)
-				if err != nil && err != io.EOF {
+				md, err = sasquatch.Metadata(sf)
+				if err != nil {
 					return nil, err
-				}
-				if err != io.EOF {
-					fi = &charmfs.FileInfo{
-						FileInfo: cfi,
-					}
 				}
 			}
 			fin := charm.FileInfo{
-				Name:    v.Name(),
-				IsDir:   fi.IsDir(),
-				Size:    fi.Size(),
-				ModTime: fi.ModTime(),
-				Mode:    fi.Mode(),
+				Name:     v.Name(),
+				IsDir:    fi.IsDir(),
+				Size:     fi.Size(),
+				ModTime:  fi.ModTime(),
+				Mode:     fi.Mode(),
+				Metadata: md,
 			}
 			fis = append(fis, fin)
 		}
@@ -171,16 +139,19 @@ func (lfs *LocalFileStore) Get(charmID string, path string) (fs.File, error) {
 			Mode:    info.Mode(),
 			Files:   fis,
 		}
-		buf := bytes.NewBuffer(nil)
-		if err := json.NewEncoder(buf).Encode(dir); err != nil {
+		if err := json.NewEncoder(data).Encode(dir); err != nil {
 			return nil, err
 		}
-		return &charmfs.File{
-			Data: io.NopCloser(buf),
-			Info: info,
-		}, nil
+	} else {
+		_, err := io.Copy(data, f)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return f, nil
+	return &charmfs.File{
+		Data: io.NopCloser(data),
+		Info: info,
+	}, nil
 }
 
 // Put reads from the provided io.Reader and stores the data with the Charm ID

@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 
+	charmfs "github.com/charmbracelet/charm/fs"
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/server/db"
 	"github.com/charmbracelet/charm/server/storage"
@@ -331,6 +333,11 @@ func (s *HTTPServer) handleGetFile(w http.ResponseWriter, r *http.Request) {
 		log.Printf("cannot get file info: %s", err)
 		s.renderError(w)
 		return
+	}
+	cfi, ok := fi.(*charmfs.FileInfo)
+	if ok && cfi.FileInfo.Metadata != nil {
+		b64 := base64.StdEncoding.EncodeToString(cfi.FileInfo.Metadata)
+		w.Header().Set("X-Metadata", b64)
 	}
 	w.Header().Set("X-Name", fi.Name())
 	w.Header().Set("X-File-Mode", fmt.Sprintf("%d", fi.Mode()))

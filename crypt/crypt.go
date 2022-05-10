@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"log"
 
 	"github.com/charmbracelet/charm/client"
 	charm "github.com/charmbracelet/charm/proto"
@@ -109,6 +110,18 @@ func (cr *Crypt) Keys() []*charm.EncryptKey {
 	return cr.keys
 }
 
+// Encrypt encrypts data.
+func (cr *Crypt) Encrypt(b []byte) ([]byte, error) {
+	if b == nil {
+		return nil, nil
+	}
+	ct, err := siv.Encrypt(nil, []byte(cr.keys[0].Key[:32]), b, nil)
+	if err != nil {
+		return nil, err
+	}
+	return ct, nil
+}
+
 // EncryptLookupField will deterministically encrypt a string and the same
 // encrypted value every time this string is encrypted with the same
 // EncryptKey. This is useful if you need to look up an encrypted value without
@@ -118,11 +131,32 @@ func (cr *Crypt) EncryptLookupField(field string) (string, error) {
 	if field == "" {
 		return "", nil
 	}
-	ct, err := siv.Encrypt(nil, []byte(cr.keys[0].Key[:32]), []byte(field), nil)
+	b, err := cr.Encrypt([]byte(field))
 	if err != nil {
 		return "", err
 	}
-	return hex.EncodeToString(ct), nil
+	return hex.EncodeToString(b), nil
+}
+
+// Decrypt decrypts data encrypted with Encrypt.
+func (cr *Crypt) Decrypt(b []byte) ([]byte, error) {
+	if b == nil {
+		return nil, nil
+	}
+	var err error
+	var pt []byte
+	for _, k := range cr.keys {
+		pt, err = siv.Decrypt([]byte(k.Key[:32]), b, nil)
+		if err == nil {
+			break
+		} else {
+			log.Print(err)
+		}
+	}
+	if len(pt) == 0 {
+		return nil, ErrIncorrectEncryptKeys
+	}
+	return pt, nil
 }
 
 // DecryptLookupField decrypts a string encrypted with EncryptLookupField.
@@ -134,15 +168,9 @@ func (cr *Crypt) DecryptLookupField(field string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	var pt []byte
-	for _, k := range cr.keys {
-		pt, err = siv.Decrypt([]byte(k.Key[:32]), ct, nil)
-		if err == nil {
-			break
-		}
-	}
-	if len(pt) == 0 {
-		return "", ErrIncorrectEncryptKeys
+	pt, err := cr.Decrypt(ct)
+	if err != nil {
+		return "", err
 	}
 	return string(pt), nil
 }
