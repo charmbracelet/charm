@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"archive/tar"
+	"bytes"
 	"io"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/charmbracelet/charm/testserver"
+	"golang.org/x/crypto/ssh"
 )
 
 func TestBackupKeysCmd(t *testing.T) {
@@ -53,5 +55,20 @@ func TestBackupKeysCmd(t *testing.T) {
 
 	if len(paths) != 2 {
 		t.Errorf("expected at least 2 files (public and private keys), got %d: %v", len(paths), paths)
+	}
+}
+
+func TestBackupToStdout(t *testing.T) {
+	_ = testserver.SetupTestServer(t)
+	var b bytes.Buffer
+
+	BackupKeysCmd.SetArgs([]string{"-o", "-"})
+	BackupKeysCmd.SetOut(&b)
+	if err := BackupKeysCmd.Execute(); err != nil {
+		t.Fatalf("command failed: %s", err)
+	}
+
+	if _, err := ssh.ParsePrivateKey(b.Bytes()); err != nil {
+		t.Fatalf("expected no error, got %v", err)
 	}
 }

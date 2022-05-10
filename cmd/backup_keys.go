@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -13,6 +12,12 @@ import (
 	"github.com/charmbracelet/charm/client"
 	"github.com/spf13/cobra"
 )
+
+var backupOutputFile string
+
+func init() {
+	BackupKeysCmd.Flags().StringVarP(&backupOutputFile, "output", "o", "charm-keys-backup.tar", "keys backup filepath")
+}
 
 // BackupKeysCmd is the cobra.Command to back up a user's account SSH keys.
 var BackupKeysCmd = &cobra.Command{
@@ -23,20 +28,6 @@ var BackupKeysCmd = &cobra.Command{
 	Args:                  cobra.NoArgs,
 	DisableFlagsInUseLine: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		const filename = "charm-keys-backup.tar"
-
-		cwd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		// Don't overwrite backup file
-		keyPath := path.Join(cwd, filename)
-		if fileOrDirectoryExists(keyPath) {
-			fmt.Printf("Not creating backup file: %s already exists.\n\n", code(filename))
-			os.Exit(1)
-		}
-
 		cfg, err := client.ConfigFromEnv()
 		if err != nil {
 			return err
@@ -56,11 +47,42 @@ var BackupKeysCmd = &cobra.Command{
 			return err
 		}
 
-		if err := createTar(dd, filename); err != nil {
+		backupPath := backupOutputFile
+		if backupPath == "-" {
+			exp := regexp.MustCompilePOSIX("charm_(rsa|ed25519)$")
+			paths, err := getKeyPaths(dd, exp)
+			if err != nil {
+				return err
+			}
+			if len(paths) != 1 {
+				return fmt.Errorf("backup to stdout only works with 1 key, you have %d", len(paths))
+			}
+			bts, err := os.ReadFile(paths[0])
+			if err != nil {
+				return err
+			}
+			_, _ = fmt.Fprint(cmd.OutOrStdout(), string(bts))
+			return nil
+		}
+
+		if !strings.HasSuffix(backupPath, ".tar") {
+			backupPath = backupPath + ".tar"
+		}
+
+		if fileOrDirectoryExists(backupPath) {
+			fmt.Printf("Not creating backup file: %s already exists.\n\n", code(backupPath))
+			os.Exit(1)
+		}
+
+		if err := os.MkdirAll(filepath.Dir(backupPath), 0o754); err != nil {
 			return err
 		}
 
-		fmt.Printf("Done! Saved keys to %s.\n\n", code(filename))
+		if err := createTar(dd, backupPath); err != nil {
+			return err
+		}
+
+		fmt.Printf("Done! Saved keys to %s.\n\n", code(backupPath))
 		return nil
 	},
 }
@@ -127,49 +149,66 @@ func createTar(source string, target string) error {
 
 	exp := regexp.MustCompilePOSIX("charm_(rsa|ed25519)(.pub)?$")
 
-	if err := filepath.Walk(source,
-		func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-
-			if !exp.MatchString(path) {
-				return nil
-			}
-
-			header, err := tar.FileInfoHeader(info, info.Name())
-			if err != nil {
-				return err
-			}
-
-			if baseDir != "" {
-				header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, source))
-			}
-
-			if err := tarball.WriteHeader(header); err != nil {
-				return err
-			}
-
-			if info.IsDir() {
-				return nil
-			}
-
-			file, err := os.Open(path)
-			if err != nil {
-				return err
-			}
-			defer file.Close() // nolint:errcheck
-
-			if _, err := io.Copy(tarball, file); err != nil {
-				return err
-			}
-			return file.Close()
-		}); err != nil {
+	paths, err := getKeyPaths(source, exp)
+	if err != nil {
 		return err
+	}
+
+	for _, path := range paths {
+		info, err := os.Stat(path)
+		if err != nil {
+			return err
+		}
+
+		header, err := tar.FileInfoHeader(info, info.Name())
+		if err != nil {
+			return err
+		}
+
+		if baseDir != "" {
+			header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, source))
+		}
+
+		if err := tarball.WriteHeader(header); err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		file, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close() // nolint:errcheck
+
+		if _, err := io.Copy(tarball, file); err != nil {
+			return err
+		}
+		if err := file.Close(); err != nil {
+			return err
+		}
 	}
 
 	if err := tarball.Close(); err != nil {
 		return err
 	}
 	return tarfile.Close()
+}
+
+func getKeyPaths(source string, filter *regexp.Regexp) ([]string, error) {
+	var result []string
+	err := filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if filter.MatchString(path) {
+			result = append(result, path)
+		}
+
+		return nil
+	})
+	return result, err
 }
