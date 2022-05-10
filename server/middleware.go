@@ -14,8 +14,12 @@ import (
 )
 
 type contextKey string
+type contextPublic string
 
-var ctxUserKey contextKey = "charmUser"
+var (
+	ctxUserKey contextKey    = "charmUser"
+	ctxPublic  contextPublic = "public"
+)
 
 // MaxFSRequestSize is the maximum size of a request body for fs endpoints.
 var MaxFSRequestSize int64 = 1024 * 1024 * 1024 // 1GB
@@ -53,7 +57,7 @@ func PublicPrefixesMiddleware(prefixes []string) func(http.Handler) http.Handler
 					public = true
 				}
 			}
-			ctx := context.WithValue(r.Context(), "public", public)
+			ctx := context.WithValue(r.Context(), ctxPublic, public)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -108,7 +112,13 @@ func CharmUserMiddleware(s *HTTPServer) func(http.Handler) http.Handler {
 }
 
 func isPublic(r *http.Request) bool {
-	return r.Context().Value("public") == true
+	public, ok := r.Context().Value(ctxPublic).(bool)
+	if !ok {
+		log.Print("cannot get public value from context")
+		return false
+	}
+
+	return public
 }
 
 func charmIDFromRequest(r *http.Request) (string, error) {
