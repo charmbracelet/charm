@@ -405,10 +405,10 @@ func (s *HTTPServer) handleGetNews(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *HTTPServer) charmUserFromRequest(w http.ResponseWriter, r *http.Request) *charm.User {
-	u := r.Context().Value(ctxUserKey)
-	if u == nil {
+	u, ok := r.Context().Value(ctxUserKey).(*charm.User)
+	if !ok {
 		log.Printf("could not assign user to request context")
 		s.renderError(w)
 	}
-	return u.(*charm.User)
+	return u
 }
