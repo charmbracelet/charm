@@ -4,7 +4,6 @@
 package cmd
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"io/fs"
@@ -334,53 +333,6 @@ func (f *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenR
 	return f, nil
 }
 
-// NodeFile is a wrapper around a File that implements the fs.File interface.
-type NodeFile struct {
-	node *File
-	*bytes.Reader
-}
-
-// Stat returns the FileInfo for this node.
-func (nf *NodeFile) Stat() (fs.FileInfo, error) {
-	return nf, nil
-}
-
-// Name returns the name of the file.
-func (nf *NodeFile) Name() string {
-	return nf.node.Name
-}
-
-// Size returns the size of the file.
-func (nf *NodeFile) Size() int64 {
-	return int64(len(nf.node.data))
-}
-
-// Mode returns the file mode bits.
-func (nf *NodeFile) Mode() fs.FileMode {
-	return nf.node.Mode
-}
-
-// ModTime returns the modification time.
-func (nf *NodeFile) ModTime() time.Time {
-	//TODO: implement
-	return time.Now()
-}
-
-// IsDir returns false for files.
-func (nf *NodeFile) IsDir() bool {
-	return false
-}
-
-// Sys is not implemented.
-func (nf *NodeFile) Sys() interface{} {
-	return nil
-}
-
-// Close closes the handle.
-func (nf *NodeFile) Close() error {
-	return nil
-}
-
 // Rename moves a file to a new directory.
 func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir bfs.Node) error {
 	f, ok := d.Items[req.OldName]
@@ -399,7 +351,8 @@ func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir bfs.No
 	ff.mu.Lock()
 	defer ff.mu.Unlock()
 
-	if err := d.Mount.lsfs.WriteFile(dst, &NodeFile{ff, bytes.NewReader(ff.data)}); err != nil {
+	if err := d.Mount.lsfs.WriteFile(dst, ff.data, ff.Mode); err != nil {
+		fmt.Println("Can't rename:", err)
 		return err
 	}
 	if err := d.Mount.lsfs.Remove(ff.Path()); err != nil {
@@ -424,7 +377,13 @@ func (f *File) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	fmt.Printf("Releasing %s %d\n", f.Path(), len(f.data))
+	fmt.Printf("Releasing %s %d %d\n", f.Path(), len(f.data), f.Mode)
+	f.Size = uint64(len(f.data))
+
+	if err := f.Mount.lsfs.WriteFile(f.Path(), f.data, f.Mode); err != nil {
+		fmt.Println("Can't write:", err)
+		return err
+	}
 
 	f.writers--
 	if f.writers == 0 {
@@ -534,9 +493,12 @@ func (f *File) Flush(ctx context.Context, req *fuse.FlushRequest) error {
 		return nil
 	}
 
-	if err := f.Mount.lsfs.WriteFile(f.Path(), &NodeFile{f, bytes.NewReader(f.data)}); err != nil {
-		return err
-	}
+	/*
+		if err := f.Mount.lsfs.WriteFile(f.Path(), f.data, f.Mode); err != nil {
+			fmt.Println("Can't flush:", err)
+			return err
+		}
+	*/
 	f.Size = uint64(len(f.data))
 
 	return nil
@@ -580,10 +542,14 @@ func (f *File) Fsync(ctx context.Context, req *fuse.FsyncRequest) error {
 		return nil
 	}
 
-	if err := f.Mount.lsfs.WriteFile(f.Path(), &NodeFile{f, bytes.NewReader(f.data)}); err != nil {
-		return err
-	}
+	/*
+		if err := f.Mount.lsfs.WriteFile(f.Path(), f.data, f.Mode); err != nil {
+			fmt.Println("Can't fsync:", err)
+			return err
+		}
+	*/
 	f.Size = uint64(len(f.data))
+
 	return nil
 }
 
@@ -629,9 +595,13 @@ var _ = bfs.NodeRemover(&Dir{})
 func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
 	fmt.Printf("Removing file in %s: %s\n", d.Path(), req.Name)
 
-	d.Items[req.Name] = nil
+	if err := d.Mount.lsfs.Remove(filepath.Join(d.Path(), req.Name)); err != nil {
+		fmt.Println("Can't remove!")
+		return err
+	}
 
-	return d.Mount.lsfs.Remove(filepath.Join(d.Path(), req.Name))
+	d.Items[req.Name] = nil
+	return nil
 }
 
 func fsMount(cmd *cobra.Command, args []string) error {
