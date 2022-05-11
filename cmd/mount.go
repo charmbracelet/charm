@@ -45,8 +45,10 @@ type Dir struct {
 	Mount  *Mount
 	Parent *Dir
 	Name   string
-	Mode   os.FileMode
-	Items  map[string]interface{}
+
+	ModTime time.Time
+	Mode    os.FileMode
+	Items   map[string]interface{}
 
 	cached bool
 }
@@ -57,8 +59,9 @@ type File struct {
 	Parent *Dir
 	Name   string
 
-	Mode os.FileMode
-	Size uint64
+	ModTime time.Time
+	Mode    os.FileMode
+	Size    uint64
 
 	// number of write-capable handles currently open
 	writers uint
@@ -71,8 +74,9 @@ type File struct {
 // Root returns the root directory.
 func (m *Mount) Root() (bfs.Node, error) {
 	return &Dir{
-		Mount: m,
-		Items: make(map[string]interface{}),
+		Mount:   m,
+		ModTime: time.Now(),
+		Items:   make(map[string]interface{}),
 	}, nil
 }
 
@@ -144,6 +148,10 @@ func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
 
 	a.Uid = d.Mount.uid
 	a.Gid = d.Mount.gid
+	a.Atime = d.ModTime
+	a.Ctime = d.ModTime
+	a.Mtime = d.ModTime
+	a.Mode = d.Mode
 	if a.Mode == 0 {
 		a.Mode = os.ModeDir | 0700
 	}
@@ -179,21 +187,23 @@ func (d *Dir) Lookup(_ context.Context, name string) (bfs.Node, error) {
 
 	if st.IsDir() {
 		dir := &Dir{
-			Mount:  d.Mount,
-			Parent: d,
-			Name:   name,
-			Mode:   st.Mode(),
-			Items:  make(map[string]interface{}),
+			Mount:   d.Mount,
+			Parent:  d,
+			Name:    name,
+			ModTime: st.ModTime(),
+			Mode:    st.Mode(),
+			Items:   make(map[string]interface{}),
 		}
 		return dir, nil
 	}
 
 	return &File{
-		Mount:  d.Mount,
-		Parent: d,
-		Name:   name,
-		Mode:   st.Mode(),
-		Size:   uint64(st.Size()),
+		Mount:   d.Mount,
+		Parent:  d,
+		Name:    name,
+		ModTime: st.ModTime(),
+		Mode:    st.Mode(),
+		Size:    uint64(st.Size()),
 	}, nil
 }
 
@@ -228,34 +238,37 @@ func (d *Dir) ReadDirAll(_ context.Context) ([]fuse.Dirent, error) {
 		if path == d.Path() {
 			return nil
 		}
-		fmt.Println("Found:", path, filepath.Base(path))
+
+		info, err := de.Info()
+		if err != nil {
+			return err
+		}
 
 		ent := fuse.Dirent{Name: filepath.Base(path)}
 		if de.IsDir() {
+			fmt.Println("Found dir:", path, filepath.Base(path), info.Mode())
 			ent.Type = fuse.DT_Dir
 
 			item := &Dir{
-				Mount:  d.Mount,
-				Parent: d,
-				Name:   filepath.Base(path),
-				Mode:   de.Type().Perm(),
-				Items:  make(map[string]interface{}),
+				Mount:   d.Mount,
+				Parent:  d,
+				Name:    filepath.Base(path),
+				ModTime: info.ModTime(),
+				Mode:    info.Mode(),
+				Items:   make(map[string]interface{}),
 			}
 			d.Items[item.Name] = item
 		} else {
+			fmt.Println("Found file:", path, filepath.Base(path), info.Size(), info.Mode())
 			ent.Type = fuse.DT_File
 
-			info, err := de.Info()
-			if err != nil {
-				return err
-			}
-
 			item := &File{
-				Mount:  d.Mount,
-				Parent: d,
-				Name:   filepath.Base(path),
-				Mode:   de.Type().Perm(),
-				Size:   uint64(info.Size()),
+				Mount:   d.Mount,
+				Parent:  d,
+				Name:    filepath.Base(path),
+				ModTime: info.ModTime(),
+				Mode:    info.Mode(),
+				Size:    uint64(info.Size()),
 			}
 			d.Items[item.Name] = item
 		}
@@ -275,7 +288,7 @@ func (d *Dir) ReadDirAll(_ context.Context) ([]fuse.Dirent, error) {
 
 // Attr returns this node's filesystem attributes.
 func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
-	// fmt.Println("Attr:", f.Path(), f.Size)
+	fmt.Println("Attr:", f.Path(), f.Size, f.Mode)
 	// a.Inode = f.Inode
 
 	/*
@@ -291,11 +304,17 @@ func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	a.Mode = f.Mode
+	a.Atime = f.ModTime
+	a.Ctime = f.ModTime
+	a.Mtime = f.ModTime
 	a.Size = f.Size
+	if len(f.data) > 0 {
+		a.Size = uint64(len(f.data))
+	}
 
 	a.Uid = f.Mount.uid
 	a.Gid = f.Mount.gid
+	a.Mode = f.Mode
 	if a.Mode == 0 {
 		a.Mode = 0644
 	}
@@ -575,13 +594,14 @@ var _ = bfs.NodeCreater(&Dir{})
 
 // Create creates a file.
 func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (bfs.Node, bfs.Handle, error) {
-	fmt.Printf("Creating file in %s: %s\n", d.Path(), req.Name)
+	fmt.Printf("Creating file in %s: %s (%d)\n", d.Path(), req.Name, req.Mode)
 
 	f := &File{
 		Mount:   d.Mount,
 		Parent:  d,
 		Name:    req.Name,
-		Mode:    0644,
+		ModTime: time.Now(),
+		Mode:    req.Mode,
 		writers: 1,
 	}
 	d.Items[req.Name] = f
