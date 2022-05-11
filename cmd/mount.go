@@ -576,14 +576,20 @@ var _ = bfs.NodeMkdirer(&Dir{})
 
 // Mkdir creates a new directory.
 func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (bfs.Node, error) {
-	fmt.Printf("Creating dir in %s: %s\n", d.Path(), req.Name)
+	fmt.Printf("Creating dir in %s: %s (%d)\n", d.Path(), req.Name, req.Mode)
+
+	dst := filepath.Join(d.Path(), req.Name)
+	if err := d.Mount.lsfs.MkdirAll(dst, req.Mode); err != nil {
+		return nil, err
+	}
 
 	dir := &Dir{
-		Mount:  d.Mount,
-		Parent: d,
-		Name:   req.Name,
-		Mode:   0700,
-		Items:  make(map[string]interface{}),
+		Mount:   d.Mount,
+		Parent:  d,
+		Name:    req.Name,
+		ModTime: time.Now(),
+		Mode:    req.Mode,
+		Items:   make(map[string]interface{}),
 	}
 	d.Items[req.Name] = dir
 
