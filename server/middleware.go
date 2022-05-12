@@ -11,6 +11,7 @@ import (
 	jwtmiddleware "github.com/auth0/go-jwt-middleware/v2"
 	"github.com/auth0/go-jwt-middleware/v2/validator"
 	charm "github.com/charmbracelet/charm/proto"
+	"github.com/charmbracelet/charm/server/config"
 )
 
 type contextKey string
@@ -23,7 +24,7 @@ var MaxFSRequestSize int64 = 1024 * 1024 * 1024 // 1GB
 // versionMiddleware is a middleware that adds a version header to the response.
 var versionMiddleware = func(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-Version", Version)
+		w.Header().Set("X-Version", config.Version)
 		h.ServeHTTP(w, r)
 	})
 }

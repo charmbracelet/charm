@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/charm/server"
+	"github.com/charmbracelet/charm/server/config"
 	"github.com/charmbracelet/keygen"
 	"github.com/spf13/cobra"
 )
@@ -21,7 +22,7 @@ var (
 		Short:  "Post news to the self-hosted Charm server.",
 		Args:   cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := server.DefaultConfig()
+			cfg := config.DefaultConfig()
 			if serverDataDir != "" {
 				cfg.DataDir = serverDataDir
 			}

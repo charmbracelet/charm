@@ -59,7 +59,7 @@ func (me *SSHServer) handleAPIAuth(s ssh.Session) {
 		me.errorLog.Printf("Error fetching encrypt keys: %s\n", err)
 		return
 	}
-	httpScheme := me.config.httpURL().Scheme
+	httpScheme := me.config.HTTPURL().Scheme
 	_ = me.sendJSON(s, charm.Auth{
 		JWT:         j,
 		ID:          u.CharmID,

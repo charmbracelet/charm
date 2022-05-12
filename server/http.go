@@ -17,6 +17,7 @@ import (
 
 	charmfs "github.com/charmbracelet/charm/fs"
 	charm "github.com/charmbracelet/charm/proto"
+	"github.com/charmbracelet/charm/server/config"
 	"github.com/charmbracelet/charm/server/db"
 	"github.com/charmbracelet/charm/server/storage"
 	"github.com/meowgorithm/babylogger"
@@ -33,7 +34,7 @@ const resultsPerPage = 50
 type HTTPServer struct {
 	db         db.DB
 	fstore     storage.FileStore
-	cfg        *Config
+	cfg        *config.Config
 	server     *http.Server
 	health     *http.Server
 	httpScheme string
@@ -49,7 +50,7 @@ type providerJSON struct {
 }
 
 // NewHTTPServer returns a new *HTTPServer with the specified Config.
-func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
+func NewHTTPServer(cfg *config.Config) (*HTTPServer, error) {
 	healthMux := http.NewServeMux()
 	// No auth health check endpoint
 	healthMux.Handle("/", versionMiddleware(
@@ -60,7 +61,7 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 	health := &http.Server{
 		Addr:     fmt.Sprintf("%s:%d", cfg.BindAddr, cfg.HealthPort),
 		Handler:  healthMux,
-		ErrorLog: cfg.errorLog,
+		ErrorLog: cfg.ErrorLog,
 	}
 	mux := goji.NewMux()
 	s := &HTTPServer{
@@ -71,17 +72,17 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 	s.server = &http.Server{
 		Addr:     fmt.Sprintf("%s:%d", s.cfg.BindAddr, s.cfg.HTTPPort),
 		Handler:  mux,
-		ErrorLog: s.cfg.errorLog,
+		ErrorLog: s.cfg.ErrorLog,
 	}
 	if cfg.UseTLS {
 		s.httpScheme = "https"
-		s.health.TLSConfig = s.cfg.tlsConfig
-		s.server.TLSConfig = s.cfg.tlsConfig
+		s.health.TLSConfig = s.cfg.TLSConfig
+		s.server.TLSConfig = s.cfg.TLSConfig
 	}
 
 	jwtMiddleware, err := JWTMiddleware(
-		cfg.jwtKeyPair.JWK.Public(),
-		cfg.httpURL().String(),
+		cfg.JWTKeyPair.JWK().Public(),
+		cfg.HTTPURL().String(),
 		[]string{"charm"},
 	)
 	if err != nil {
@@ -172,14 +173,14 @@ func (s *HTTPServer) renderCustomError(w http.ResponseWriter, msg string, status
 }
 
 func (s *HTTPServer) handleJWKS(w http.ResponseWriter, r *http.Request) {
-	jwks := jose.JSONWebKeySet{Keys: []jose.JSONWebKey{s.cfg.jwtKeyPair.JWK.Public()}}
+	jwks := jose.JSONWebKeySet{Keys: []jose.JSONWebKey{s.cfg.JWTKeyPair.JWK().Public()}}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	_ = json.NewEncoder(w).Encode(jwks)
 }
 
 func (s *HTTPServer) handleOpenIDConfig(w http.ResponseWriter, r *http.Request) {
-	pj := providerJSON{JWKSURL: fmt.Sprintf("%s/v1/public/jwks", s.cfg.httpURL())}
+	pj := providerJSON{JWKSURL: fmt.Sprintf("%s/v1/public/jwks", s.cfg.HTTPURL())}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	_ = json.NewEncoder(w).Encode(pj)
@@ -311,7 +312,7 @@ func (s *HTTPServer) handlePostFile(w http.ResponseWriter, r *http.Request) {
 		defer f.Close() // nolint:errcheck
 	}
 	if s.cfg.UserMaxStorage > 0 && fh != nil {
-		stat, err := s.cfg.FileStore.Stat(u.CharmID, "")
+		stat, err := s.cfg.FileStore.Info(u.CharmID, "")
 		if err != nil {
 			log.Printf("cannot stat user storage: %s", err)
 			s.renderError(w)
@@ -335,7 +336,7 @@ func (s *HTTPServer) handlePostFile(w http.ResponseWriter, r *http.Request) {
 func (s *HTTPServer) handleGetFile(w http.ResponseWriter, r *http.Request) {
 	u := s.charmUserFromRequest(w, r)
 	path := filepath.Clean(pattern.Path(r.Context()))
-	fi, err := s.cfg.FileStore.Stat(u.CharmID, path)
+	fi, err := s.cfg.FileStore.Info(u.CharmID, path)
 	if errors.Is(err, fs.ErrNotExist) {
 		s.renderCustomError(w, "file not found", http.StatusNotFound)
 		return
