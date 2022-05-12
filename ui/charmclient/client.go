@@ -1,8 +1,6 @@
 package charmclient
 
 import (
-	"log"
-
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm/client"
 	charm "github.com/charmbracelet/charm/proto"
@@ -27,7 +25,6 @@ type ErrMsg struct {
 func NewClient(cfg *client.Config) tea.Cmd {
 	return func() tea.Msg {
 		cc, err := client.NewClient(cfg)
-		log.Println("error:", err)
 
 		if err == charm.ErrMissingSSHAuth {
 			return SSHAuthErrorMsg{err}
