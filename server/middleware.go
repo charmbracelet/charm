@@ -20,6 +20,14 @@ var ctxUserKey contextKey = "charmUser"
 // MaxFSRequestSize is the maximum size of a request body for fs endpoints.
 var MaxFSRequestSize int64 = 1024 * 1024 * 1024 // 1GB
 
+// versionMiddleware is a middleware that adds a version header to the response.
+var versionMiddleware = func(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Version", Version)
+		h.ServeHTTP(w, r)
+	})
+}
+
 // RequestLimitMiddleware limits the request body size to the specified limit.
 func RequestLimitMiddleware() func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {

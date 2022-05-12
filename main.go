@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/charm/client"
 	"github.com/charmbracelet/charm/cmd"
+	"github.com/charmbracelet/charm/server"
 	"github.com/charmbracelet/charm/ui"
 	"github.com/charmbracelet/charm/ui/common"
 	"github.com/spf13/cobra"
@@ -62,6 +63,7 @@ func init() {
 		}
 	}
 	rootCmd.Version = Version
+	server.Version = Version
 
 	rootCmd.AddCommand(
 		cmd.BioCmd,

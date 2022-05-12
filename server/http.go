@@ -52,9 +52,11 @@ type providerJSON struct {
 func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 	healthMux := http.NewServeMux()
 	// No auth health check endpoint
-	healthMux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "We live!")
-	}))
+	healthMux.Handle("/", versionMiddleware(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprintf(w, "We live!")
+		}),
+	))
 	health := &http.Server{
 		Addr:     fmt.Sprintf("%s:%d", cfg.BindAddr, cfg.HealthPort),
 		Handler:  healthMux,
@@ -86,6 +88,7 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 		return nil, err
 	}
 
+	mux.Use(versionMiddleware)
 	mux.Use(babylogger.Middleware)
 	mux.Use(PublicPrefixesMiddleware([]string{"/v1/public/", "/.well-known/"}))
 	mux.Use(jwtMiddleware)

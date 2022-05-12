@@ -23,6 +23,12 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+var (
+	// Version is the version of the Charm Cloud server. This is set at build
+	// time by main.go.
+	Version = ""
+)
+
 // Config is the configuration for the Charm server.
 type Config struct {
 	BindAddr       string `env:"CHARM_SERVER_BIND_ADDRESS" envDefault:""`
