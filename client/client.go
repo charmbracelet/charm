@@ -94,10 +94,14 @@ func NewClient(cfg *Config) (*Client, error) {
 
 	var pkam ssh.AuthMethod
 	for i := 0; i < len(sshKeys); i++ {
-		pkam, err = publicKeyAuthMethod(sshKeys[i])
+		signer, err := parseKey(sshKeys[i])
 		if err != nil && i == len(sshKeys)-1 {
 			return nil, charm.ErrMissingSSHAuth
 		}
+		if err := checkKeyAlgo(signer); err != nil && i == len(sshKeys)-1 {
+			return nil, err
+		}
+		pkam = ssh.PublicKeys(signer)
 	}
 	cc.authKeyPaths = sshKeys
 
@@ -224,8 +228,6 @@ func (cfg *Config) KeygenType() keygen.KeyType {
 		return keygen.Ed25519
 	case "rsa":
 		return keygen.RSA
-	case "ecdsa":
-		return keygen.ECDSA
 	default:
 		return keygen.Ed25519
 	}
@@ -320,7 +322,17 @@ func (cc *Client) findAuthKeys(keyType string) (pathsToKeys []string, err error)
 	return found, nil
 }
 
-func publicKeyAuthMethod(kp string) (ssh.AuthMethod, error) {
+func checkKeyAlgo(signer ssh.Signer) error {
+	ka := signer.PublicKey().Type()
+	for _, a := range []string{"ssh-rsa", "ssh-ed25519"} {
+		if a == ka {
+			return nil
+		}
+	}
+	return fmt.Errorf("Sorry, we don't support %s keys yet. Supported types are rsa and ed25519", algo(ka))
+}
+
+func parseKey(kp string) (ssh.Signer, error) {
 	keyPath, err := homedir.Expand(kp)
 	if err != nil {
 		return nil, err
@@ -333,5 +345,5 @@ func publicKeyAuthMethod(kp string) (ssh.AuthMethod, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ssh.PublicKeys(signer), nil
+	return signer, nil
 }
