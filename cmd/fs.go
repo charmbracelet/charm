@@ -264,6 +264,9 @@ func fsRemove(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	if isRecursive {
+		return lsfs.RemoveAll(args[0])
+	}
 	return lsfs.Remove(args[0])
 }
 
@@ -363,6 +366,7 @@ func printDir(f fs.ReadDirFile) error {
 func init() {
 	fsCopyCmd.Flags().BoolVarP(&isRecursive, "recursive", "r", false, "copy directories recursively")
 	fsMoveCmd.Flags().BoolVarP(&isRecursive, "recursive", "r", false, "move directories recursively")
+	fsRemoveCmd.Flags().BoolVarP(&isRecursive, "recursive", "r", false, "remove files recursively")
 
 	FSCmd.AddCommand(fsCatCmd)
 	FSCmd.AddCommand(fsCopyCmd)

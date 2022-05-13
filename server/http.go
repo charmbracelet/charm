@@ -393,10 +393,19 @@ func (s *HTTPServer) handleGetFile(w http.ResponseWriter, r *http.Request) {
 func (s *HTTPServer) handleDeleteFile(w http.ResponseWriter, r *http.Request) {
 	u := s.charmUserFromRequest(w, r)
 	path := filepath.Clean(pattern.Path(r.Context()))
-	err := s.cfg.FileStore.Delete(u.CharmID, path)
+	all := r.Header.Get("X-Recursive") == "true"
+	err := s.cfg.FileStore.Delete(u.CharmID, path, all)
 	if err != nil {
-		log.Printf("cannot delete file: %s", err)
-		s.renderError(w)
+		switch {
+		case errors.Is(err, fs.ErrNotExist):
+			s.renderCustomError(w, "file not found", http.StatusNotFound)
+		// Directory not empty
+		case errors.Is(err, fs.ErrExist):
+			s.renderCustomError(w, "directory not empty", http.StatusBadRequest)
+		default:
+			log.Printf("cannot delete file: %s", err)
+			s.renderError(w)
+		}
 		return
 	}
 }

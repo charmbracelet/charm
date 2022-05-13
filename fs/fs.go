@@ -384,18 +384,30 @@ func (cfs *FS) WriteFile(name string, data []byte, perm fs.FileMode) error {
 	return resp.Body.Close()
 }
 
-// Remove deletes a file from the Charm Cloud server.
-func (cfs *FS) Remove(name string) error {
+func (cfs *FS) remove(name string, all bool) error {
 	ep, err := cfs.EncryptPath(name)
 	if err != nil {
 		return err
 	}
 	path := fmt.Sprintf("/v1/fs/%s", ep)
-	resp, err := cfs.cc.AuthedRequest("DELETE", path, nil, nil)
+	headers := http.Header{
+		"X-Recursive": {fmt.Sprintf("%t", all)},
+	}
+	resp, err := cfs.cc.AuthedRequest("DELETE", path, headers, nil)
 	if err != nil {
 		return err
 	}
 	return resp.Body.Close()
+}
+
+// Remove deletes a file from the Charm Cloud server.
+func (cfs *FS) Remove(name string) error {
+	return cfs.remove(name, false)
+}
+
+// RemoveAll deletes a directory and all its contents from the Charm Cloud
+func (cfs *FS) RemoveAll(name string) error {
+	return cfs.remove(name, true)
 }
 
 // MkdirAll creates a directory on the configured Charm Cloud server.

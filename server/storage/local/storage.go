@@ -185,7 +185,10 @@ func (lfs *LocalFileStore) Put(charmID string, path string, r io.Reader, mode fs
 }
 
 // Delete deletes the file at the given path for the provided Charm ID.
-func (lfs *LocalFileStore) Delete(charmID string, path string) error {
-	fp := filepath.Join(lfs.Path, charmID, path)
-	return os.RemoveAll(fp)
+func (lfs *LocalFileStore) Delete(charmID string, path string, all bool) error {
+	fp := filepath.Join(lfs.path, charmID, path)
+	if all {
+		return os.RemoveAll(fp)
+	}
+	return os.Remove(fp)
 }
