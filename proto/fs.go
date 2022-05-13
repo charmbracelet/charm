@@ -7,12 +7,13 @@ import (
 
 // FileInfo describes a file and is returned by Stat.
 type FileInfo struct {
-	Name    string      `json:"name"`
-	IsDir   bool        `json:"is_dir"`
-	Size    int64       `json:"size"`
-	ModTime time.Time   `json:"modtime"`
-	Mode    fs.FileMode `json:"mode"`
-	Files   []FileInfo  `json:"files,omitempty"`
+	Name     string      `json:"name"`
+	IsDir    bool        `json:"is_dir"`
+	Size     int64       `json:"size"`
+	ModTime  time.Time   `json:"modtime"`
+	Mode     fs.FileMode `json:"mode"`
+	Metadata []byte      `json:"metadata,omitempty"`
+	Files    []FileInfo  `json:"files,omitempty"`
 }
 
 // Add execute permissions to an fs.FileMode to mirror read permissions.

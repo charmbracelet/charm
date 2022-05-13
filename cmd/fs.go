@@ -176,9 +176,14 @@ func (lrfs *localRemoteFS) write(name string, src fs.File) error {
 			}
 		}
 	case remotePath:
-		if !stat.IsDir() {
-			return lrfs.cfs.WriteFile(p.path, src)
+		if stat.IsDir() {
+			return lrfs.cfs.MkdirAll(p.path, stat.Mode())
 		}
+		buf, err := io.ReadAll(src)
+		if err != nil {
+			return err
+		}
+		return lrfs.cfs.WriteFile(p.path, buf, stat.Mode())
 	default:
 		return fmt.Errorf("invalid path type")
 	}
@@ -259,6 +264,9 @@ func fsRemove(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	if isRecursive {
+		return lsfs.RemoveAll(args[0])
+	}
 	return lsfs.Remove(args[0])
 }
 
@@ -318,6 +326,9 @@ func fsTree(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	err = fs.WalkDir(lsfs, args[0], func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
 		fmt.Println(path)
 		return nil
 	})
@@ -355,6 +366,7 @@ func printDir(f fs.ReadDirFile) error {
 func init() {
 	fsCopyCmd.Flags().BoolVarP(&isRecursive, "recursive", "r", false, "copy directories recursively")
 	fsMoveCmd.Flags().BoolVarP(&isRecursive, "recursive", "r", false, "move directories recursively")
+	fsRemoveCmd.Flags().BoolVarP(&isRecursive, "recursive", "r", false, "remove files recursively")
 
 	FSCmd.AddCommand(fsCatCmd)
 	FSCmd.AddCommand(fsCopyCmd)

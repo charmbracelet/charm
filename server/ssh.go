@@ -11,6 +11,7 @@ import (
 	"time"
 
 	charm "github.com/charmbracelet/charm/proto"
+	"github.com/charmbracelet/charm/server/config"
 	"github.com/charmbracelet/charm/server/db"
 	"github.com/charmbracelet/wish"
 	rm "github.com/charmbracelet/wish/recover"
@@ -30,7 +31,7 @@ type SessionHandler func(s Session)
 // SSHServer serves the SSH protocol and handles requests to authenticate and
 // link Charm user accounts.
 type SSHServer struct {
-	config    *Config
+	config    *config.Config
 	db        db.DB
 	server    *ssh.Server
 	errorLog  *log.Logger
@@ -38,11 +39,11 @@ type SSHServer struct {
 }
 
 // NewSSHServer creates a new SSHServer from the provided Config.
-func NewSSHServer(cfg *Config) (*SSHServer, error) {
+func NewSSHServer(cfg *config.Config) (*SSHServer, error) {
 	s := &SSHServer{
 		config:    cfg,
-		errorLog:  cfg.errorLog,
-		linkQueue: cfg.linkQueue,
+		errorLog:  cfg.ErrorLog,
+		linkQueue: cfg.LinkQueue,
 	}
 	if s.errorLog == nil {
 		s.errorLog = log.Default()
@@ -134,12 +135,12 @@ func (me *SSHServer) newJWT(charmID string, audience ...string) (string, error) 
 	claims := &jwt.RegisteredClaims{
 		Subject:   charmID,
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
-		Issuer:    me.config.httpURL().String(),
+		Issuer:    me.config.HTTPURL().String(),
 		Audience:  audience,
 	}
 	token := jwt.NewWithClaims(&jwt.SigningMethodEd25519{}, claims)
-	token.Header["kid"] = me.config.jwtKeyPair.JWK.KeyID
-	return token.SignedString(me.config.jwtKeyPair.PrivateKey)
+	token.Header["kid"] = me.config.JWTKeyPair.JWK().KeyID
+	return token.SignedString(me.config.JWTKeyPair.PrivateKey())
 }
 
 // keyText is the base64 encoded public key for the glider.Session.

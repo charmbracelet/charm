@@ -12,6 +12,7 @@ import (
 	charmfs "github.com/charmbracelet/charm/fs"
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/server/storage"
+	"github.com/muesli/sasquatch"
 )
 
 // LocalFileStore is a FileStore implementation that stores files locally in a
@@ -34,20 +35,36 @@ func NewLocalFileStore(path string) (*LocalFileStore, error) {
 // Stat returns the FileInfo for the given Charm ID and path.
 func (lfs *LocalFileStore) Stat(charmID, path string) (fs.FileInfo, error) {
 	fp := filepath.Join(lfs.Path, charmID, path)
-	i, err := os.Stat(fp)
+	f, err := os.Open(fp)
 	if os.IsNotExist(err) {
 		return nil, fs.ErrNotExist
 	}
 	if err != nil {
 		return nil, err
 	}
+	i, err := f.Stat()
+	if err != nil {
+		return nil, err
+	}
+	var md []byte
+	if !i.IsDir() {
+		md, err = sasquatch.Metadata(f)
+		if err != nil {
+			return nil, err
+		}
+	}
+	name := i.Name()
+	if name == charmID {
+		name = ""
+	}
 	in := &charmfs.FileInfo{
 		FileInfo: charm.FileInfo{
-			Name:    i.Name(),
-			IsDir:   i.IsDir(),
-			Size:    i.Size(),
-			ModTime: i.ModTime(),
-			Mode:    i.Mode(),
+			Name:     name,
+			IsDir:    i.IsDir(),
+			Size:     i.Size(),
+			ModTime:  i.ModTime(),
+			Mode:     i.Mode(),
+			Metadata: md,
 		},
 	}
 	// Get the actual size of the files in a directory
@@ -68,8 +85,9 @@ func (lfs *LocalFileStore) Stat(charmID, path string) (fs.FileInfo, error) {
 
 // Get returns an fs.File for the given Charm ID and path.
 func (lfs *LocalFileStore) Get(charmID string, path string) (fs.File, error) {
+	data := bytes.NewBuffer(nil)
 	fp := filepath.Join(lfs.Path, charmID, path)
-	info, err := os.Stat(fp)
+	info, err := lfs.Stat(charmID, path)
 	if os.IsNotExist(err) {
 		return nil, fs.ErrNotExist
 	}
@@ -92,35 +110,48 @@ func (lfs *LocalFileStore) Get(charmID string, path string) (fs.File, error) {
 			if err != nil {
 				return nil, err
 			}
+			var md []byte
+			if !v.IsDir() {
+				sf, err := os.Open(filepath.Join(fp, v.Name()))
+				if err != nil {
+					return nil, err
+				}
+				md, err = sasquatch.Metadata(sf)
+				if err != nil {
+					return nil, err
+				}
+			}
 			fin := charm.FileInfo{
-				Name:    v.Name(),
-				IsDir:   fi.IsDir(),
-				Size:    fi.Size(),
-				ModTime: fi.ModTime(),
-				Mode:    fi.Mode(),
+				Name:     v.Name(),
+				IsDir:    fi.IsDir(),
+				Size:     fi.Size(),
+				ModTime:  fi.ModTime(),
+				Mode:     fi.Mode(),
+				Metadata: md,
 			}
 			fis = append(fis, fin)
 		}
 		dir := charm.FileInfo{
 			Name:    info.Name(),
-			IsDir:   true,
-			Size:    0,
+			IsDir:   info.IsDir(),
+			Size:    info.Size(),
 			ModTime: info.ModTime(),
 			Mode:    info.Mode(),
 			Files:   fis,
 		}
-		buf := bytes.NewBuffer(nil)
-		enc := json.NewEncoder(buf)
-		err = enc.Encode(dir)
+		if err := json.NewEncoder(data).Encode(dir); err != nil {
+			return nil, err
+		}
+	} else {
+		_, err := io.Copy(data, f)
 		if err != nil {
 			return nil, err
 		}
-		return &charmfs.DirFile{
-			Buffer:   buf,
-			FileInfo: info,
-		}, nil
 	}
-	return f, nil
+	return &charmfs.File{
+		Data: io.NopCloser(data),
+		Info: info,
+	}, nil
 }
 
 // Put reads from the provided io.Reader and stores the data with the Charm ID
@@ -134,7 +165,7 @@ func (lfs *LocalFileStore) Put(charmID string, path string, r io.Reader, mode fs
 	if mode.IsDir() {
 		return storage.EnsureDir(fp, mode)
 	}
-	err := storage.EnsureDir(filepath.Dir(fp), mode)
+	err := storage.EnsureDir(filepath.Dir(fp), 0o755)
 	if err != nil {
 		return err
 	}
@@ -154,7 +185,10 @@ func (lfs *LocalFileStore) Put(charmID string, path string, r io.Reader, mode fs
 }
 
 // Delete deletes the file at the given path for the provided Charm ID.
-func (lfs *LocalFileStore) Delete(charmID string, path string) error {
-	fp := filepath.Join(lfs.Path, charmID, path)
-	return os.RemoveAll(fp)
+func (lfs *LocalFileStore) Delete(charmID string, path string, all bool) error {
+	fp := filepath.Join(lfs.path, charmID, path)
+	if all {
+		return os.RemoveAll(fp)
+	}
+	return os.Remove(fp)
 }

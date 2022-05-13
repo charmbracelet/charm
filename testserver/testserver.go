@@ -13,6 +13,7 @@ import (
 
 	"github.com/charmbracelet/charm/client"
 	"github.com/charmbracelet/charm/server"
+	"github.com/charmbracelet/charm/server/config"
 	"github.com/charmbracelet/keygen"
 )
 
@@ -28,7 +29,7 @@ func SetupTestServer(tb testing.TB) *client.Client {
 	sp := filepath.Join(td, ".ssh")
 	clientData := filepath.Join(td, ".client-data")
 
-	cfg := server.DefaultConfig()
+	cfg := config.DefaultConfig()
 	cfg.DataDir = filepath.Join(td, ".data")
 	cfg.SSHPort = randomPort(tb)
 	cfg.HTTPPort = randomPort(tb)

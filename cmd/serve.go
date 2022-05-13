@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/charm/server"
+	"github.com/charmbracelet/charm/server/config"
 	"github.com/charmbracelet/keygen"
 	"github.com/spf13/cobra"
 )
@@ -30,7 +31,7 @@ var (
 		Long:    paragraph("Start the SSH and HTTP servers needed to power a SQLite-backed Charm Cloud."),
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := server.DefaultConfig()
+			cfg := config.DefaultConfig()
 			if serverHTTPPort != 0 {
 				cfg.HTTPPort = serverHTTPPort
 			}

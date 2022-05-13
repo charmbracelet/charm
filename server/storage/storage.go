@@ -12,7 +12,7 @@ type FileStore interface {
 	Stat(charmID string, path string) (fs.FileInfo, error)
 	Get(charmID string, path string) (fs.File, error)
 	Put(charmID string, path string, r io.Reader, mode fs.FileMode) error
-	Delete(charmID string, path string) error
+	Delete(charmID string, path string, all bool) error
 }
 
 // EnsureDir will create the directory for the provided path on the server

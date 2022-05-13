@@ -54,34 +54,49 @@ func NewCrypt() (*Crypt, error) {
 // NewDecryptedReader creates a new Reader that will read from and decrypt the
 // passed in io.Reader of encrypted data.
 func (cr *Crypt) NewDecryptedReader(r io.Reader) (*DecryptedReader, error) {
+	dr, _, err := cr.NewDecryptedReaderWithMetadata(r)
+	return dr, err
+}
+
+// NewDecryptedReaderWithMetadata creates a new Reader that will read from and decrypt the
+// passed in io.Reader of encrypted data and its metadata.
+func (cr *Crypt) NewDecryptedReaderWithMetadata(r io.Reader) (*DecryptedReader, []byte, error) {
 	var sdr io.Reader
+	var md []byte
 	dr := &DecryptedReader{}
 	for _, k := range cr.keys {
 		id, err := sasquatch.NewScryptIdentity(k.Key)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		sdr, err = sasquatch.Decrypt(r, id)
+		sdr, md, err = sasquatch.DecryptWithMetadata(r, id)
 		if err == nil {
 			break
 		}
 	}
 	if sdr == nil {
-		return nil, ErrIncorrectEncryptKeys
+		return nil, nil, ErrIncorrectEncryptKeys
 	}
 	dr.r = sdr
-	return dr, nil
+	return dr, md, nil
 }
 
 // NewEncryptedWriter creates a new Writer that encrypts all data and writes
 // the encrypted data to the supplied io.Writer.
 func (cr *Crypt) NewEncryptedWriter(w io.Writer) (*EncryptedWriter, error) {
+	return cr.NewEncryptedWriterWithMetadata(w, nil)
+}
+
+// NewEncryptedWriterWithMetadata creates a new Writer that encrypts all data
+// and writes the encrypted data along with their metadata to the supplied
+// io.Writer.
+func (cr *Crypt) NewEncryptedWriterWithMetadata(w io.Writer, metadata []byte) (*EncryptedWriter, error) {
 	ew := &EncryptedWriter{}
 	rec, err := sasquatch.NewScryptRecipient(cr.keys[0].Key)
 	if err != nil {
 		return ew, err
 	}
-	sew, err := sasquatch.Encrypt(w, rec)
+	sew, err := sasquatch.EncryptWithMetadata(w, metadata, rec)
 	if err != nil {
 		return ew, err
 	}
@@ -94,6 +109,18 @@ func (cr *Crypt) Keys() []*charm.EncryptKey {
 	return cr.keys
 }
 
+// Encrypt encrypts data.
+func (cr *Crypt) Encrypt(b []byte) ([]byte, error) {
+	if b == nil {
+		return nil, nil
+	}
+	ct, err := siv.Encrypt(nil, []byte(cr.keys[0].Key[:32]), b, nil)
+	if err != nil {
+		return nil, err
+	}
+	return ct, nil
+}
+
 // EncryptLookupField will deterministically encrypt a string and the same
 // encrypted value every time this string is encrypted with the same
 // EncryptKey. This is useful if you need to look up an encrypted value without
@@ -103,11 +130,30 @@ func (cr *Crypt) EncryptLookupField(field string) (string, error) {
 	if field == "" {
 		return "", nil
 	}
-	ct, err := siv.Encrypt(nil, []byte(cr.keys[0].Key[:32]), []byte(field), nil)
+	b, err := cr.Encrypt([]byte(field))
 	if err != nil {
 		return "", err
 	}
-	return hex.EncodeToString(ct), nil
+	return hex.EncodeToString(b), nil
+}
+
+// Decrypt decrypts data encrypted with Encrypt.
+func (cr *Crypt) Decrypt(b []byte) ([]byte, error) {
+	if b == nil {
+		return nil, nil
+	}
+	var err error
+	var pt []byte
+	for _, k := range cr.keys {
+		pt, err = siv.Decrypt([]byte(k.Key[:32]), b, nil)
+		if err == nil {
+			break
+		}
+	}
+	if len(pt) == 0 {
+		return nil, ErrIncorrectEncryptKeys
+	}
+	return pt, nil
 }
 
 // DecryptLookupField decrypts a string encrypted with EncryptLookupField.
@@ -119,15 +165,9 @@ func (cr *Crypt) DecryptLookupField(field string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	var pt []byte
-	for _, k := range cr.keys {
-		pt, err = siv.Decrypt([]byte(k.Key[:32]), ct, nil)
-		if err == nil {
-			break
-		}
-	}
-	if len(pt) == 0 {
-		return "", ErrIncorrectEncryptKeys
+	pt, err := cr.Decrypt(ct)
+	if err != nil {
+		return "", err
 	}
 	return string(pt), nil
 }

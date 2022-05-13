@@ -2,12 +2,14 @@ package server
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -15,6 +17,7 @@ import (
 
 	charmfs "github.com/charmbracelet/charm/fs"
 	charm "github.com/charmbracelet/charm/proto"
+	"github.com/charmbracelet/charm/server/config"
 	"github.com/charmbracelet/charm/server/db"
 	"github.com/charmbracelet/charm/server/storage"
 	"github.com/meowgorithm/babylogger"
@@ -31,7 +34,7 @@ const resultsPerPage = 50
 type HTTPServer struct {
 	db         db.DB
 	fstore     storage.FileStore
-	cfg        *Config
+	cfg        *config.Config
 	server     *http.Server
 	health     *http.Server
 	httpScheme string
@@ -47,16 +50,18 @@ type providerJSON struct {
 }
 
 // NewHTTPServer returns a new *HTTPServer with the specified Config.
-func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
+func NewHTTPServer(cfg *config.Config) (*HTTPServer, error) {
 	healthMux := http.NewServeMux()
 	// No auth health check endpoint
-	healthMux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "We live!")
-	}))
+	healthMux.Handle("/", versionMiddleware(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprintf(w, "We live!")
+		}),
+	))
 	health := &http.Server{
 		Addr:     fmt.Sprintf("%s:%d", cfg.BindAddr, cfg.HealthPort),
 		Handler:  healthMux,
-		ErrorLog: cfg.errorLog,
+		ErrorLog: cfg.ErrorLog,
 	}
 	mux := goji.NewMux()
 	s := &HTTPServer{
@@ -67,23 +72,24 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 	s.server = &http.Server{
 		Addr:     fmt.Sprintf("%s:%d", s.cfg.BindAddr, s.cfg.HTTPPort),
 		Handler:  mux,
-		ErrorLog: s.cfg.errorLog,
+		ErrorLog: s.cfg.ErrorLog,
 	}
 	if cfg.UseTLS {
 		s.httpScheme = "https"
-		s.health.TLSConfig = s.cfg.tlsConfig
-		s.server.TLSConfig = s.cfg.tlsConfig
+		s.health.TLSConfig = s.cfg.TLSConfig
+		s.server.TLSConfig = s.cfg.TLSConfig
 	}
 
 	jwtMiddleware, err := JWTMiddleware(
-		cfg.jwtKeyPair.JWK.Public(),
-		cfg.httpURL().String(),
+		cfg.JWTKeyPair.JWK().Public(),
+		cfg.HTTPURL().String(),
 		[]string{"charm"},
 	)
 	if err != nil {
 		return nil, err
 	}
 
+	mux.Use(versionMiddleware)
 	mux.Use(babylogger.Middleware)
 	mux.Use(PublicPrefixesMiddleware([]string{"/v1/public/", "/.well-known/"}))
 	mux.Use(jwtMiddleware)
@@ -93,6 +99,7 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 	mux.HandleFunc(pat.Get("/v1/bio/:name"), s.handleGetUser)
 	mux.HandleFunc(pat.Post("/v1/bio"), s.handlePostUser)
 	mux.HandleFunc(pat.Post("/v1/encrypt-key"), s.handlePostEncryptKey)
+	// NOTE: pat.Get handles both GET and HEAD requests.
 	mux.HandleFunc(pat.Get("/v1/fs/*"), s.handleGetFile)
 	mux.HandleFunc(pat.Post("/v1/fs/*"), s.handlePostFile)
 	mux.HandleFunc(pat.Delete("/v1/fs/*"), s.handleDeleteFile)
@@ -166,14 +173,14 @@ func (s *HTTPServer) renderCustomError(w http.ResponseWriter, msg string, status
 }
 
 func (s *HTTPServer) handleJWKS(w http.ResponseWriter, r *http.Request) {
-	jwks := jose.JSONWebKeySet{Keys: []jose.JSONWebKey{s.cfg.jwtKeyPair.JWK.Public()}}
+	jwks := jose.JSONWebKeySet{Keys: []jose.JSONWebKey{s.cfg.JWTKeyPair.JWK().Public()}}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	_ = json.NewEncoder(w).Encode(jwks)
 }
 
 func (s *HTTPServer) handleOpenIDConfig(w http.ResponseWriter, r *http.Request) {
-	pj := providerJSON{JWKSURL: fmt.Sprintf("%s/v1/public/jwks", s.cfg.httpURL())}
+	pj := providerJSON{JWKSURL: fmt.Sprintf("%s/v1/public/jwks", s.cfg.HTTPURL())}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	_ = json.NewEncoder(w).Encode(pj)
@@ -280,22 +287,32 @@ func (s *HTTPServer) handlePostSeq(w http.ResponseWriter, r *http.Request) {
 func (s *HTTPServer) handlePostFile(w http.ResponseWriter, r *http.Request) {
 	u := s.charmUserFromRequest(w, r)
 	path := filepath.Clean(pattern.Path(r.Context()))
-	ms := r.URL.Query().Get("mode")
+	ms := r.Header.Get("X-File-Mode")
+	if ms == "" {
+		// Deprecated: remove in next release
+		ms = r.URL.Query().Get("mode")
+		log.Printf("deprecated: use X-File-Mode header instead of mode query param. Please update your client.")
+	}
 	m, err := strconv.ParseUint(ms, 10, 32)
 	if err != nil {
 		log.Printf("file mode not a number: %s", err)
 		s.renderError(w)
 		return
 	}
-	f, fh, err := r.FormFile("data")
-	if err != nil {
-		log.Printf("cannot parse form data: %s", err)
-		s.renderError(w)
-		return
+	mode := fs.FileMode(m)
+	var f multipart.File
+	var fh *multipart.FileHeader
+	if !mode.IsDir() {
+		f, fh, err = r.FormFile("data")
+		if err != nil {
+			log.Printf("cannot parse form data: %s", err)
+			s.renderError(w)
+			return
+		}
+		defer f.Close() // nolint:errcheck
 	}
-	defer f.Close() // nolint:errcheck
-	if s.cfg.UserMaxStorage > 0 {
-		stat, err := s.cfg.FileStore.Stat(u.CharmID, "")
+	if s.cfg.UserMaxStorage > 0 && fh != nil {
+		stat, err := s.cfg.FileStore.Info(u.CharmID, "")
 		if err != nil {
 			log.Printf("cannot stat user storage: %s", err)
 			s.renderError(w)
@@ -306,47 +323,68 @@ func (s *HTTPServer) handlePostFile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if err := s.cfg.FileStore.Put(u.CharmID, path, f, fs.FileMode(m)); err != nil {
+	if err := s.cfg.FileStore.Put(u.CharmID, path, f, mode); err != nil {
 		log.Printf("cannot post file: %s", err)
 		s.renderError(w)
 		return
 	}
-	s.cfg.Stats.FSFileWritten(u.CharmID, fh.Size)
+	if fh != nil {
+		s.cfg.Stats.FSFileWritten(u.CharmID, fh.Size)
+	}
 }
 
 func (s *HTTPServer) handleGetFile(w http.ResponseWriter, r *http.Request) {
 	u := s.charmUserFromRequest(w, r)
 	path := filepath.Clean(pattern.Path(r.Context()))
-	f, err := s.cfg.FileStore.Get(u.CharmID, path)
+	fi, err := s.cfg.FileStore.Info(u.CharmID, path)
 	if errors.Is(err, fs.ErrNotExist) {
 		s.renderCustomError(w, "file not found", http.StatusNotFound)
 		return
 	}
 	if err != nil {
-		log.Printf("cannot get file: %s", err)
-		s.renderError(w)
-		return
-	}
-	defer f.Close() // nolint:errcheck
-	fi, err := f.Stat()
-	if err != nil {
 		log.Printf("cannot get file info: %s", err)
 		s.renderError(w)
 		return
 	}
-
-	switch f.(type) {
-	case *charmfs.DirFile:
+	cfi, ok := fi.(*charmfs.FileInfo)
+	if ok && cfi.FileInfo.Metadata != nil {
+		b64 := base64.StdEncoding.EncodeToString(cfi.FileInfo.Metadata)
+		w.Header().Set("X-Metadata", b64)
+	}
+	w.Header().Set("X-Name", fi.Name())
+	w.Header().Set("X-File-Mode", fmt.Sprintf("%d", fi.Mode()))
+	w.Header().Set("X-Is-Dir", fmt.Sprintf("%t", fi.IsDir()))
+	w.Header().Set("X-Last-Modified", fi.ModTime().Format(http.TimeFormat))
+	w.Header().Set("X-Size", fmt.Sprintf("%d", fi.Size()))
+	// Backwards compatibility with old clients
+	w.Header().Set("Last-Modified", fi.ModTime().Format(http.TimeFormat))
+	if fi.IsDir() {
 		w.Header().Set("Content-Type", "application/json")
-	default:
+	} else {
 		w.Header().Set("Content-Type", "application/octet-stream")
-		w.Header().Set("Last-Modified", fi.ModTime().Format(http.TimeFormat))
 		s.cfg.Stats.FSFileRead(u.CharmID, fi.Size())
 	}
-	w.Header().Set("X-File-Mode", fmt.Sprintf("%d", fi.Mode()))
-	_, err = io.Copy(w, f)
-	if err != nil {
-		log.Printf("cannot copy file: %s", err)
+	switch r.Method {
+	case "HEAD":
+	case "GET":
+		f, err := s.cfg.FileStore.Get(u.CharmID, path)
+		if errors.Is(err, fs.ErrNotExist) {
+			s.renderCustomError(w, "file not found", http.StatusNotFound)
+			return
+		}
+		if err != nil {
+			log.Printf("cannot get file: %s", err)
+			s.renderError(w)
+			return
+		}
+		defer f.Close() // nolint:errcheck
+		_, err = io.Copy(w, f)
+		if err != nil {
+			log.Printf("cannot copy file: %s", err)
+			s.renderError(w)
+			return
+		}
+	default:
 		s.renderError(w)
 		return
 	}
@@ -355,10 +393,19 @@ func (s *HTTPServer) handleGetFile(w http.ResponseWriter, r *http.Request) {
 func (s *HTTPServer) handleDeleteFile(w http.ResponseWriter, r *http.Request) {
 	u := s.charmUserFromRequest(w, r)
 	path := filepath.Clean(pattern.Path(r.Context()))
-	err := s.cfg.FileStore.Delete(u.CharmID, path)
+	all := r.Header.Get("X-Recursive") == "true"
+	err := s.cfg.FileStore.Delete(u.CharmID, path, all)
 	if err != nil {
-		log.Printf("cannot delete file: %s", err)
-		s.renderError(w)
+		switch {
+		case errors.Is(err, fs.ErrNotExist):
+			s.renderCustomError(w, "file not found", http.StatusNotFound)
+		// Directory not empty
+		case errors.Is(err, fs.ErrExist):
+			s.renderCustomError(w, "directory not empty", http.StatusBadRequest)
+		default:
+			log.Printf("cannot delete file: %s", err)
+			s.renderError(w)
+		}
 		return
 	}
 }

@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/charmbracelet/charm/server"
+	"github.com/charmbracelet/charm/server/config"
 	"github.com/charmbracelet/charm/server/db/sqlite"
 	"github.com/charmbracelet/charm/server/db/sqlite/migration"
 	"github.com/spf13/cobra"
@@ -24,7 +24,7 @@ var ServeMigrationCmd = &cobra.Command{
 	Long:    paragraph("Run the server migration tool to migrate the database."),
 	Args:    cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg := server.DefaultConfig()
+		cfg := config.DefaultConfig()
 		dp := filepath.Join(cfg.DataDir, "db", sqlite.DbName)
 		_, err := os.Stat(dp)
 		if err != nil {
