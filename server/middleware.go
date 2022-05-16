@@ -21,7 +21,8 @@ var ctxUserKey contextKey = "charmUser"
 // MaxFSRequestSize is the maximum size of a request body for fs endpoints.
 var MaxFSRequestSize int64 = 1024 * 1024 * 1024 // 1GB
 
-// versionMiddleware is a middleware that adds a version header to the response.
+// versionMiddleware is a middleware that adds the server version as header
+// (X-Version) to the response.
 var versionMiddleware = func(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Version", config.Version)
@@ -51,6 +52,12 @@ func RequestLimitMiddleware() func(http.Handler) http.Handler {
 	}
 }
 
+var publicCtxKey = struct{}{}
+
+func isPublic(r *http.Request) bool {
+	return r.Context().Value(publicCtxKey) == true
+}
+
 // PublicPrefixesMiddleware allows for the specification of non-authed URL
 // prefixes. These won't be checked for JWT bearers or Charm user accounts.
 func PublicPrefixesMiddleware(prefixes []string) func(http.Handler) http.Handler {
@@ -62,7 +69,7 @@ func PublicPrefixesMiddleware(prefixes []string) func(http.Handler) http.Handler
 					public = true
 				}
 			}
-			ctx := context.WithValue(r.Context(), "public", public)
+			ctx := context.WithValue(r.Context(), publicCtxKey, public)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -114,10 +121,6 @@ func CharmUserMiddleware(s *HTTPServer) func(http.Handler) http.Handler {
 			}
 		})
 	}
-}
-
-func isPublic(r *http.Request) bool {
-	return r.Context().Value("public") == true
 }
 
 func charmIDFromRequest(r *http.Request) (string, error) {

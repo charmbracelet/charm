@@ -43,7 +43,7 @@ type Config struct {
 	Stats          stats.Stats
 	LinkQueue      charm.LinkQueue
 	TLSConfig      *tls.Config
-	JWTKeyPair     jwt.JWTKeyPair
+	JWTKeyPair     jwt.KeyPair
 }
 
 // DefaultConfig returns a Config with the values populated with the defaults
@@ -102,7 +102,7 @@ func (cfg *Config) WithLinkQueue(q charm.LinkQueue) *Config {
 }
 
 // WithJWTKeyPair returns a Config with the provided JWT key pair.
-func (cfg *Config) WithJWTKeyPair(k jwt.JWTKeyPair) *Config {
+func (cfg *Config) WithJWTKeyPair(k jwt.KeyPair) *Config {
 	cfg.JWTKeyPair = k
 	return cfg
 }

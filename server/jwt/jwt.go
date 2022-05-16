@@ -8,8 +8,8 @@ import (
 	"gopkg.in/square/go-jose.v2"
 )
 
-// JWTKeyPair is an interface for JWT signing and verification.
-type JWTKeyPair interface {
+// KeyPair is an interface for JWT signing and verification.
+type KeyPair interface {
 	PrivateKey() *ed25519.PrivateKey
 	JWK() *jose.JSONWebKey
 }
@@ -33,7 +33,7 @@ func (j JSONWebKeyPair) JWK() *jose.JSONWebKey {
 
 // NewJSONWebKeyPair creates a new JSONWebKeyPair from a given ED25519 private
 // key.
-func NewJSONWebKeyPair(pk *ed25519.PrivateKey) JWTKeyPair {
+func NewJSONWebKeyPair(pk *ed25519.PrivateKey) JSONWebKeyPair {
 	sum := sha256.Sum256([]byte(*pk))
 	kid := fmt.Sprintf("%x", sum)
 	jwk := &jose.JSONWebKey{

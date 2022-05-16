@@ -89,8 +89,8 @@ func NewHTTPServer(cfg *config.Config) (*HTTPServer, error) {
 		return nil, err
 	}
 
-	mux.Use(versionMiddleware)
 	mux.Use(babylogger.Middleware)
+	mux.Use(versionMiddleware)
 	mux.Use(PublicPrefixesMiddleware([]string{"/v1/public/", "/.well-known/"}))
 	mux.Use(jwtMiddleware)
 	mux.Use(CharmUserMiddleware(s))
