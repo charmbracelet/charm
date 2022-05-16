@@ -150,6 +150,7 @@ func (cfs *FS) Stat(name string) (fs.FileInfo, error) {
 			}
 			if err != io.EOF {
 				info.FileInfo = fi
+				info.FileInfo.Name = path.Base(fileName)
 			}
 		}
 	}
@@ -257,6 +258,7 @@ func (cfs *FS) ReadDir(name string) ([]fs.DirEntry, error) {
 					}
 					if err != io.EOF {
 						fi = ei
+						fi.Name = n
 					}
 				}
 			}
@@ -285,7 +287,7 @@ func (cfs *FS) WriteFile(name string, data []byte, perm fs.FileMode) error {
 		return err
 	}
 	fi := charm.FileInfo{
-		Name:    path.Base(name),
+		// Ignore the name in the metadata.
 		IsDir:   false,
 		Size:    int64(len(data)),
 		Mode:    perm,
@@ -424,6 +426,27 @@ func (cfs *FS) MkdirAll(path string, perm fs.FileMode) error {
 	rp := fmt.Sprintf("/v1/fs/%s?mode=%d", ep, perm)
 	headers := http.Header{
 		"X-File-Mode": {fmt.Sprintf("%d", perm)},
+	}
+	resp, err := cfs.cc.AuthedRequest("POST", rp, headers, nil)
+	if err != nil {
+		return err
+	}
+	return resp.Body.Close()
+}
+
+// Rename renames a file on the configured Charm Cloud server.
+func (cfs *FS) Rename(oldname, newname string) error {
+	op, err := cfs.EncryptPath(oldname)
+	if err != nil {
+		return err
+	}
+	np, err := cfs.EncryptPath(newname)
+	if err != nil {
+		return err
+	}
+	rp := fmt.Sprintf("/v1/fs/%s", np)
+	headers := http.Header{
+		"X-Rename": {op},
 	}
 	resp, err := cfs.cc.AuthedRequest("POST", rp, headers, nil)
 	if err != nil {

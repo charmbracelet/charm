@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/charmbracelet/charm/server/config"
 	"github.com/google/uuid"
 )
 
@@ -15,7 +16,8 @@ func TestPut(t *testing.T) {
 	tdir := t.TempDir()
 	charmID := uuid.New().String()
 	buf := bytes.NewBufferString("")
-	lfs, err := NewLocalFileStore(tdir)
+	cfg := config.DefaultConfig()
+	lfs, err := NewLocalFileStore(cfg, tdir)
 	if err != nil {
 		t.Fatal(err)
 	}

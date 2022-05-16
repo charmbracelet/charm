@@ -11,30 +11,42 @@ import (
 
 	charmfs "github.com/charmbracelet/charm/fs"
 	charm "github.com/charmbracelet/charm/proto"
+	"github.com/charmbracelet/charm/server/config"
 	"github.com/charmbracelet/charm/server/storage"
 	"github.com/muesli/sasquatch"
+)
+
+var (
+	// FileMode is the default mode for files.
+	FileMode fs.FileMode = 0o666
+	// DirMode is the default mode for directories.
+	DirMode fs.FileMode = 0o777
 )
 
 // LocalFileStore is a FileStore implementation that stores files locally in a
 // folder.
 type LocalFileStore struct {
-	Path string
+	cfg  *config.Config
+	path string
 }
 
 // NewLocalFileStore creates a FileStore locally in the provided path. Files
 // will be encrypted client-side and stored as regular file system files and
 // folders.
-func NewLocalFileStore(path string) (*LocalFileStore, error) {
+func NewLocalFileStore(cfg *config.Config, path string) (*LocalFileStore, error) {
 	err := storage.EnsureDir(path, 0o700)
 	if err != nil {
 		return nil, err
 	}
-	return &LocalFileStore{path}, nil
+	return &LocalFileStore{
+		path: path,
+		cfg:  cfg,
+	}, nil
 }
 
 // Stat returns the FileInfo for the given Charm ID and path.
-func (lfs *LocalFileStore) Stat(charmID, path string) (fs.FileInfo, error) {
-	fp := filepath.Join(lfs.Path, charmID, path)
+func (lfs *LocalFileStore) Info(charmID, path string) (fs.FileInfo, error) {
+	fp := filepath.Join(lfs.path, charmID, path)
 	f, err := os.Open(fp)
 	if os.IsNotExist(err) {
 		return nil, fs.ErrNotExist
@@ -86,8 +98,8 @@ func (lfs *LocalFileStore) Stat(charmID, path string) (fs.FileInfo, error) {
 // Get returns an fs.File for the given Charm ID and path.
 func (lfs *LocalFileStore) Get(charmID string, path string) (fs.File, error) {
 	data := bytes.NewBuffer(nil)
-	fp := filepath.Join(lfs.Path, charmID, path)
-	info, err := lfs.Stat(charmID, path)
+	fp := filepath.Join(lfs.path, charmID, path)
+	info, err := lfs.Info(charmID, path)
 	if os.IsNotExist(err) {
 		return nil, fs.ErrNotExist
 	}
@@ -161,11 +173,11 @@ func (lfs *LocalFileStore) Put(charmID string, path string, r io.Reader, mode fs
 		return fmt.Errorf("invalid path specified: %s", cpath)
 	}
 
-	fp := filepath.Join(lfs.Path, charmID, path)
+	fp := filepath.Join(lfs.path, charmID, path)
 	if mode.IsDir() {
-		return storage.EnsureDir(fp, mode)
+		return storage.EnsureDir(fp, DirMode)
 	}
-	err := storage.EnsureDir(filepath.Dir(fp), 0o755)
+	err := storage.EnsureDir(filepath.Dir(fp), DirMode)
 	if err != nil {
 		return err
 	}
@@ -178,17 +190,30 @@ func (lfs *LocalFileStore) Put(charmID string, path string, r io.Reader, mode fs
 	if err != nil {
 		return err
 	}
-	if mode != 0 {
-		return f.Chmod(mode)
-	}
 	return nil
 }
 
 // Delete deletes the file at the given path for the provided Charm ID.
-func (lfs *LocalFileStore) Delete(charmID string, path string, all bool) error {
+func (lfs *LocalFileStore) Delete(charmID, path string, all bool) error {
 	fp := filepath.Join(lfs.path, charmID, path)
 	if all {
 		return os.RemoveAll(fp)
 	}
 	return os.Remove(fp)
+}
+
+// Rename renames the file at the given path for the provided Charm ID. If
+// destination exists, an error is returned.
+func (lfs *LocalFileStore) Rename(charmID, src, dst string) error {
+	srcfp := filepath.Join(lfs.path, charmID, src)
+	dstfp := filepath.Join(lfs.path, charmID, dst)
+	_, err := os.Stat(srcfp)
+	if err != nil {
+		return err
+	}
+	_, err = os.Stat(dstfp)
+	if !os.IsNotExist(err) {
+		return fs.ErrExist
+	}
+	return os.Rename(srcfp, dstfp)
 }

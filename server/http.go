@@ -287,49 +287,58 @@ func (s *HTTPServer) handlePostSeq(w http.ResponseWriter, r *http.Request) {
 func (s *HTTPServer) handlePostFile(w http.ResponseWriter, r *http.Request) {
 	u := s.charmUserFromRequest(w, r)
 	path := filepath.Clean(pattern.Path(r.Context()))
-	ms := r.Header.Get("X-File-Mode")
-	if ms == "" {
-		// Deprecated: remove in next release
-		ms = r.URL.Query().Get("mode")
-		log.Printf("deprecated: use X-File-Mode header instead of mode query param. Please update your client.")
-	}
-	m, err := strconv.ParseUint(ms, 10, 32)
-	if err != nil {
-		log.Printf("file mode not a number: %s", err)
-		s.renderError(w)
-		return
-	}
-	mode := fs.FileMode(m)
-	var f multipart.File
-	var fh *multipart.FileHeader
-	if !mode.IsDir() {
-		f, fh, err = r.FormFile("data")
+	src := r.Header.Get("X-Rename")
+	if src != "" {
+		if err := s.cfg.FileStore.Rename(u.CharmID, src, path); err != nil {
+			log.Printf("cannot rename file: %s", err)
+			s.renderCustomError(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	} else {
+		ms := r.Header.Get("X-File-Mode")
+		if ms == "" {
+			// Deprecated: remove in next release
+			ms = r.URL.Query().Get("mode")
+			log.Printf("deprecated: use X-File-Mode header instead of mode query param. Please update your client.")
+		}
+		m, err := strconv.ParseUint(ms, 10, 32)
 		if err != nil {
-			log.Printf("cannot parse form data: %s", err)
+			log.Printf("file mode not a number: %s", err)
 			s.renderError(w)
 			return
 		}
-		defer f.Close() // nolint:errcheck
-	}
-	if s.cfg.UserMaxStorage > 0 && fh != nil {
-		stat, err := s.cfg.FileStore.Info(u.CharmID, "")
-		if err != nil {
-			log.Printf("cannot stat user storage: %s", err)
+		mode := fs.FileMode(m)
+		var f multipart.File
+		var fh *multipart.FileHeader
+		if !mode.IsDir() {
+			f, fh, err = r.FormFile("data")
+			if err != nil {
+				log.Printf("cannot parse form data: %s", err)
+				s.renderError(w)
+				return
+			}
+			defer f.Close() // nolint:errcheck
+		}
+		if s.cfg.UserMaxStorage > 0 && fh != nil {
+			stat, err := s.cfg.FileStore.Info(u.CharmID, "")
+			if err != nil {
+				log.Printf("cannot stat user storage: %s", err)
+				s.renderError(w)
+				return
+			}
+			if stat.Size()+fh.Size > s.cfg.UserMaxStorage {
+				s.renderCustomError(w, "user storage limit exceeded", http.StatusForbidden)
+				return
+			}
+		}
+		if err := s.cfg.FileStore.Put(u.CharmID, path, f, mode); err != nil {
+			log.Printf("cannot post file: %s", err)
 			s.renderError(w)
 			return
 		}
-		if stat.Size()+fh.Size > s.cfg.UserMaxStorage {
-			s.renderCustomError(w, "user storage limit exceeded", http.StatusForbidden)
-			return
+		if fh != nil {
+			s.cfg.Stats.FSFileWritten(u.CharmID, fh.Size)
 		}
-	}
-	if err := s.cfg.FileStore.Put(u.CharmID, path, f, mode); err != nil {
-		log.Printf("cannot post file: %s", err)
-		s.renderError(w)
-		return
-	}
-	if fh != nil {
-		s.cfg.Stats.FSFileWritten(u.CharmID, fh.Size)
 	}
 }
 

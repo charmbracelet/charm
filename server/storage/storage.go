@@ -9,9 +9,10 @@ import (
 // FileStore is the interface storage backends need to implement to act as a
 // the datastore for the Charm Cloud server.
 type FileStore interface {
-	Stat(charmID string, path string) (fs.FileInfo, error)
+	Info(charmID string, path string) (fs.FileInfo, error)
 	Get(charmID string, path string) (fs.File, error)
 	Put(charmID string, path string, r io.Reader, mode fs.FileMode) error
+	Rename(charmID string, src string, dst string) error
 	Delete(charmID string, path string, all bool) error
 }
 

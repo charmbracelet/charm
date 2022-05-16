@@ -106,7 +106,7 @@ func (srv *Server) init(cfg *config.Config) {
 		srv.Config = cfg.WithDB(db)
 	}
 	if cfg.FileStore == nil {
-		fs, err := lfs.NewLocalFileStore(filepath.Join(cfg.DataDir, "files"))
+		fs, err := lfs.NewLocalFileStore(srv.Config, filepath.Join(cfg.DataDir, "files"))
 		if err != nil {
 			log.Fatalf("could not init file path: %s", err)
 		}
