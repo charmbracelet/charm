@@ -11,7 +11,7 @@ require (
 	github.com/charmbracelet/keygen v0.3.0
 	github.com/charmbracelet/lipgloss v0.5.0
 	github.com/charmbracelet/wish v0.3.1
-	github.com/dgraph-io/badger/v3 v3.2011.1
+	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/gliderlabs/ssh v0.3.3
 	github.com/golang-jwt/jwt/v4 v4.2.0
 	github.com/google/uuid v1.3.0
@@ -33,25 +33,28 @@ require (
 )
 
 require (
-	github.com/DataDog/zstd v1.4.1 // indirect
 	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/beorn7/perks v1.0.0 // indirect
 	github.com/caarlos0/sshmarshal v0.0.0-20220308164159-9ddb9f83c6b3 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
+	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/containerd/console v1.0.3 // indirect
-	github.com/dgraph-io/ristretto v0.0.4-0.20210122082011-bb5d392ed82d // indirect
+	github.com/dgraph-io/ristretto v0.1.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
-	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
-	github.com/golang/protobuf v1.4.2 // indirect
-	github.com/golang/snappy v0.0.1 // indirect
-	github.com/google/flatbuffers v1.12.0 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/golang/glog v1.0.0 // indirect
+	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/golang/snappy v0.0.4 // indirect
+	github.com/google/flatbuffers v2.0.6+incompatible // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jacobsa/oglematchers v0.0.0-20150720000706-141901ea67cd // indirect
 	github.com/jacobsa/oglemock v0.0.0-20150831005832-e94d794d06ff // indirect
 	github.com/jacobsa/ogletest v0.0.0-20170503003838-80d50a735a11 // indirect
 	github.com/jacobsa/reqtrace v0.0.0-20150505043853-245c9e0234cb // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
+	github.com/klauspost/compress v1.15.5 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
@@ -65,14 +68,14 @@ require (
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
-	go.opencensus.io v0.22.5 // indirect
+	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
-	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
+	golang.org/x/net v0.0.0-20220531201128-c960675eff93 // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
-	golang.org/x/term v0.0.0-20210422114643-f5beecf764ed // indirect
+	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/tools v0.1.10 // indirect
 	golang.org/x/xerrors v0.0.0-20220517211312-f3a8303e98df // indirect
-	google.golang.org/protobuf v1.25.0 // indirect
+	google.golang.org/protobuf v1.28.0 // indirect
 	lukechampine.com/uint128 v1.2.0 // indirect
 	modernc.org/cc/v3 v3.36.0 // indirect
 	modernc.org/ccgo/v3 v3.16.6 // indirect
