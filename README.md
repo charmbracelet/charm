@@ -103,6 +103,17 @@ if err != nil {
 }
 ```
 
+### FAQ
+
+<details>
+	<summary>Are there any file size limits?</summary>
+	<p>There are no limitations in file size per se, although there's a 1 GB cap on storage for the free Charm accounts, but you can get unlimited if you self-host the Charm Cloud.</p>
+</details>
+<details>
+	<summary>Is it possible to not have a local copy of the database?</summary>
+	<p>No. Skate uses BadgerDB and keeps a local copy of the key-value store. The local databases are synced through the Charm Cloud.</p>
+</details>
+
 For more on Charm FS see [the Charm FS docs][fs].
 
 ## Charm Crypt
