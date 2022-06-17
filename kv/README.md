@@ -56,3 +56,10 @@ func main() {
 	})
 }
 ```
+
+## Deleting a Database
+
+1. Find the database in `charm fs ls /`
+2. Delete the database with `charm fs rm db-name`
+3. Locate the local copy of the database. To see where your charm-related data lives, run `charm` to start up with GUI, then select `Backup`
+4. Run `rm ~/path/to/cloud.charm.sh/kv/db-name` to remove the local copy of your charm-kv database
