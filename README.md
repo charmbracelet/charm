@@ -176,6 +176,9 @@ pacman -S charm
 
 # Nix
 nix-env -iA nixpkgs.charm
+
+# Chrome OS
+crew install charm
 ```
 
 Or download a package or binary from the [releases][releases] page. All
