@@ -11,6 +11,8 @@ import (
 	"github.com/charmbracelet/charm/cmd"
 	"github.com/charmbracelet/charm/ui"
 	"github.com/charmbracelet/charm/ui/common"
+	mcobra "github.com/muesli/mango-cobra"
+	"github.com/muesli/roff"
 	"github.com/spf13/cobra"
 )
 
@@ -47,6 +49,24 @@ var (
 			return cmd.Help()
 		},
 	}
+
+	manCmd = &cobra.Command{
+		Use:    "man",
+		Short:  "Generate man pages",
+		Args:   cobra.NoArgs,
+		Hidden: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			manPage, err := mcobra.NewManPage(1, rootCmd) //.
+			if err != nil {
+				return err
+			}
+
+			manPage = manPage.WithSection("Copyright", "(C) 2021-2022 Charmbracelet, Inc.\n"+
+				"Released under MIT license.")
+			fmt.Println(manPage.Build(roff.NewDocument()))
+			return nil
+		},
+	}
 )
 
 func init() {
@@ -62,6 +82,7 @@ func init() {
 		}
 	}
 	rootCmd.Version = Version
+	rootCmd.CompletionOptions.HiddenDefaultCmd = true
 
 	rootCmd.AddCommand(
 		cmd.BioCmd,
@@ -80,6 +101,7 @@ func init() {
 		cmd.FSCmd,
 		cmd.CryptCmd,
 		cmd.MigrateAccountCmd,
+		manCmd,
 	)
 }
 
