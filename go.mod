@@ -20,11 +20,13 @@ require (
 	github.com/meowgorithm/babylogger v1.2.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/muesli/go-app-paths v0.2.1
+	github.com/muesli/mango-cobra v1.2.0
 	github.com/muesli/reflow v0.3.0
+	github.com/muesli/roff v0.1.0
 	github.com/muesli/sasquatch v0.0.0-20200811221207-66979d92330a
 	github.com/muesli/toktok v0.1.0
 	github.com/prometheus/client_golang v0.9.3
-	github.com/spf13/cobra v1.0.0
+	github.com/spf13/cobra v1.5.0
 	goji.io v2.0.2+incompatible
 	golang.org/x/crypto v0.0.0-20220307211146-efcb8507fb70
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
@@ -56,6 +58,8 @@ require (
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/muesli/ansi v0.0.0-20211018074035-2e021307bc4b // indirect
+	github.com/muesli/mango v0.1.0 // indirect
+	github.com/muesli/mango-pflag v0.1.0 // indirect
 	github.com/muesli/termenv v0.11.1-0.20220212125758-44cd13922739 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4 // indirect
