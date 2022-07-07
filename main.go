@@ -101,6 +101,7 @@ func init() {
 		cmd.FSCmd,
 		cmd.CryptCmd,
 		cmd.MigrateAccountCmd,
+		cmd.WhereCmd,
 		manCmd,
 	)
 }
