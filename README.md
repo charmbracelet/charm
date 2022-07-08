@@ -176,6 +176,18 @@ pacman -S charm
 
 # Nix
 nix-env -iA nixpkgs.charm
+
+# Debian/Ubuntu
+echo 'deb [trusted=yes] https://repo.charm.sh/apt/ /' | sudo tee /etc/apt/sources.list.d/charm.list
+sudo apt update && sudo apt install charm
+
+# Fedora
+echo '[charm]
+name=Charm
+baseurl=https://repo.charm.sh/yum/
+enabled=1
+gpgcheck=0' | sudo tee /etc/yum.repos.d/charm.repo
+sudo yum install charm
 ```
 
 Or download a package or binary from the [releases][releases] page. All
