@@ -11,14 +11,10 @@ import (
 
 // TestLinkGen
 func TestLinkGen(t *testing.T) {
-	_ = testserver.SetupTestServer(t)
+	client1 := testserver.SetupTestServer(t)
 	ecfg, err := client.ConfigFromEnv()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
-	}
-	client1, err := client.NewClient(ecfg)
-	if err != nil {
-		t.Fatalf("error creating first client: %v", err)
 	}
 	client2, err := client.NewClient(ecfg)
 	if err != nil {
