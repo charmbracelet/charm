@@ -21,8 +21,8 @@ const (
 	LinkStatusInvalidTokenRequest
 )
 
-// LinkTimeout is the length of time a Token is valid for.
-const LinkTimeout = time.Minute
+// DefaultLinkTimeout is the length of time a Token is valid for.
+const DefaultLinkTimeout = time.Minute
 
 // Token represent the confirmation code generated during linking.
 type Token string

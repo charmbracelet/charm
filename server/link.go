@@ -111,7 +111,8 @@ func (sl *SSHLinker) User() *charm.User {
 	return sl.account
 }
 
-// LinkGen implements the proto.LinkTransport interface for the SSHLinker.
+// LinkGen generates a link token and sends it to the user using the given
+// link transport.
 func (me *SSHServer) LinkGen(lt charm.LinkTransport) error {
 	u := lt.User()
 	tok := me.NewToken()
@@ -136,7 +137,7 @@ func (me *SSHServer) LinkGen(lt charm.LinkTransport) error {
 		}()
 		select {
 		case <-ch:
-		case <-time.After(charm.LinkTimeout):
+		case <-time.After(me.linkTimeout):
 			log.Printf("Link %s timed out", tok)
 			l.Status = charm.LinkStatusTimedOut
 			lt.TimedOut(l)
@@ -201,14 +202,15 @@ func (me *SSHServer) LinkGen(lt charm.LinkTransport) error {
 			l.Status = charm.LinkStatusRequestDenied
 		}
 		me.linkQueue.SendLinkRequest(lt, linkRequest, l)
-	case <-time.After(charm.LinkTimeout):
+	case <-time.After(me.linkTimeout):
 		log.Printf("Link %s timed out", tok)
 		lt.TimedOut(&charm.Link{Token: tok, Status: charm.LinkStatusTimedOut})
 	}
 	return nil
 }
 
-// LinkRequest implements the proto.LinkTransport interface for the SSHLinker.
+// LinkRequest links a new machine to the link transport user account after
+// validating the token.
 func (me *SSHServer) LinkRequest(lt charm.LinkTransport, key string, token string, ip string) error {
 	l := &charm.Link{
 		Host:          me.config.Host,
@@ -243,11 +245,11 @@ func (me *SSHServer) LinkRequest(lt charm.LinkTransport, key string, token strin
 				l.Status = charm.LinkStatusError
 				lt.Error(l)
 			}
-		case <-time.After(charm.LinkTimeout):
+		case <-time.After(me.linkTimeout):
 			l.Status = charm.LinkStatusTimedOut
 			lt.TimedOut(l)
 		}
-	case <-time.After(charm.LinkTimeout):
+	case <-time.After(me.linkTimeout):
 		l.Status = charm.LinkStatusTimedOut
 		lt.TimedOut(l)
 	}
@@ -394,7 +396,7 @@ func (s *channelLinkQueue) SendLinkRequest(lt charm.LinkTransport, lc chan *char
 	go func() {
 		select {
 		case lc <- l:
-		case <-time.After(charm.LinkTimeout):
+		case <-time.After(s.s.linkTimeout):
 			l.Status = charm.LinkStatusTimedOut
 			lt.TimedOut(l)
 		}

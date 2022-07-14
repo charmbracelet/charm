@@ -30,19 +30,24 @@ type SessionHandler func(s Session)
 // SSHServer serves the SSH protocol and handles requests to authenticate and
 // link Charm user accounts.
 type SSHServer struct {
-	config    *Config
-	db        db.DB
-	server    *ssh.Server
-	errorLog  *log.Logger
-	linkQueue charm.LinkQueue
+	config      *Config
+	db          db.DB
+	server      *ssh.Server
+	errorLog    *log.Logger
+	linkQueue   charm.LinkQueue
+	linkTimeout time.Duration
 }
 
 // NewSSHServer creates a new SSHServer from the provided Config.
 func NewSSHServer(cfg *Config) (*SSHServer, error) {
 	s := &SSHServer{
-		config:    cfg,
-		errorLog:  cfg.errorLog,
-		linkQueue: cfg.linkQueue,
+		config:      cfg,
+		errorLog:    cfg.errorLog,
+		linkQueue:   cfg.linkQueue,
+		linkTimeout: cfg.linkTimeout,
+	}
+	if s.linkTimeout == 0 {
+		s.linkTimeout = charm.DefaultLinkTimeout
 	}
 	if s.errorLog == nil {
 		s.errorLog = log.Default()
