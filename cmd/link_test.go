@@ -3,9 +3,11 @@ package cmd
 import (
 	"log"
 	"testing"
+	"time"
 
 	"github.com/charmbracelet/charm/client"
 	"github.com/charmbracelet/charm/proto"
+	"github.com/charmbracelet/charm/server"
 	"github.com/charmbracelet/charm/testserver"
 )
 
@@ -68,12 +70,32 @@ func TestInvalidLinkGen(t *testing.T) {
 	})
 }
 
+// TestTimeoutLink
+func TestTimeoutLink(t *testing.T) {
+	client1 := testserver.SetupTestServer(t, func(c *server.Config) *server.Config {
+		return c.WithLinkTimeout(5 * time.Second)
+	})
+	lc := make(chan string, 1)
+	t.Run("link client 1", func(t *testing.T) {
+		t.Parallel()
+		lh := &linkHandlerTest{desc: "client1", linkChan: lc, approve: true}
+		// pass testing.t to it, assert error
+		err := client1.LinkGen(lh)
+		if err != nil {
+			t.Fatalf("failed to link client 1: %v", err)
+		}
+		if lh.status != timedout {
+			t.Fatalf("expected link to timeout, got: %v", lh.status)
+		}
+	})
+}
+
 // use these status codes for assertions in tests
 type statusCode uint
 
 const (
-	timedout statusCode = iota
-	ok
+	ok statusCode = iota
+	timedout
 	invalidToken
 	requestDenied
 )
