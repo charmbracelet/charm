@@ -202,7 +202,7 @@ func (kv *KV) Keys() ([][]byte, error) {
 		it := txn.NewIterator(opts)
 		defer it.Close() //nolint:errcheck
 		for it.Rewind(); it.Valid(); it.Next() {
-			ks = append(ks, it.Item().Key())
+			ks = append(ks, it.Item().KeyCopy(nil))
 		}
 		return nil
 	})
