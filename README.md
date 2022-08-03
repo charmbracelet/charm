@@ -70,7 +70,7 @@ For details on Charm KV, see [the Charm KV docs][kv].
 
 Each Charm user has a virtual personal filesystem on the Charm server. Charm
 FS provides a Go [fs.FS](https://golang.org/pkg/io/fs/) implementation for the
-user along with additional write and delete methods. If you're a building
+user along with additional write and delete methods. If you're building
 a tool that requires file storage, Charm FS will provide it on
 a networked-basis without friction-filled authentication flows.
 
