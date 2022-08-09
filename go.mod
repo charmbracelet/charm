@@ -19,7 +19,7 @@ require (
 	github.com/mattn/go-isatty v0.0.14
 	github.com/meowgorithm/babylogger v1.2.0
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/muesli/go-app-paths v0.2.1
+	github.com/muesli/go-app-paths v0.2.2
 	github.com/muesli/mango-cobra v1.2.0
 	github.com/muesli/reflow v0.3.0
 	github.com/muesli/roff v0.1.0
