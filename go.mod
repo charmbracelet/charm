@@ -16,7 +16,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/google/uuid v1.3.0
 	github.com/jacobsa/crypto v0.0.0-20190317225127-9f44e2d11115
-	github.com/mattn/go-isatty v0.0.14
+	github.com/mattn/go-isatty v0.0.16
 	github.com/meowgorithm/babylogger v1.2.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/muesli/go-app-paths v0.2.2
@@ -76,7 +76,7 @@ require (
 	go.opencensus.io v0.22.5 // indirect
 	golang.org/x/mod v0.3.0 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
-	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
+	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/tools v0.0.0-20210106214847-113979e3529a // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
