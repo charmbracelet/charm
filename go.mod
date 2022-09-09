@@ -3,6 +3,7 @@ module github.com/charmbracelet/charm
 go 1.17
 
 require (
+	github.com/aperturerobotics/jacobsa-crypto v1.0.0
 	github.com/auth0/go-jwt-middleware/v2 v2.0.1
 	github.com/caarlos0/env/v6 v6.10.0
 	github.com/calmh/randomart v1.1.0
@@ -15,7 +16,6 @@ require (
 	github.com/gliderlabs/ssh v0.3.5
 	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/google/uuid v1.3.0
-	github.com/jacobsa/crypto v0.0.0-20190317225127-9f44e2d11115
 	github.com/mattn/go-isatty v0.0.16
 	github.com/meowgorithm/babylogger v1.2.0
 	github.com/mitchellh/go-homedir v1.1.0
@@ -51,10 +51,6 @@ require (
 	github.com/golang/snappy v0.0.3 // indirect
 	github.com/google/flatbuffers v1.12.1 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
-	github.com/jacobsa/oglematchers v0.0.0-20150720000706-141901ea67cd // indirect
-	github.com/jacobsa/oglemock v0.0.0-20150831005832-e94d794d06ff // indirect
-	github.com/jacobsa/ogletest v0.0.0-20170503003838-80d50a735a11 // indirect
-	github.com/jacobsa/reqtrace v0.0.0-20150505043853-245c9e0234cb // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/klauspost/compress v1.12.3 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect

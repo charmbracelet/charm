@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/aperturerobotics/jacobsa-crypto/siv"
 	"github.com/charmbracelet/charm/client"
 	charm "github.com/charmbracelet/charm/proto"
-	"github.com/jacobsa/crypto/siv"
 	"github.com/muesli/sasquatch"
 )
 
