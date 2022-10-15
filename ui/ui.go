@@ -194,7 +194,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Initialize models that require a Charm client
 		m.info = info.NewModel(m.cc)
-		m.username = username.NewModel(m.cc)
+		m.username = username.NewModel(m.cc, "")
 		m.keys = keys.NewModel(m.cfg)
 		m.keys.SetCharmClient(m.cc)
 
@@ -210,7 +210,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case username.NameSetMsg:
 		m.status = statusReady
-		m.username = username.NewModel(m.cc) // reset the state
+		m.username = username.NewModel(m.cc, "") // reset the state
 		m.info.User.Name = string(msg)
 	}
 
@@ -277,7 +277,7 @@ func updateChilden(msg tea.Msg, m model) (model, tea.Cmd) {
 	case statusSettingUsername:
 		m.username, cmd = username.Update(msg, m.username)
 		if m.username.Done {
-			m.username = username.NewModel(m.cc) // reset the state
+			m.username = username.NewModel(m.cc, "") // reset the state
 			m.status = statusReady
 		} else if m.username.Quit {
 			m.status = statusQuitting
