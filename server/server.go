@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/url"
 	"path/filepath"
+	"time"
 
 	"github.com/caarlos0/env/v6"
 	charm "github.com/charmbracelet/charm/proto"
@@ -45,6 +46,7 @@ type Config struct {
 	FileStore      storage.FileStore
 	Stats          stats.Stats
 	linkQueue      charm.LinkQueue
+	linkTimeout    time.Duration
 	tlsConfig      *tls.Config
 	jwtKeyPair     JSONWebKeyPair
 	httpScheme     string
@@ -109,6 +111,12 @@ func (cfg *Config) WithErrorLogger(l *log.Logger) *Config {
 // WithLinkQueue returns a Config with the provided LinkQueue implementation.
 func (cfg *Config) WithLinkQueue(q charm.LinkQueue) *Config {
 	cfg.linkQueue = q
+	return cfg
+}
+
+// WithLinkTimeout returns a Config with the provided link timeout.
+func (cfg *Config) WithLinkTimeout(dur time.Duration) *Config {
+	cfg.linkTimeout = dur
 	return cfg
 }
 

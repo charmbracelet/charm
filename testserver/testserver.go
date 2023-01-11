@@ -16,12 +16,15 @@ import (
 	"github.com/charmbracelet/keygen"
 )
 
+// Option is a function that can be used to modify the server configuration.
+type Option func(*server.Config) *server.Config
+
 // SetupTestServer starts a test server and sets the needed environment
 // variables so clients pick it up.
 // It also returns a client forcing these settings in.
 // Unless you use the given client, this is not really thread safe due
 // to setting a bunch of environment variables.
-func SetupTestServer(tb testing.TB) *client.Client {
+func SetupTestServer(tb testing.TB, opts ...Option) *client.Client {
 	tb.Helper()
 
 	td := tb.TempDir()
@@ -40,6 +43,11 @@ func SetupTestServer(tb testing.TB) *client.Client {
 	}
 
 	cfg = cfg.WithKeys(kp.PublicKey(), kp.PrivateKeyPEM())
+
+	for _, opt := range opts {
+		cfg = opt(cfg)
+	}
+
 	s, err := server.NewServer(cfg)
 	if err != nil {
 		tb.Fatalf("new server error: %s", err)
