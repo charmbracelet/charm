@@ -7,7 +7,7 @@ require (
 	github.com/caarlos0/env/v6 v6.10.0
 	github.com/calmh/randomart v1.1.0
 	github.com/charmbracelet/bubbles v0.13.0
-	github.com/charmbracelet/bubbletea v0.22.1
+	github.com/charmbracelet/bubbletea v0.23.2
 	github.com/charmbracelet/keygen v0.3.0
 	github.com/charmbracelet/lipgloss v0.5.0
 	github.com/charmbracelet/wish v0.5.0
@@ -16,7 +16,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/google/uuid v1.3.0
 	github.com/jacobsa/crypto v0.0.0-20190317225127-9f44e2d11115
-	github.com/mattn/go-isatty v0.0.16
+	github.com/mattn/go-isatty v0.0.17
 	github.com/meowgorithm/babylogger v1.2.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/muesli/go-app-paths v0.2.2
@@ -28,8 +28,8 @@ require (
 	github.com/prometheus/client_golang v1.13.0
 	github.com/spf13/cobra v1.5.0
 	goji.io v2.0.2+incompatible
-	golang.org/x/crypto v0.0.0-20220826181053-bd7e27e6170d
-	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
+	golang.org/x/crypto v0.6.0
+	golang.org/x/sync v0.1.0
 	gopkg.in/square/go-jose.v2 v2.6.0
 	modernc.org/sqlite v1.18.1
 )
@@ -37,6 +37,7 @@ require (
 require (
 	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
+	github.com/aymanbagabas/go-osc52 v1.2.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/caarlos0/sshmarshal v0.1.0 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
@@ -59,13 +60,13 @@ require (
 	github.com/klauspost/compress v1.12.3 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
-	github.com/mattn/go-runewidth v0.0.13 // indirect
+	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/muesli/ansi v0.0.0-20211018074035-2e021307bc4b // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/muesli/mango v0.1.0 // indirect
 	github.com/muesli/mango-pflag v0.1.0 // indirect
-	github.com/muesli/termenv v0.11.1-0.20220212125758-44cd13922739 // indirect
+	github.com/muesli/termenv v0.14.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
@@ -75,12 +76,12 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	go.opencensus.io v0.22.5 // indirect
-	golang.org/x/mod v0.3.0 // indirect
-	golang.org/x/net v0.0.0-20220826154423-83b083e8dc8b // indirect
-	golang.org/x/sys v0.0.0-20220825204002-c680a09ffe64 // indirect
-	golang.org/x/term v0.0.0-20220722155259-a9ba230a4035 // indirect
-	golang.org/x/text v0.3.7 // indirect
-	golang.org/x/tools v0.0.0-20210106214847-113979e3529a // indirect
+	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
+	golang.org/x/net v0.7.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/term v0.5.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
+	golang.org/x/tools v0.1.12 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	lukechampine.com/uint128 v1.1.1 // indirect
