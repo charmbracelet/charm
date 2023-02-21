@@ -3,7 +3,6 @@ package ui
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
@@ -16,6 +15,7 @@ import (
 	"github.com/charmbracelet/charm/ui/linkgen"
 	"github.com/charmbracelet/charm/ui/username"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/log"
 	"github.com/muesli/reflow/indent"
 	"github.com/muesli/reflow/wordwrap"
 	"github.com/muesli/reflow/wrap"
@@ -25,8 +25,8 @@ import (
 // Charm TUI.
 func NewProgram(cfg *client.Config) *tea.Program {
 	if cfg.Logfile != "" {
-		log.Println("-- Starting Charm ----------------")
-		log.Println("Bubble Tea now initializing...")
+		log.Debug("-- Starting Charm ----------------")
+		log.Debug("Bubble Tea now initializing...")
 	}
 	return tea.NewProgram(initialModel(cfg))
 }
@@ -131,7 +131,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.cfg.Debug && m.cfg.Logfile != "" {
 		if _, ok := msg.(spinner.TickMsg); !ok {
-			log.Printf("STATUS: %s | MSG: %#v\n", m.status, msg)
+			log.Debug("UI", "status", m.status, "msg", msg)
 		}
 	}
 

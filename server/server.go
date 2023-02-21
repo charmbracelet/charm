@@ -6,7 +6,7 @@ import (
 	"crypto/ed25519"
 	"crypto/tls"
 	"fmt"
-	"log"
+	glog "log"
 	"net/url"
 	"path/filepath"
 
@@ -19,6 +19,7 @@ import (
 	"github.com/charmbracelet/charm/server/stats/prometheus"
 	"github.com/charmbracelet/charm/server/storage"
 	lfs "github.com/charmbracelet/charm/server/storage/local"
+	"github.com/charmbracelet/log"
 	gossh "golang.org/x/crypto/ssh"
 	"golang.org/x/sync/errgroup"
 )
@@ -38,7 +39,7 @@ type Config struct {
 	PublicURL      string `env:"CHARM_SERVER_PUBLIC_URL"`
 	EnableMetrics  bool   `env:"CHARM_SERVER_ENABLE_METRICS" envDefault:"false"`
 	UserMaxStorage int64  `env:"CHARM_SERVER_USER_MAX_STORAGE" envDefault:"0"`
-	errorLog       *log.Logger
+	errorLog       *glog.Logger
 	PublicKey      []byte
 	PrivateKey     []byte
 	DB             db.DB
@@ -62,7 +63,7 @@ type Server struct {
 func DefaultConfig() *Config {
 	cfg := &Config{httpScheme: "http"}
 	if err := env.Parse(cfg); err != nil {
-		log.Fatalf("could not read environment: %s", err)
+		log.Fatal("could not read environment", "err", err)
 	}
 
 	return cfg
@@ -101,7 +102,7 @@ func (cfg *Config) WithTLSConfig(c *tls.Config) *Config {
 }
 
 // WithErrorLogger returns a Config with the provided error log for the server.
-func (cfg *Config) WithErrorLogger(l *log.Logger) *Config {
+func (cfg *Config) WithErrorLogger(l *glog.Logger) *Config {
 	cfg.errorLog = l
 	return cfg
 }
@@ -119,7 +120,7 @@ func (cfg *Config) httpURL() *url.URL {
 	}
 	url, err := url.Parse(s)
 	if err != nil {
-		log.Fatalf("could not parse URL: %s", err)
+		log.Fatal("could not parse URL", "err", err)
 	}
 	return url
 }
@@ -202,7 +203,7 @@ func (srv *Server) init(cfg *Config) {
 		dp := filepath.Join(cfg.DataDir, "db")
 		err := storage.EnsureDir(dp, 0o700)
 		if err != nil {
-			log.Fatalf("could not init sqlite path: %s", err)
+			log.Fatal("could not init sqlite path", "err", err)
 		}
 		db := sqlite.NewDB(filepath.Join(dp, sqlite.DbName))
 		srv.Config = cfg.WithDB(db)
@@ -210,7 +211,7 @@ func (srv *Server) init(cfg *Config) {
 	if cfg.FileStore == nil {
 		fs, err := lfs.NewLocalFileStore(filepath.Join(cfg.DataDir, "files"))
 		if err != nil {
-			log.Fatalf("could not init file path: %s", err)
+			log.Fatal("could not init file path", "err", err)
 		}
 		srv.Config = cfg.WithFileStore(fs)
 	}

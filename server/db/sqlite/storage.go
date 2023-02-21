@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"strconv"
 	"time"
+
+	"github.com/charmbracelet/log"
 
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/google/uuid"
@@ -32,7 +33,7 @@ type DB struct {
 // NewDB creates a new DB in the given path.
 func NewDB(path string) *DB {
 	var err error
-	log.Printf("Opening SQLite db: %s\n", path)
+	log.Debug("Opening SQLite db", "path", path)
 	db, err := sql.Open("sqlite", path+DbOptions)
 	if err != nil {
 		panic(err)
@@ -88,7 +89,7 @@ func (me *DB) GetUserWithName(name string) (*charm.User, error) {
 // SetUserName sets a user name for the given user id.
 func (me *DB) SetUserName(charmID string, name string) (*charm.User, error) {
 	var u *charm.User
-	log.Printf("Setting name `%s` for user %s\n", name, charmID)
+	log.Debug("Setting name for user", "name", name, "id", charmID)
 	err := me.WrapTransaction(func(tx *sql.Tx) error {
 		// TODO: this should be handled with unique constraints in the database instead.
 		var err error
@@ -144,7 +145,7 @@ func (me *DB) UserForKey(key string, create bool) (*charm.User, error) {
 			return charm.ErrMissingUser
 		}
 		if err == sql.ErrNoRows {
-			log.Printf("Creating user for key %s\n", charm.PublicKeySha(key))
+			log.Debug("Creating user for key", "key", charm.PublicKeySha(key))
 			err = me.createUser(tx, key)
 			if err != nil {
 				return err
@@ -175,7 +176,7 @@ func (me *DB) UserForKey(key string, create bool) (*charm.User, error) {
 
 // AddEncryptKeyForPublicKey adds an ecrypted key to the user.
 func (me *DB) AddEncryptKeyForPublicKey(u *charm.User, pk string, gid string, ek string, ca *time.Time) error {
-	log.Printf("Adding encrypted key %s %s for user %s\n", gid, ca, u.CharmID)
+	log.Debug("Adding encrypted key for user", "key", gid, "time", ca, "id", u.CharmID)
 	return me.WrapTransaction(func(tx *sql.Tx) error {
 		u2, err := me.UserForKey(pk, false)
 		if err != nil {
@@ -194,7 +195,7 @@ func (me *DB) AddEncryptKeyForPublicKey(u *charm.User, pk string, gid string, ek
 		if err == sql.ErrNoRows {
 			return me.insertEncryptKey(tx, ek, gid, u2.PublicKey.ID, ca)
 		}
-		log.Printf("Encrypt key %s already exists for public key, skipping", gid)
+		log.Debug("Encrypt key already exists for public key, skipping", "key", gid)
 		return nil
 	})
 }
@@ -230,7 +231,7 @@ func (me *DB) EncryptKeysForPublicKey(pk *charm.PublicKey) ([]*charm.EncryptKey,
 // LinkUserKey links a user to a key.
 func (me *DB) LinkUserKey(user *charm.User, key string) error {
 	ks := charm.PublicKeySha(key)
-	log.Printf("Linking user %s and key %s\n", user.CharmID, ks)
+	log.Debug("Linking user and key", "id", user.CharmID, "key", ks)
 	return me.WrapTransaction(func(tx *sql.Tx) error {
 		return me.insertPublicKey(tx, user.ID, key)
 	})
@@ -239,7 +240,7 @@ func (me *DB) LinkUserKey(user *charm.User, key string) error {
 // UnlinkUserKey unlinks the key from the user.
 func (me *DB) UnlinkUserKey(user *charm.User, key string) error {
 	ks := charm.PublicKeySha(key)
-	log.Printf("Unlinking user %s key %s\n", user.CharmID, ks)
+	log.Debug("Unlinking user key", "id", user.CharmID, "key", ks)
 	return me.WrapTransaction(func(tx *sql.Tx) error {
 		err := me.deleteUserPublicKey(tx, user.ID, key)
 		if err != nil {
@@ -252,7 +253,7 @@ func (me *DB) UnlinkUserKey(user *charm.User, key string) error {
 			return err
 		}
 		if count == 0 {
-			log.Printf("Removing last key for account %s, deleting\n", user.CharmID)
+			log.Debug("Removing last key for account, deleting", "id", user.CharmID)
 			// TODO: Where to put glow stuff
 			// err := me.deleteUserStashMarkdown(tx, user.ID)
 			// if err != nil {
@@ -267,7 +268,7 @@ func (me *DB) UnlinkUserKey(user *charm.User, key string) error {
 // KeysForUser returns all user's public keys.
 func (me *DB) KeysForUser(user *charm.User) ([]*charm.PublicKey, error) {
 	var keys []*charm.PublicKey
-	log.Printf("Getting keys for user %s\n", user.CharmID)
+	log.Debug("Getting keys for user", "id", user.CharmID)
 	err := me.WrapTransaction(func(tx *sql.Tx) error {
 		rs, err := me.selectUserPublicKeys(tx, user.ID)
 		if err != nil {
@@ -449,7 +450,7 @@ func (me *DB) CreateDB() error {
 
 // Close the db.
 func (me *DB) Close() error {
-	log.Println("Closing db")
+	log.Debug("Closing db")
 	return me.db.Close()
 }
 
@@ -656,7 +657,7 @@ func (me *DB) WrapTransaction(f func(tx *sql.Tx) error) error {
 	defer cancel()
 	tx, err := me.db.BeginTx(ctx, nil)
 	if err != nil {
-		log.Printf("error starting transaction: %s", err)
+		log.Error("error starting transaction", "err", err)
 		return err
 	}
 	for {
@@ -666,12 +667,12 @@ func (me *DB) WrapTransaction(f func(tx *sql.Tx) error) error {
 			if ok && serr.Code() == sqlitelib.SQLITE_BUSY {
 				continue
 			}
-			log.Printf("error in transaction: %s", err)
+			log.Error("error in transaction", "err", err)
 			return err
 		}
 		err = tx.Commit()
 		if err != nil {
-			log.Printf("error committing transaction: %s", err)
+			log.Error("error committing transaction", "err", err)
 			return err
 		}
 		break

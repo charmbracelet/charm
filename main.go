@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"runtime/debug"
 
-	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/log"
+
 	"github.com/charmbracelet/charm/client"
 	"github.com/charmbracelet/charm/cmd"
 	"github.com/charmbracelet/charm/ui"
@@ -36,11 +36,17 @@ var (
 
 				// Log to file, if set
 				if cfg.Logfile != "" {
-					f, err := tea.LogToFile(cfg.Logfile, "charm")
+					f, err := os.OpenFile(cfg.Logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
 					if err != nil {
 						return err
 					}
-					defer f.Close() //nolint:errcheck
+					if cfg.Debug {
+						log.SetLevel(log.DebugLevel)
+					}
+					log.SetOutput(f)
+					log.SetPrefix("charm")
+
+					defer f.Close()
 				}
 
 				return ui.NewProgram(cfg).Start()

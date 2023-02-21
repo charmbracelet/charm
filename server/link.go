@@ -3,9 +3,10 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
+
+	"github.com/charmbracelet/log"
 
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/gliderlabs/ssh"
@@ -21,7 +22,7 @@ type SSHLinker struct {
 
 // TokenCreated implements the proto.LinkTransport interface for the SSHLinker.
 func (sl *SSHLinker) TokenCreated(token charm.Token) {
-	log.Println("TokenCreated")
+	log.Debug("TokenCreated")
 	_ = sl.server.sendJSON(sl.session, charm.Link{
 		Host:   sl.server.config.Host,
 		Port:   sl.server.config.SSHPort,
@@ -32,19 +33,19 @@ func (sl *SSHLinker) TokenCreated(token charm.Token) {
 
 // TokenSent implements the proto.LinkTransport interface for the SSHLinker.
 func (sl *SSHLinker) TokenSent(l *charm.Link) {
-	log.Println("Token sent")
+	log.Debug("Token sent")
 }
 
 // Requested implements the proto.LinkTransport interface for the SSHLinker.
 func (sl *SSHLinker) Requested(l *charm.Link) (bool, error) {
-	log.Println("Requested")
+	log.Debug("Requested")
 	_ = sl.server.sendJSON(sl.session, l)
 	var msg charm.Message
 	err := json.NewDecoder(sl.session).Decode(&msg)
 	if err != nil {
 		return false, err
 	}
-	log.Printf("MSG: %s", msg.Message)
+	log.Debug("MSG", "msg", msg.Message)
 	if strings.ToLower(msg.Message) == "yes" {
 		return true, nil
 	}
@@ -53,61 +54,61 @@ func (sl *SSHLinker) Requested(l *charm.Link) (bool, error) {
 
 // LinkedSameUser implements the proto.LinkTransport interface for the SSHLinker.
 func (sl *SSHLinker) LinkedSameUser(l *charm.Link) {
-	log.Println("LinkedSameUser")
+	log.Debug("LinkedSameUser")
 	_ = sl.server.sendJSON(sl.session, l)
 }
 
 // LinkedDifferentUser implements the proto.LinkTransport interface for the SSHLinker.
 func (sl *SSHLinker) LinkedDifferentUser(l *charm.Link) {
-	log.Println("LinkedDifferentUser")
+	log.Debug("LinkedDifferentUser")
 	_ = sl.server.sendJSON(sl.session, l)
 }
 
 // Success implements the proto.LinkTransport interface for the SSHLinker.
 func (sl *SSHLinker) Success(l *charm.Link) {
-	log.Println("Success")
+	log.Debug("Success")
 	_ = sl.server.sendJSON(sl.session, l)
 }
 
 // TimedOut implements the proto.LinkTransport interface for the SSHLinker.
 func (sl *SSHLinker) TimedOut(l *charm.Link) {
-	log.Println("TimedOut")
+	log.Debug("TimedOut")
 	_ = sl.server.sendJSON(sl.session, l)
 }
 
 // Error implements the proto.LinkTransport interface for the SSHLinker.
 func (sl *SSHLinker) Error(l *charm.Link) {
-	log.Println("Error")
+	log.Debug("Error")
 	_ = sl.server.sendJSON(sl.session, l)
 }
 
 // RequestStart implements the proto.LinkTransport interface for the SSHLinker.
 func (sl *SSHLinker) RequestStart(l *charm.Link) {
-	log.Println("RequestStart")
+	log.Debug("RequestStart")
 	_ = sl.server.sendJSON(sl.session, l)
 }
 
 // RequestDenied implements the proto.LinkTransport interface for the SSHLinker.
 func (sl *SSHLinker) RequestDenied(l *charm.Link) {
-	log.Println("RequestDenied")
+	log.Debug("RequestDenied")
 	_ = sl.server.sendJSON(sl.session, l)
 }
 
 // RequestValidToken implements the proto.LinkTransport interface for the SSHLinker.
 func (sl *SSHLinker) RequestValidToken(l *charm.Link) {
-	log.Println("RequestValidToken")
+	log.Debug("RequestValidToken")
 	_ = sl.server.sendJSON(sl.session, l)
 }
 
 // RequestInvalidToken implements the proto.LinkTransport interface for the SSHLinker.
 func (sl *SSHLinker) RequestInvalidToken(l *charm.Link) {
-	log.Println("RequestInvalidToken")
+	log.Debug("RequestInvalidToken")
 	_ = sl.server.sendJSON(sl.session, l)
 }
 
 // User implements the proto.LinkTransport interface for the SSHLinker.
 func (sl *SSHLinker) User() *charm.User {
-	log.Println("User")
+	log.Debug("User")
 	return sl.account
 }
 
@@ -122,11 +123,11 @@ func (me *SSHServer) LinkGen(lt charm.LinkTransport) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Token created %s", tok)
+	log.Debug("Token created", "token", tok)
 	lt.TokenCreated(tok)
 	select {
 	case l := <-linkRequest:
-		log.Printf("Link request received %v", l)
+		log.Debug("Link request received", "link", l)
 		var err error
 		var approved bool
 		ch := make(chan bool, 1)
@@ -137,7 +138,7 @@ func (me *SSHServer) LinkGen(lt charm.LinkTransport) error {
 		select {
 		case <-ch:
 		case <-time.After(charm.LinkTimeout):
-			log.Printf("Link %s timed out", tok)
+			log.Debug("Link timed out", "token", tok)
 			l.Status = charm.LinkStatusTimedOut
 			lt.TimedOut(l)
 			return nil
@@ -148,27 +149,27 @@ func (me *SSHServer) LinkGen(lt charm.LinkTransport) error {
 		if approved {
 			if u.CharmID == "" {
 				// Create account for the link generator public key if it doesn't exist
-				log.Printf("Creating account for token: %s", tok)
+				log.Debug("Creating account for token", "token", tok)
 				u, err = me.db.UserForKey(u.PublicKey.Key, true)
 				if err != nil {
-					log.Printf("Create account error: %s", err)
+					log.Error("Create account error", "err", err)
 					l.Status = charm.LinkStatusError
 					me.linkQueue.SendLinkRequest(lt, linkRequest, l)
 					return err
 				}
 			}
-			log.Printf("Found account %s\n", u.CharmID)
+			log.Debug("Found account", "id", u.CharmID)
 			// Look up account for the link requester public key
 			lu, err := me.db.UserForKey(l.RequestPubKey, false)
 			if err != nil && err != charm.ErrMissingUser {
-				log.Printf("Storage key lookup error: %s", err)
+				log.Error("Storage key lookup error", "err", err)
 				l.Status = charm.LinkStatusError
 				me.linkQueue.SendLinkRequest(lt, linkRequest, l)
 				return err
 			}
 			if err == charm.ErrMissingUser {
 				// Add the link requester's key to the link generator's account if one does not exist
-				log.Printf("Link account key to account %s", u.CharmID)
+				log.Debug("Link account key to account", "id", u.CharmID)
 				err = me.db.LinkUserKey(u, l.RequestPubKey)
 				if err != nil {
 					l.Status = charm.LinkStatusError
@@ -178,12 +179,12 @@ func (me *SSHServer) LinkGen(lt charm.LinkTransport) error {
 				l.Status = charm.LinkStatusSuccess
 			} else if lu.ID == u.ID {
 				// Maybe they're already linked
-				log.Printf("Key is already linked to account %s", u.CharmID)
+				log.Debug("Key is already linked to account", "id", u.CharmID)
 				l.Status = charm.LinkStatusSameUser
 				lt.LinkedSameUser(l)
 			} else {
 				// Link requester's key is linked to another acccount, merge
-				log.Printf("Key is already linked to different account %s", lu.CharmID)
+				log.Debug("Key is already linked to different account", "id", lu.CharmID)
 				err = me.db.MergeUsers(u.ID, lu.ID)
 				if err != nil {
 					l.Status = charm.LinkStatusError
@@ -193,16 +194,16 @@ func (me *SSHServer) LinkGen(lt charm.LinkTransport) error {
 				l.Status = charm.LinkStatusSuccess
 			}
 			if l.Status == charm.LinkStatusSuccess {
-				log.Printf("Link %s approved", tok)
+				log.Debug("Link approved", "token", tok)
 				lt.Success(l)
 			}
 		} else {
-			log.Printf("Link %s not approved", tok)
+			log.Debug("Link not approved", "token", tok)
 			l.Status = charm.LinkStatusRequestDenied
 		}
 		me.linkQueue.SendLinkRequest(lt, linkRequest, l)
 	case <-time.After(charm.LinkTimeout):
-		log.Printf("Link %s timed out", tok)
+		log.Debug("Link timed out", "token", tok)
 		lt.TimedOut(&charm.Link{Token: tok, Status: charm.LinkStatusTimedOut})
 	}
 	return nil
@@ -239,7 +240,7 @@ func (me *SSHServer) LinkRequest(lt charm.LinkTransport, key string, token strin
 			case charm.LinkStatusRequestDenied:
 				lt.RequestDenied(l)
 			default:
-				log.Printf("Link error: %d", lr.Status)
+				log.Error("Link error", "status", lr.Status)
 				l.Status = charm.LinkStatusError
 				lt.Error(l)
 			}
@@ -279,7 +280,7 @@ func (me *SSHServer) handleLinkGenAPI(s ssh.Session) {
 		_ = me.sendAPIMessage(s, fmt.Sprintf("Storage key lookup error: %s", err))
 		return
 	}
-	log.Printf("API link gen user %s\n", u.CharmID)
+	log.Debug("API link gen user", "id", u.CharmID)
 	linker := &SSHLinker{
 		account: u,
 		session: s,
@@ -287,7 +288,7 @@ func (me *SSHServer) handleLinkGenAPI(s ssh.Session) {
 	}
 	err = me.LinkGen(linker)
 	if err != nil {
-		log.Printf("Error linking account: %s", err)
+		log.Error("Error linking account", "err", err)
 		_ = me.sendAPIMessage(s, fmt.Sprintf("Error linking account: %s", err))
 		return
 	}
@@ -300,7 +301,7 @@ func (me *SSHServer) handleLinkRequestAPI(s ssh.Session) {
 		_ = me.sendAPIMessage(s, fmt.Sprintf("Missing public key %s", err))
 		return
 	}
-	log.Println("API link request")
+	log.Print("API link request")
 	linker := &SSHLinker{
 		session: s,
 		server:  me,
@@ -309,7 +310,7 @@ func (me *SSHServer) handleLinkRequestAPI(s ssh.Session) {
 	t := strings.ToUpper(s.Command()[1])
 	err = me.LinkRequest(linker, key, t, ip)
 	if err != nil {
-		log.Printf("Error linking account: %s", err)
+		log.Error("Error linking account", "err", err)
 		_ = me.sendAPIMessage(s, fmt.Sprintf("Error linking account: %s", err))
 		return
 	}
@@ -327,33 +328,33 @@ func (me *SSHServer) handleAPILink(s ssh.Session) {
 func (me *SSHServer) handleAPIUnlink(s ssh.Session) {
 	key, err := keyText(s)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		_ = me.sendAPIMessage(s, "Missing key")
 		return
 	}
 	u, err := me.db.UserForKey(key, true)
 	if err != nil {
-		log.Printf("Error fetching user: %s", err)
+		log.Error("Error fetching user", "err", err)
 		_ = me.sendAPIMessage(s, fmt.Sprintf("Error fetching user: %s", err))
 		return
 	}
-	log.Printf("API unlink user %s\n", u.CharmID)
+	log.Error("API unlink user", "id", u.CharmID)
 
 	var ur charm.UnlinkRequest
 	err = json.NewDecoder(s).Decode(&ur)
 	if err != nil {
-		log.Printf("Error unlinking account: %s", err)
+		log.Error("Error unlinking account", "err", err)
 		_ = me.sendAPIMessage(s, fmt.Sprintf("Error unlinking account: %s", err))
 		return
 	}
 	if ur.Key == "" {
-		log.Println("Error unlinking account: blank key")
+		log.Error("Error unlinking account: blank key")
 		_ = me.sendAPIMessage(s, "missing key")
 		return
 	}
 	err = me.db.UnlinkUserKey(u, ur.Key)
 	if err != nil {
-		log.Printf("Error unlinking account: %s", err)
+		log.Error("Error unlinking account", "err", err)
 		_ = me.sendAPIMessage(s, fmt.Sprintf("Error unlinking account: %s", err))
 		return
 	}
@@ -368,7 +369,7 @@ type channelLinkQueue struct {
 // InitLinkRequest implements the proto.LinkQueue interface for the channelLinkQueue.
 func (s *channelLinkQueue) InitLinkRequest(t charm.Token) {
 	if _, ok := s.linkRequests[t]; !ok {
-		log.Printf("Making new link for token: %s\n", t)
+		log.Error("Making new link for token", "token", t)
 		lr := make(chan *charm.Link)
 		s.linkRequests[t] = lr
 	}

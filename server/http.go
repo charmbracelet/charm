@@ -7,11 +7,12 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
 	"net/http"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/charmbracelet/log"
 
 	charmfs "github.com/charmbracelet/charm/fs"
 	charm "github.com/charmbracelet/charm/proto"
@@ -112,7 +113,7 @@ func (s *HTTPServer) Start() error {
 	scheme := strings.ToUpper(s.httpScheme)
 	errg, _ := errgroup.WithContext(context.Background())
 	errg.Go(func() error {
-		log.Printf("Starting %s health server on: %s", scheme, s.health.Addr)
+		log.Print("Starting health server", "scheme", scheme, "addr", s.health.Addr)
 		if s.cfg.UseTLS {
 			err := s.health.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile)
 			if err != http.ErrServerClosed {
@@ -127,7 +128,7 @@ func (s *HTTPServer) Start() error {
 		return nil
 	})
 	errg.Go(func() error {
-		log.Printf("Starting %s server on: %s", scheme, s.server.Addr)
+		log.Print("Starting server", "scheme", scheme, "addr", s.server.Addr)
 		if s.cfg.UseTLS {
 			err := s.server.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile)
 			if err != http.ErrServerClosed {
@@ -147,8 +148,8 @@ func (s *HTTPServer) Start() error {
 // Shutdown gracefully shut down the HTTP and health servers.
 func (s *HTTPServer) Shutdown(ctx context.Context) error {
 	scheme := strings.ToUpper(s.httpScheme)
-	log.Printf("Stopping %s server on %s", scheme, s.server.Addr)
-	log.Printf("Stopping %s health server on %s", scheme, s.health.Addr)
+	log.Print("Stopping server", "scheme", scheme, "addr", s.server.Addr)
+	log.Print("Stopping health server", "scheme", scheme, "addr", s.health.Addr)
 	if err := s.health.Shutdown(ctx); err != nil {
 		return err
 	}
@@ -198,20 +199,20 @@ func (s *HTTPServer) handleGetUser(w http.ResponseWriter, r *http.Request) {
 func (s *HTTPServer) handlePostUser(w http.ResponseWriter, r *http.Request) {
 	id, err := charmIDFromRequest(r)
 	if err != nil {
-		log.Printf("cannot read request body: %s", err)
+		log.Error("cannot read request body", "err", err)
 		s.renderError(w)
 		return
 	}
 	u := &charm.User{}
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("cannot read request body: %s", err)
+		log.Error("cannot read request body", "err", err)
 		s.renderError(w)
 		return
 	}
 	err = json.Unmarshal(body, u)
 	if err != nil {
-		log.Printf("cannot decode user json: %s", err)
+		log.Error("cannot decode user json", "err", err)
 		s.renderError(w)
 		return
 	}
@@ -219,7 +220,7 @@ func (s *HTTPServer) handlePostUser(w http.ResponseWriter, r *http.Request) {
 	if err == charm.ErrNameTaken {
 		s.renderCustomError(w, fmt.Sprintf("username '%s' already taken", u.Name), http.StatusConflict)
 	} else if err != nil {
-		log.Printf("cannot set user name: %s", err)
+		log.Error("cannot set user name", "err", err)
 		s.renderError(w)
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -232,19 +233,19 @@ func (s *HTTPServer) handlePostEncryptKey(w http.ResponseWriter, r *http.Request
 	ek := &charm.EncryptKey{}
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("cannot read request body: %s", err)
+		log.Error("cannot read request body", "err", err)
 		s.renderError(w)
 		return
 	}
 	err = json.Unmarshal(body, ek)
 	if err != nil {
-		log.Printf("cannot decode encrypt key json: %s", err)
+		log.Error("cannot decode encrypt key json", "err", err)
 		s.renderError(w)
 		return
 	}
 	err = s.db.AddEncryptKeyForPublicKey(u, ek.PublicKey, ek.ID, ek.Key, ek.CreatedAt)
 	if err != nil {
-		log.Printf("cannot add encrypt key: %s", err)
+		log.Error("cannot add encrypt key", "err", err)
 		s.renderError(w)
 		return
 	}
@@ -256,7 +257,7 @@ func (s *HTTPServer) handleGetSeq(w http.ResponseWriter, r *http.Request) {
 	name := pat.Param(r, "name")
 	seq, err := s.db.GetSeq(u, name)
 	if err != nil {
-		log.Printf("cannot get seq: %s", err)
+		log.Error("cannot get seq", "err", err)
 		s.renderError(w)
 		return
 	}
@@ -269,7 +270,7 @@ func (s *HTTPServer) handlePostSeq(w http.ResponseWriter, r *http.Request) {
 	name := pat.Param(r, "name")
 	seq, err := s.db.NextSeq(u, name)
 	if err != nil {
-		log.Printf("cannot get next seq: %s", err)
+		log.Error("cannot get next seq", "err", err)
 		s.renderError(w)
 		return
 	}
@@ -283,13 +284,13 @@ func (s *HTTPServer) handlePostFile(w http.ResponseWriter, r *http.Request) {
 	ms := r.URL.Query().Get("mode")
 	m, err := strconv.ParseUint(ms, 10, 32)
 	if err != nil {
-		log.Printf("file mode not a number: %s", err)
+		log.Error("file mode not a number", "err", err)
 		s.renderError(w)
 		return
 	}
 	f, fh, err := r.FormFile("data")
 	if err != nil {
-		log.Printf("cannot parse form data: %s", err)
+		log.Error("cannot parse form data", "err", err)
 		s.renderError(w)
 		return
 	}
@@ -297,7 +298,7 @@ func (s *HTTPServer) handlePostFile(w http.ResponseWriter, r *http.Request) {
 	if s.cfg.UserMaxStorage > 0 {
 		stat, err := s.cfg.FileStore.Stat(u.CharmID, "")
 		if err != nil {
-			log.Printf("cannot stat user storage: %s", err)
+			log.Error("cannot stat user storage", "err", err)
 			s.renderError(w)
 			return
 		}
@@ -307,7 +308,7 @@ func (s *HTTPServer) handlePostFile(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if err := s.cfg.FileStore.Put(u.CharmID, path, f, fs.FileMode(m)); err != nil {
-		log.Printf("cannot post file: %s", err)
+		log.Error("cannot post file", "err", err)
 		s.renderError(w)
 		return
 	}
@@ -323,14 +324,14 @@ func (s *HTTPServer) handleGetFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		log.Printf("cannot get file: %s", err)
+		log.Error("cannot get file", "err", err)
 		s.renderError(w)
 		return
 	}
 	defer f.Close() // nolint:errcheck
 	fi, err := f.Stat()
 	if err != nil {
-		log.Printf("cannot get file info: %s", err)
+		log.Error("cannot get file info", "err", err)
 		s.renderError(w)
 		return
 	}
@@ -346,7 +347,7 @@ func (s *HTTPServer) handleGetFile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-File-Mode", fmt.Sprintf("%d", fi.Mode()))
 	_, err = io.Copy(w, f)
 	if err != nil {
-		log.Printf("cannot copy file: %s", err)
+		log.Error("cannot copy file", "err", err)
 		s.renderError(w)
 		return
 	}
@@ -357,7 +358,7 @@ func (s *HTTPServer) handleDeleteFile(w http.ResponseWriter, r *http.Request) {
 	path := filepath.Clean(pattern.Path(r.Context()))
 	err := s.cfg.FileStore.Delete(u.CharmID, path)
 	if err != nil {
-		log.Printf("cannot delete file: %s", err)
+		log.Error("cannot delete file", "err", err)
 		s.renderError(w)
 		return
 	}
@@ -371,7 +372,7 @@ func (s *HTTPServer) handleGetNewsList(w http.ResponseWriter, r *http.Request) {
 	}
 	page, err := strconv.Atoi(p)
 	if err != nil {
-		log.Printf("page not a number: %s", err)
+		log.Error("page not a number", "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -383,7 +384,7 @@ func (s *HTTPServer) handleGetNewsList(w http.ResponseWriter, r *http.Request) {
 	}
 	ns, err := s.db.GetNewsList(tag, offset)
 	if err != nil {
-		log.Printf("cannot get news: %s", err)
+		log.Error("cannot get news", "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -396,7 +397,7 @@ func (s *HTTPServer) handleGetNews(w http.ResponseWriter, r *http.Request) {
 	id := pat.Param(r, "id")
 	news, err := s.db.GetNews(id)
 	if err != nil {
-		log.Printf("cannot get news markdown: %s", err)
+		log.Error("cannot get news markdown", "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -407,7 +408,7 @@ func (s *HTTPServer) handleGetNews(w http.ResponseWriter, r *http.Request) {
 func (s *HTTPServer) charmUserFromRequest(w http.ResponseWriter, r *http.Request) *charm.User {
 	u, ok := r.Context().Value(ctxUserKey).(*charm.User)
 	if !ok {
-		log.Printf("could not assign user to request context")
+		log.Error("could not assign user to request context")
 		s.renderError(w)
 	}
 	return u
