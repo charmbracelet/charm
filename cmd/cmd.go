@@ -3,8 +3,9 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
+
+	"github.com/charmbracelet/log"
 
 	"github.com/charmbracelet/charm/client"
 	charm "github.com/charmbracelet/charm/proto"

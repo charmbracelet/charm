@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"syscall"
 	"time"
+
+	"github.com/charmbracelet/log"
 
 	"github.com/charmbracelet/charm/server"
 	"github.com/charmbracelet/keygen"
@@ -61,7 +62,7 @@ var (
 			signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 			go func() {
 				if err := s.Start(); err != nil {
-					log.Fatalf("error starting server: %s", err)
+					log.Fatal("error starting server", "err", err)
 				}
 			}()
 

@@ -3,11 +3,11 @@ package prometheus
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/charmbracelet/charm/server/db"
+	"github.com/charmbracelet/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -59,7 +59,7 @@ func (ps *Stats) Start() error {
 			time.Sleep(time.Minute)
 		}
 	}()
-	log.Printf("Starting Stats HTTP server on: %s", ps.server.Addr)
+	log.Print("Starting Stats HTTP server", "addr", ps.server.Addr)
 	err := ps.server.ListenAndServe()
 	if err != http.ErrServerClosed {
 		return err

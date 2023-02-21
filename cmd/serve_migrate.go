@@ -3,9 +3,10 @@ package cmd
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/charmbracelet/log"
 
 	"github.com/charmbracelet/charm/server"
 	"github.com/charmbracelet/charm/server/db/sqlite"
@@ -34,7 +35,7 @@ var ServeMigrationCmd = &cobra.Command{
 		for _, m := range []migration.Migration{
 			migration.Migration0001,
 		} {
-			log.Printf("Running migration: %04d %s\n", m.ID, m.Name)
+			log.Print("Running migration", "id", fmt.Sprintf("%04d", m.ID), "name", m.Name)
 			err = db.WrapTransaction(func(tx *sql.Tx) error {
 				_, err := tx.Exec(m.SQL)
 				if err != nil {

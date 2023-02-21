@@ -2,7 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"log"
+
+	"github.com/charmbracelet/log"
 
 	"github.com/charmbracelet/charm/client"
 	"github.com/charmbracelet/charm/proto"
@@ -52,24 +53,24 @@ var (
 			lh := &linkHandler{desc: "link-request", linkChan: lc}
 			ed25519Client.Link(lh, tok)
 			if verbose {
-				log.Printf("link-gen sync encrypt keys")
+				log.Info("link-gen sync encrypt keys")
 			}
 			err = rsaClient.SyncEncryptKeys()
 			if err != nil {
 				if verbose {
-					log.Printf("link-gen sync encrypt keys failed")
+					log.Info("link-gen sync encrypt keys failed")
 				} else {
 					printError()
 				}
 				return err
 			}
 			if verbose {
-				log.Printf("link-request sync encrypt keys")
+				log.Info("link-request sync encrypt keys")
 			}
 			err = ed25519Client.SyncEncryptKeys()
 			if err != nil {
 				if verbose {
-					log.Printf("link-request sync encrypt keys failed")
+					log.Info("link-request sync encrypt keys failed")
 				} else {
 					printError()
 				}
@@ -139,7 +140,7 @@ func (lh linkHandler) Error(l *proto.Link) {
 
 func (lh *linkHandler) printDebug(msg string, l *proto.Link) {
 	if verbose {
-		log.Printf("%s %s:\t%v\n", lh.desc, msg, l)
+		log.Info("%s %s:\t%v\n", lh.desc, msg, l)
 	}
 }
 

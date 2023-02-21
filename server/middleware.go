@@ -4,9 +4,10 @@ import (
 	"context"
 	"crypto"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
+
+	"github.com/charmbracelet/log"
 
 	jwtmiddleware "github.com/auth0/go-jwt-middleware/v2"
 	"github.com/auth0/go-jwt-middleware/v2/validator"
@@ -90,7 +91,7 @@ func CharmUserMiddleware(s *HTTPServer) func(http.Handler) http.Handler {
 			} else {
 				id, err := charmIDFromRequest(r)
 				if err != nil {
-					log.Printf("cannot get charm id from request: %s", err)
+					log.Error("cannot get charm id from request", "err", err)
 					s.renderError(w)
 					return
 				}
@@ -99,7 +100,7 @@ func CharmUserMiddleware(s *HTTPServer) func(http.Handler) http.Handler {
 					s.renderCustomError(w, fmt.Sprintf("missing user for id '%s'", id), http.StatusNotFound)
 					return
 				} else if err != nil {
-					log.Printf("cannot read request body: %s", err)
+					log.Error("cannot read request body", "err", err)
 					s.renderError(w)
 					return
 				}
@@ -113,7 +114,7 @@ func CharmUserMiddleware(s *HTTPServer) func(http.Handler) http.Handler {
 func isPublic(r *http.Request) bool {
 	public, ok := r.Context().Value(ctxPublicKey).(bool)
 	if !ok {
-		log.Print("cannot get public value from context")
+		log.Debug("cannot get public value from context")
 		return false
 	}
 

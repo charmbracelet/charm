@@ -2,7 +2,8 @@ package server
 
 import (
 	"fmt"
-	"log"
+
+	"github.com/charmbracelet/log"
 
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/wish"
@@ -15,7 +16,7 @@ func (me *SSHServer) sshMiddleware() wish.Middleware {
 			cmd := s.Command()
 			if len(cmd) >= 1 {
 				r := cmd[0]
-				log.Printf("ssh %s\n", r)
+				log.Debug("ssh", "cmd", r)
 				switch r {
 				case "api-auth":
 					me.handleAPIAuth(s)
@@ -47,7 +48,7 @@ func (me *SSHServer) handleAPIAuth(s ssh.Session) {
 		me.errorLog.Println(err)
 		return
 	}
-	log.Printf("JWT for user %s\n", u.CharmID)
+	log.Debug("JWT for user", "id", u.CharmID)
 	j, err := me.newJWT(u.CharmID, "charm")
 	if err != nil {
 		me.errorLog.Printf("Error making JWT: %s\n", err)
@@ -83,7 +84,7 @@ func (me *SSHServer) handleAPIKeys(s ssh.Session) {
 		_ = me.sendAPIMessage(s, fmt.Sprintf("API keys error: %s", err))
 		return
 	}
-	log.Printf("API keys for user %s\n", u.CharmID)
+	log.Debug("API keys for user", "id", u.CharmID)
 	keys, err := me.db.KeysForUser(u)
 	if err != nil {
 		me.errorLog.Println(err)
@@ -118,7 +119,7 @@ func (me *SSHServer) handleID(s ssh.Session) {
 		me.errorLog.Println(err)
 		return
 	}
-	log.Printf("ID for user %s\n", u.CharmID)
+	log.Debug("ID for user", "id", u.CharmID)
 	_, _ = s.Write([]byte(u.CharmID))
 	me.config.Stats.ID()
 }

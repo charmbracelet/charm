@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"path"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/charmbracelet/log"
 
 	"github.com/charmbracelet/charm/client"
 	"github.com/charmbracelet/charm/crypt"
@@ -232,7 +233,7 @@ func (cfs *FS) WriteFile(name string, src fs.File) error {
 
 		// write multipart header
 		if _, err := rw.Write(header); err != nil {
-			log.Printf("WriteFile %s error: %v", name, err)
+			log.Error("WriteFile", "name", name, "err", err)
 			return
 		}
 		// chunk the read data into 64MB chunks
@@ -243,13 +244,13 @@ func (cfs *FS) WriteFile(name string, src fs.File) error {
 				break
 			}
 			if _, err := rw.Write(buf[:n]); err != nil {
-				log.Printf("WriteFile %s error: %v", name, err)
+				log.Error("WriteFile", "name", name, "err", err)
 				return
 			}
 		}
 		// write multipart boundary
 		if _, err := rw.Write(boun); err != nil {
-			log.Printf("WriteFile %s error: %v", name, err)
+			log.Error("WriteFile", "name", name, "err", err)
 			return
 		}
 	}()
