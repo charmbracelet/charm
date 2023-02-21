@@ -17,7 +17,9 @@ import (
 )
 
 var (
-	Version   = ""
+	// Version is the version of the charm CLI.
+	Version = ""
+	// CommitSHA is the commit SHA of the charm CLI.
 	CommitSHA = ""
 
 	styles = common.DefaultStyles()
@@ -46,10 +48,13 @@ var (
 					log.SetOutput(f)
 					log.SetPrefix("charm")
 
-					defer f.Close()
+					defer f.Close() // nolint: errcheck
 				}
 
-				return ui.NewProgram(cfg).Start()
+				p := ui.NewProgram(cfg)
+				if _, err := p.Run(); err != nil {
+					return err
+				}
 			}
 
 			return cmd.Help()

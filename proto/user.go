@@ -1,7 +1,7 @@
 package proto
 
 import (
-	"crypto/sha1"
+	"crypto/sha1" // nolint: gosec
 	"fmt"
 	"time"
 )
@@ -32,5 +32,5 @@ func (pk *PublicKey) Sha() string {
 
 // PublicKeySha returns the SHA for a public key in hex format.
 func PublicKeySha(key string) string {
-	return fmt.Sprintf("%x", sha1.Sum([]byte(key)))
+	return fmt.Sprintf("%x", sha1.Sum([]byte(key))) // nolint: gosec
 }

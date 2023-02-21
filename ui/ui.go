@@ -67,7 +67,7 @@ func (s status) String() string {
 // menuChoice represents a chosen menu item.
 type menuChoice int
 
-// menu choices
+// menu choices.
 const (
 	linkChoice menuChoice = iota
 	keysChoice

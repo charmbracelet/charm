@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/log"
 
@@ -55,9 +56,10 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 		fmt.Fprintf(w, "We live!")
 	}))
 	health := &http.Server{
-		Addr:     fmt.Sprintf("%s:%d", cfg.BindAddr, cfg.HealthPort),
-		Handler:  healthMux,
-		ErrorLog: cfg.errorLog,
+		Addr:              fmt.Sprintf("%s:%d", cfg.BindAddr, cfg.HealthPort),
+		Handler:           healthMux,
+		ErrorLog:          cfg.errorLog,
+		ReadHeaderTimeout: time.Minute,
 	}
 	mux := goji.NewMux()
 	s := &HTTPServer{
@@ -66,9 +68,10 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 		httpScheme: "http",
 	}
 	s.server = &http.Server{
-		Addr:     fmt.Sprintf("%s:%d", s.cfg.BindAddr, s.cfg.HTTPPort),
-		Handler:  mux,
-		ErrorLog: s.cfg.errorLog,
+		Addr:              fmt.Sprintf("%s:%d", s.cfg.BindAddr, s.cfg.HTTPPort),
+		Handler:           mux,
+		ErrorLog:          s.cfg.errorLog,
+		ReadHeaderTimeout: time.Minute,
 	}
 	if cfg.UseTLS {
 		s.httpScheme = "https"
@@ -180,16 +183,18 @@ func (s *HTTPServer) handleOpenIDConfig(w http.ResponseWriter, r *http.Request) 
 	_ = json.NewEncoder(w).Encode(pj)
 }
 
-// TODO do we need this since you can only get the authed user?
 func (s *HTTPServer) handleGetUserByID(w http.ResponseWriter, r *http.Request) {
+	// nolint: godox
+	// TODO do we need this since you can only get the authed user?
 	u := s.charmUserFromRequest(w, r)
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(u)
 	s.cfg.Stats.GetUserByID()
 }
 
-// TODO do we need this since you can only get the authed user?
 func (s *HTTPServer) handleGetUser(w http.ResponseWriter, r *http.Request) {
+	// nolint: godox
+	// TODO do we need this since you can only get the authed user?
 	u := s.charmUserFromRequest(w, r)
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(u)

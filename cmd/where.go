@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// WhereCmd is a command to find the absolute path to your charm data folder.
 var WhereCmd = &cobra.Command{
 	Use:   "where",
 	Short: "Find where your cloud.charm.sh folder resides on your machine",

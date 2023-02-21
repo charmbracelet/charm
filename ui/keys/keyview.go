@@ -61,14 +61,14 @@ func (m Model) newStyledKey(styles common.Styles, key charm.PublicKey, active bo
 	}
 }
 
-// Selected state
+// Selected state.
 func (k *styledKey) selected() {
 	k.gutter = common.VerticalLine(common.StateSelected)
 	k.keyLabel = k.styles.Label.Render("Key:")
 	k.dateLabel = k.styles.Label.Render("Added:")
 }
 
-// Deleting state
+// Deleting state.
 func (k *styledKey) deleting() {
 	k.gutter = common.VerticalLine(common.StateDeleting)
 	k.keyLabel = k.styles.Delete.Render("Key:")

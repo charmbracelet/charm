@@ -66,7 +66,7 @@ type Model struct {
 }
 
 // acceptRequest rejects the current linking request.
-func (m Model) acceptRequest() (Model, tea.Cmd) {
+func (m Model) acceptRequest() (Model, tea.Cmd) { // nolint: unparam
 	m.lh.response <- true
 	return m, nil
 }
@@ -321,8 +321,7 @@ func InitLinkGen(m Model) tea.Cmd {
 // HandleLinkRequest returns a bunch of blocking commands that resolve on link
 // request states. As a Tea command, this should be treated as batch:
 //
-//     tea.Batch(HandleLinkRequest(model)...)
-//
+//	tea.Batch(HandleLinkRequest(model)...)
 func HandleLinkRequest(m Model) []tea.Cmd {
 	go func() {
 		if err := m.cc.LinkGen(m.lh); err != nil {

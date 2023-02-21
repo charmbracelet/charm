@@ -99,6 +99,7 @@ func (kv *KV) restoreSeq(seq uint64) error {
 		return err
 	}
 	defer r.Close() // nolint:errcheck
+	// nolint: godox
 	// TODO DB.Load() should be called on a database that is not running any
 	// other concurrent transactions while it is running.
 	return kv.DB.Load(r, 1)

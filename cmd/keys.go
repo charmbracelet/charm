@@ -33,7 +33,11 @@ var KeysCmd = &cobra.Command{
 				}
 				defer f.Close() // nolint:errcheck
 			}
-			return keys.NewProgram(cfg).Start()
+			p := keys.NewProgram(cfg)
+			if _, err := p.Run(); err != nil {
+				return err
+			}
+			return nil
 		}
 		cc := initCharmClient()
 

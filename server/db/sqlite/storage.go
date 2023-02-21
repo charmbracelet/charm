@@ -91,6 +91,7 @@ func (me *DB) SetUserName(charmID string, name string) (*charm.User, error) {
 	var u *charm.User
 	log.Debug("Setting name for user", "name", name, "id", charmID)
 	err := me.WrapTransaction(func(tx *sql.Tx) error {
+		// nolint: godox
 		// TODO: this should be handled with unique constraints in the database instead.
 		var err error
 		r := me.selectUserWithName(tx, name)
@@ -254,6 +255,7 @@ func (me *DB) UnlinkUserKey(user *charm.User, key string) error {
 		}
 		if count == 0 {
 			log.Debug("Removing last key for account, deleting", "id", user.CharmID)
+			// nolint: godox
 			// TODO: Where to put glow stuff
 			// err := me.deleteUserStashMarkdown(tx, user.ID)
 			// if err != nil {

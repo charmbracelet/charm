@@ -47,11 +47,11 @@ var (
 			lc := make(chan string)
 			go func() {
 				lh := &linkHandler{desc: "link-gen", linkChan: lc}
-				rsaClient.LinkGen(lh)
+				_ = rsaClient.LinkGen(lh)
 			}()
 			tok := <-lc
 			lh := &linkHandler{desc: "link-request", linkChan: lc}
-			ed25519Client.Link(lh, tok)
+			_ = ed25519Client.Link(lh, tok)
 			if verbose {
 				log.Info("link-gen sync encrypt keys")
 			}

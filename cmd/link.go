@@ -30,16 +30,19 @@ func LinkCmd(parentName string) *cobra.Command {
 				defer f.Close() //nolint:errcheck
 			}
 
+			var p *tea.Program
 			switch len(args) {
 			case 0:
 				// Initialize a linking session
-				p := linkgen.NewProgram(cfg, parentName)
-				return p.Start()
+				p = linkgen.NewProgram(cfg, parentName)
 			default:
 				// Join in on a linking session
-				p := link.NewProgram(cfg, args[0])
-				return p.Start()
+				p = link.NewProgram(cfg, args[0])
 			}
+			if _, err := p.Run(); err != nil {
+				return err
+			}
+			return nil
 		},
 	}
 }

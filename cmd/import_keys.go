@@ -68,7 +68,11 @@ var (
 			}
 			if !empty && !forceImportOverwrite {
 				if common.IsTTY() {
-					return newImportConfirmationTUI(cmd.InOrStdin(), path, dd).Start()
+					p := newImportConfirmationTUI(cmd.InOrStdin(), path, dd)
+					if _, err := p.Run(); err != nil {
+						return err
+					}
+					return nil
 				}
 				return fmt.Errorf("not overwriting the existing keys in %s; to force, use -f", dd)
 			}

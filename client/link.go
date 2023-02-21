@@ -145,13 +145,15 @@ func (cc *Client) SyncEncryptKeys() error {
 	return cc.deleteUserData()
 }
 
-// TODO find a better place for this, or do something more sophisticated than
-// just wiping it out.
 func (cc *Client) deleteUserData() error {
+	// nolint: godox
+	// TODO find a better place for this, or do something more sophisticated than
+	// just wiping it out.
 	dd, err := cc.DataPath()
 	if err != nil {
 		return err
 	}
+	// nolint: godox
 	// TODO add any other directories that need wiping
 	kvd := fmt.Sprintf("%s/kv", dd)
 	return os.RemoveAll(kvd)
