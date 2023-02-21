@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/auth0/go-jwt-middleware/v2 v2.0.1
-	github.com/caarlos0/env/v6 v6.10.0
+	github.com/caarlos0/env/v6 v6.10.1
 	github.com/calmh/randomart v1.1.0
 	github.com/charmbracelet/bubbles v0.13.0
 	github.com/charmbracelet/bubbletea v0.23.2
