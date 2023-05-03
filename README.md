@@ -169,7 +169,7 @@ Use a package manager:
 
 ```bash
 # macOS or Linux
-brew tap charmbracelet/tap && brew install charmbracelet/tap/charm
+brew install charmbracelet/tap/charm
 
 # Arch Linux (btw)
 pacman -S charm
