@@ -3,7 +3,7 @@ module github.com/charmbracelet/charm
 go 1.17
 
 require (
-	github.com/auth0/go-jwt-middleware/v2 v2.0.1
+	github.com/auth0/go-jwt-middleware/v2 v2.1.0
 	github.com/caarlos0/env/v6 v6.10.1
 	github.com/calmh/randomart v1.1.0
 	github.com/charmbracelet/bubbles v0.15.0
