@@ -11,10 +11,6 @@ var (
 	// Color wraps termenv.ColorProfile.Color, which produces a termenv color
 	// for use in termenv styling.
 	Color func(string) te.Color = te.ColorProfile().Color
-
-	// HasDarkBackground stores whether or not the terminal has a dark
-	// background.
-	HasDarkBackground = te.HasDarkBackground()
 )
 
 // Colors for dark and light backgrounds.
@@ -29,14 +25,6 @@ var (
 	FaintRed               = NewColorPair("#C74665", "#FF6F91")
 	SpinnerColor           = NewColorPair("#747373", "#8E8E8E")
 	NoColor                = NewColorPair("", "")
-)
-
-// Functions for styling strings.
-var (
-	IndigoFg       func(string) string = te.Style{}.Foreground(Indigo.Color()).Styled
-	SubtleIndigoFg                     = te.Style{}.Foreground(SubtleIndigo.Color()).Styled
-	RedFg                              = te.Style{}.Foreground(Red.Color()).Styled
-	FaintRedFg                         = te.Style{}.Foreground(FaintRed.Color()).Styled
 )
 
 // ColorPair is a pair of colors, one intended for a dark background and the
@@ -54,7 +42,7 @@ func NewColorPair(dark, light string) ColorPair {
 
 // Color returns the appropriate termenv.Color for the terminal background.
 func (c ColorPair) Color() te.Color {
-	if HasDarkBackground {
+	if te.HasDarkBackground() {
 		return Color(c.Dark)
 	}
 
@@ -64,7 +52,7 @@ func (c ColorPair) Color() te.Color {
 // String returns a string representation of the color appropriate for the
 // current terminal background.
 func (c ColorPair) String() string {
-	if HasDarkBackground {
+	if te.HasDarkBackground() {
 		return c.Dark
 	}
 

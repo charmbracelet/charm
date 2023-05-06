@@ -10,6 +10,7 @@ import (
 
 	"github.com/calmh/randomart"
 	"github.com/charmbracelet/charm/ui/common"
+	"github.com/muesli/termenv"
 )
 
 // ErrMalformedKey parsing error for bad ssh key.
@@ -26,8 +27,8 @@ type Fingerprint struct {
 func (f Fingerprint) String() string {
 	return fmt.Sprintf(
 		"%s %s",
-		common.SubtleIndigoFg(strings.ToUpper(f.Algorithm)),
-		common.IndigoFg(f.Type+":"+f.Value),
+		termenv.Style{}.Foreground(common.SubtleIndigo.Color()).Styled(strings.ToUpper(f.Algorithm)),
+		termenv.Style{}.Foreground(common.Indigo.Color()).Styled(f.Type+":"+f.Value),
 	)
 }
 

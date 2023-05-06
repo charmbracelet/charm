@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/charm"
 	"github.com/charmbracelet/charm/ui/common"
+	"github.com/muesli/termenv"
 	te "github.com/muesli/termenv"
 )
 
@@ -18,8 +19,8 @@ func (f fingerprint) state(s keyState) string {
 	if s == keyDeleting {
 		return fmt.Sprintf(
 			"%s %s",
-			common.FaintRedFg(strings.ToUpper(f.Algorithm)),
-			common.RedFg(f.Type+":"+f.Value),
+			termenv.Style{}.Foreground(common.FaintRed.Color()).Styled(strings.ToUpper(f.Algorithm)),
+			termenv.Style{}.Foreground(common.Red.Color()).Styled(f.Type+":"+f.Value),
 		)
 	}
 	return f.String()
