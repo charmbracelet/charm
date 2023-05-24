@@ -163,7 +163,21 @@ charm crypt encrypt < secretphoto.jpg > encrypted.jpg.json
 charm help
 ```
 
-### Installation
+### Client Settings
+
+The Charm client can be configured using environment variables. These are the
+defaults: 
+
+* `CHARM_HOST`: Server public URL (_default cloud.charm.sh_)
+* `CHARM_SSH_PORT`: SSH port to connect to (_default 35353_)
+* `CHARM_HTTP_PORT`: HTTP port to connect to (_default 35354_)
+* `CHARM_DEBUG`: Whether debugging logs are enabled (_default false_)
+* `CHARM_LOGFILE`: The file path to output debug logs
+* `CHARM_KEY_TYPE`: The type of key to create for new users (_default ed25519_)
+* `CHARM_DATA_DIR`: The path to where the user data is stored
+* `CHARM_IDENTITY_KEY`: The path to the identity key used for auth
+
+## Installation
 
 Use a package manager:
 
