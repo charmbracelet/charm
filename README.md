@@ -26,6 +26,47 @@ There’s also the powerful [Charm Client](#charm-client) for directly accessing
 Charm services. [Self-hosting](#self-hosting) a Charm Cloud is as simple as
 running `charm serve`.
 
+## Installation
+
+Use a package manager:
+
+```bash
+# macOS or Linux
+brew tap charmbracelet/tap && brew install charmbracelet/tap/charm
+
+# Arch Linux (btw)
+pacman -S charm
+
+# Nix
+nix-env -iA nixpkgs.charm
+
+# Debian/Ubuntu
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
+echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
+sudo apt update && sudo apt install charm
+
+# Fedora/RHEL
+echo '[charm]
+name=Charm
+baseurl=https://repo.charm.sh/yum/
+enabled=1
+gpgcheck=1
+gpgkey=https://repo.charm.sh/yum/gpg.key' | sudo tee /etc/yum.repos.d/charm.repo
+sudo yum install charm
+```
+
+Or download a package or binary from the [releases][releases] page. All
+major platforms and architectures are supported, including FreeBSD and ARM.
+
+You can also just build and install it yourself:
+
+```bash
+git clone https://github.com/charmbracelet/charm.git
+cd charm
+go install
+```
+
 ## Charm KV
 
 A powerful, embeddable key-value store built on [BadgerDB][badger]. Store user
@@ -138,7 +179,8 @@ course, users can revoke machines’ access too.
 
 ### Backups
 
-You can use `charm backup-keys` to backup your account keys. Your account can be recovered using `charm import-keys charm-keys-backup.tar`
+You can use `charm backup-keys` to backup your account keys. Your account can
+be recovered using `charm import-keys charm-keys-backup.tar`
 
 ## Charm Client
 
@@ -177,47 +219,6 @@ defaults:
 * `CHARM_DATA_DIR`: The path to where the user data is stored
 * `CHARM_IDENTITY_KEY`: The path to the identity key used for auth
 
-## Installation
-
-Use a package manager:
-
-```bash
-# macOS or Linux
-brew tap charmbracelet/tap && brew install charmbracelet/tap/charm
-
-# Arch Linux (btw)
-pacman -S charm
-
-# Nix
-nix-env -iA nixpkgs.charm
-
-# Debian/Ubuntu
-sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
-echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
-sudo apt update && sudo apt install charm
-
-# Fedora/RHEL
-echo '[charm]
-name=Charm
-baseurl=https://repo.charm.sh/yum/
-enabled=1
-gpgcheck=1
-gpgkey=https://repo.charm.sh/yum/gpg.key' | sudo tee /etc/yum.repos.d/charm.repo
-sudo yum install charm
-```
-
-Or download a package or binary from the [releases][releases] page. All
-major platforms and architectures are supported, including FreeBSD and ARM.
-
-You can also just build and install it yourself:
-
-```bash
-git clone https://github.com/charmbracelet/charm.git
-cd charm
-go install
-```
-
 ## Self-Hosting
 
 Charm libraries point at our Charmbracelet, Inc. servers by default (that’s
@@ -254,12 +255,16 @@ choosing:
 export CHARM_HOST=burrito.example.com
 ```
 
-See instructions for [Systemd](https://github.com/charmbracelet/charm/blob/main/systemd.md) and [Docker](https://github.com/charmbracelet/charm/blob/main/docker.md).
+See instructions for
+[Systemd](https://github.com/charmbracelet/charm/blob/main/systemd.md) and
+[Docker](https://github.com/charmbracelet/charm/blob/main/docker.md).
 
 #### Storage Considerations
 
 The max data you can store on our Charm Cloud servers is 1GB per account.
-By default, self-hosted servers don't have a data storage limit. Should you want to set a max storage limit on your server, you can do so using `CHARM_SERVER_USER_MAX_STORAGE`
+By default, self-hosted servers don't have a data storage limit. Should you
+want to set a max storage limit on your server, you can do so using
+`CHARM_SERVER_USER_MAX_STORAGE`
 
 ### TLS
 
