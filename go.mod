@@ -8,16 +8,16 @@ require (
 	github.com/calmh/randomart v1.1.0
 	github.com/charmbracelet/bubbles v0.15.0
 	github.com/charmbracelet/bubbletea v0.23.2
-	github.com/charmbracelet/keygen v0.3.0
-	github.com/charmbracelet/lipgloss v0.6.0
-	github.com/charmbracelet/log v0.1.0
-	github.com/charmbracelet/wish v0.5.0
+	github.com/charmbracelet/keygen v0.4.2
+	github.com/charmbracelet/lipgloss v0.7.1
+	github.com/charmbracelet/log v0.2.2
+	github.com/charmbracelet/ssh v0.0.0-20221117183211-483d43d97103
+	github.com/charmbracelet/wish v1.1.1
 	github.com/dgraph-io/badger/v3 v3.2103.2
-	github.com/gliderlabs/ssh v0.3.5
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/uuid v1.3.0
 	github.com/jacobsa/crypto v0.0.0-20190317225127-9f44e2d11115
-	github.com/mattn/go-isatty v0.0.17
+	github.com/mattn/go-isatty v0.0.19
 	github.com/meowgorithm/babylogger v1.2.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/muesli/go-app-paths v0.2.2
@@ -38,7 +38,7 @@ require (
 require (
 	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
-	github.com/aymanbagabas/go-osc52 v1.2.1 // indirect
+	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/caarlos0/sshmarshal v0.1.0 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
@@ -68,13 +68,13 @@ require (
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/muesli/mango v0.1.0 // indirect
 	github.com/muesli/mango-pflag v0.1.0 // indirect
-	github.com/muesli/termenv v0.14.0 // indirect
+	github.com/muesli/termenv v0.15.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
-	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	go.opencensus.io v0.22.5 // indirect

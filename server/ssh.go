@@ -14,9 +14,9 @@ import (
 
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/server/db"
+	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
 	rm "github.com/charmbracelet/wish/recover"
-	"github.com/gliderlabs/ssh"
 	jwt "github.com/golang-jwt/jwt/v4"
 )
 

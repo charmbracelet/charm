@@ -6,8 +6,8 @@ import (
 	"github.com/charmbracelet/log"
 
 	charm "github.com/charmbracelet/charm/proto"
+	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
-	"github.com/gliderlabs/ssh"
 )
 
 func (me *SSHServer) sshMiddleware() wish.Middleware {
