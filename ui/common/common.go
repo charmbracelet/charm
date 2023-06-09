@@ -4,7 +4,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/mattn/go-isatty"
+	isatty "github.com/mattn/go-isatty"
 )
 
 var (

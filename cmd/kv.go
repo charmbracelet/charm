@@ -8,7 +8,7 @@ import (
 
 	"github.com/charmbracelet/charm/kv"
 	"github.com/charmbracelet/charm/ui/common"
-	"github.com/dgraph-io/badger/v3"
+	badger "github.com/dgraph-io/badger/v3"
 	"github.com/spf13/cobra"
 )
 

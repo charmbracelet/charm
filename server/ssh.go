@@ -17,7 +17,7 @@ import (
 	"github.com/charmbracelet/wish"
 	rm "github.com/charmbracelet/wish/recover"
 	"github.com/gliderlabs/ssh"
-	"github.com/golang-jwt/jwt/v4"
+	jwt "github.com/golang-jwt/jwt/v4"
 )
 
 // Session represents a Charm User's SSH session.

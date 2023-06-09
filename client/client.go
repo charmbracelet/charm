@@ -13,11 +13,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/caarlos0/env/v6"
+	env "github.com/caarlos0/env/v6"
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/keygen"
-	"github.com/golang-jwt/jwt/v4"
-	"github.com/mitchellh/go-homedir"
+	jwt "github.com/golang-jwt/jwt/v4"
+	homedir "github.com/mitchellh/go-homedir"
 	gap "github.com/muesli/go-app-paths"
 	"golang.org/x/crypto/ssh"
 )
