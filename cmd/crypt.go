@@ -62,7 +62,7 @@ type cryptFile struct {
 	Data string `json:"data"`
 }
 
-func cryptEncrypt(cmd *cobra.Command, args []string) error {
+func cryptEncrypt(_ *cobra.Command, _ []string) error {
 	cr, err := crypt.NewCrypt()
 	if err != nil {
 		return err
@@ -88,7 +88,7 @@ func cryptEncrypt(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func cryptDecrypt(cmd *cobra.Command, args []string) error {
+func cryptDecrypt(_ *cobra.Command, args []string) error {
 	var r io.Reader
 	cr, err := crypt.NewCrypt()
 	if err != nil {
@@ -127,7 +127,7 @@ func cryptDecrypt(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func cryptEncryptLookup(cmd *cobra.Command, args []string) error {
+func cryptEncryptLookup(_ *cobra.Command, args []string) error {
 	cr, err := crypt.NewCrypt()
 	if err != nil {
 		return err
@@ -140,7 +140,7 @@ func cryptEncryptLookup(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func cryptDecryptLookup(cmd *cobra.Command, args []string) error {
+func cryptDecryptLookup(_ *cobra.Command, args []string) error {
 	cr, err := crypt.NewCrypt()
 	if err != nil {
 		return err

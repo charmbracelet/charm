@@ -26,11 +26,11 @@ func (lh *linkHandler) TokenCreated(l *charm.Link) {
 	lh.token <- l.Token
 }
 
-func (lh *linkHandler) TokenSent(l *charm.Link) {}
+func (lh *linkHandler) TokenSent(_ *charm.Link) {}
 
-func (lh *linkHandler) ValidToken(l *charm.Link) {}
+func (lh *linkHandler) ValidToken(_ *charm.Link) {}
 
-func (lh *linkHandler) InvalidToken(l *charm.Link) {}
+func (lh *linkHandler) InvalidToken(_ *charm.Link) {}
 
 // Request handles link approvals. The remote machine sends an approval request,
 // which we send to the Tea UI as a message. The Tea application then sends a
@@ -40,21 +40,21 @@ func (lh *linkHandler) Request(l *charm.Link) bool {
 	return <-lh.response
 }
 
-func (lh *linkHandler) RequestDenied(l *charm.Link) {}
+func (lh *linkHandler) RequestDenied(_ *charm.Link) {}
 
 // Successful link, but this account has already been linked.
-func (lh *linkHandler) SameUser(l *charm.Link) {
+func (lh *linkHandler) SameUser(_ *charm.Link) {
 	lh.success <- true
 }
 
-func (lh *linkHandler) Success(l *charm.Link) {
+func (lh *linkHandler) Success(_ *charm.Link) {
 	lh.success <- false
 }
 
-func (lh *linkHandler) Timeout(l *charm.Link) {
+func (lh *linkHandler) Timeout(_ *charm.Link) {
 	lh.timeout <- struct{}{}
 }
 
-func (lh *linkHandler) Error(l *charm.Link) {
+func (lh *linkHandler) Error(_ *charm.Link) {
 	lh.err <- errors.New("there’s been an error; please try again")
 }

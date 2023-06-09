@@ -32,7 +32,7 @@ func (sl *SSHLinker) TokenCreated(token charm.Token) {
 }
 
 // TokenSent implements the proto.LinkTransport interface for the SSHLinker.
-func (sl *SSHLinker) TokenSent(l *charm.Link) {
+func (sl *SSHLinker) TokenSent(_ *charm.Link) {
 	log.Debug("Token sent")
 }
 

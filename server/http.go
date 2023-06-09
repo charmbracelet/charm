@@ -169,14 +169,14 @@ func (s *HTTPServer) renderCustomError(w http.ResponseWriter, msg string, status
 	_ = json.NewEncoder(w).Encode(charm.Message{Message: msg})
 }
 
-func (s *HTTPServer) handleJWKS(w http.ResponseWriter, r *http.Request) {
+func (s *HTTPServer) handleJWKS(w http.ResponseWriter, _ *http.Request) {
 	jwks := jose.JSONWebKeySet{Keys: []jose.JSONWebKey{s.cfg.jwtKeyPair.JWK.Public()}}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	_ = json.NewEncoder(w).Encode(jwks)
 }
 
-func (s *HTTPServer) handleOpenIDConfig(w http.ResponseWriter, r *http.Request) {
+func (s *HTTPServer) handleOpenIDConfig(w http.ResponseWriter, _ *http.Request) {
 	pj := providerJSON{JWKSURL: fmt.Sprintf("%s/v1/public/jwks", s.cfg.httpURL())}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")

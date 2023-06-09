@@ -104,7 +104,7 @@ func (me *SSHServer) sendJSON(s ssh.Session, o interface{}) error {
 	return json.NewEncoder(s).Encode(o)
 }
 
-func (me *SSHServer) authHandler(ctx ssh.Context, key ssh.PublicKey) bool {
+func (me *SSHServer) authHandler(_ ssh.Context, _ ssh.PublicKey) bool {
 	return true
 }
 
