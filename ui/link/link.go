@@ -70,7 +70,7 @@ func newModel(cfg *client.Config, code string) model {
 func (m model) Init() tea.Cmd {
 	return tea.Batch(
 		charmclient.NewClient(m.cfg),
-		spinner.Tick,
+		m.spinner.Tick,
 	)
 }
 

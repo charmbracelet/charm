@@ -98,7 +98,7 @@ func (m *Model) SetCharmClient(cc *client.Client) {
 func NewModel(cfg *client.Config) Model {
 	st := common.DefaultStyles()
 
-	p := pager.NewModel()
+	p := pager.New()
 	p.PerPage = keysPerPage
 	p.Type = pager.Dots
 	p.InactiveDot = st.InactivePagination.Render("•")
@@ -122,7 +122,7 @@ func NewModel(cfg *client.Config) Model {
 func (m Model) Init() tea.Cmd {
 	return tea.Batch(
 		charmclient.NewClient(m.cfg),
-		spinner.Tick,
+		m.spinner.Tick,
 	)
 }
 
@@ -355,7 +355,7 @@ func LoadKeys(m Model) tea.Cmd {
 	}
 	return tea.Batch(
 		fetchKeys(m.cc),
-		spinner.Tick,
+		m.spinner.Tick,
 	)
 }
 

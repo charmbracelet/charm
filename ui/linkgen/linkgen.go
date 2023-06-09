@@ -122,7 +122,7 @@ func (m *Model) SetCharmClient(cc *client.Client) {
 // Init is the Bubble Tea program's initialization function. This is used in
 // standalone mode.
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(charmclient.NewClient(m.cfg), spinner.Tick)
+	return tea.Batch(charmclient.NewClient(m.cfg), m.spinner.Tick)
 }
 
 // Update is the Tea update loop.
@@ -315,7 +315,7 @@ func (m Model) View() string {
 // InitLinkGen runs the necessary commands for starting the link generation
 // process.
 func InitLinkGen(m Model) tea.Cmd {
-	return tea.Batch(append(HandleLinkRequest(m), spinner.Tick)...)
+	return tea.Batch(append(HandleLinkRequest(m), m.spinner.Tick)...)
 }
 
 // HandleLinkRequest returns a bunch of blocking commands that resolve on link

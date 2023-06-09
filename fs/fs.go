@@ -260,8 +260,8 @@ func (cfs *FS) WriteFile(name string, src fs.File) error {
 	}
 	path := fmt.Sprintf("/v1/fs/%s?mode=%d", ep, info.Mode())
 	headers := http.Header{
-		"Content-Type":   {w.FormDataContentType()},
-		"Content-Length": {fmt.Sprintf("%d", contentLength)},
+		"Content-Type":   []string{w.FormDataContentType()},
+		"Content-Length": []string{fmt.Sprintf("%d", contentLength)},
 	}
 	resp, err := cfs.cc.AuthedRequest("POST", path, headers, rr)
 	if err != nil {

@@ -92,7 +92,7 @@ func (m *Model) indexBackward() {
 func NewModel(cc *client.Client) Model {
 	st := common.DefaultStyles()
 
-	im := input.NewModel()
+	im := input.New()
 	im.CursorStyle = st.Cursor
 	im.Placeholder = "divagurl2000"
 	im.Prompt = st.FocusedPrompt.String()
@@ -175,7 +175,7 @@ func Update(msg tea.Msg, m Model) (Model, tea.Cmd) {
 
 					return m, tea.Batch(
 						setName(m), // fire off the command, too
-						spinner.Tick,
+						m.spinner.Tick,
 					)
 				case cancelButton: // Exit this mini-app
 					m.Done = true
