@@ -20,7 +20,7 @@ func TestPut(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	paths := []string{"/", "///"}
+	paths := []string{filepath.Join(string(os.PathSeparator), ""), filepath.Join(string(os.PathSeparator), "//")}
 	for _, path := range paths {
 		err = lfs.Put(charmID, path, buf, fs.FileMode(0o644))
 		if err == nil {
@@ -30,7 +30,7 @@ func TestPut(t *testing.T) {
 	}
 
 	content := "hello world"
-	path := "/hello.txt"
+	path := filepath.Join(string(os.PathSeparator), "hello.txt")
 	t.Run(path, func(t *testing.T) {
 		buf = bytes.NewBufferString(content)
 		err = lfs.Put(charmID, path, buf, fs.FileMode(0o644))
@@ -63,7 +63,7 @@ func TestPut(t *testing.T) {
 	})
 
 	content = "bar"
-	path = "/foo/hello.txt"
+	path = filepath.Join(string(os.PathSeparator), "foo", "hello.txt")
 	t.Run(path, func(t *testing.T) {
 		buf = bytes.NewBufferString(content)
 		err = lfs.Put(charmID, path, buf, fs.FileMode(0o644))

@@ -17,7 +17,7 @@ import (
 	"github.com/charmbracelet/wish"
 	rm "github.com/charmbracelet/wish/recover"
 	"github.com/gliderlabs/ssh"
-	"github.com/golang-jwt/jwt/v4"
+	jwt "github.com/golang-jwt/jwt/v4"
 )
 
 // Session represents a Charm User's SSH session.
@@ -104,7 +104,7 @@ func (me *SSHServer) sendJSON(s ssh.Session, o interface{}) error {
 	return json.NewEncoder(s).Encode(o)
 }
 
-func (me *SSHServer) authHandler(ctx ssh.Context, key ssh.PublicKey) bool {
+func (me *SSHServer) authHandler(_ ssh.Context, _ ssh.PublicKey) bool {
 	return true
 }
 

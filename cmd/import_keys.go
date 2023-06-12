@@ -217,15 +217,12 @@ func restoreFromReader(r io.Reader, dd string) error {
 		return err
 	}
 
-	if err := os.WriteFile(
+	err = os.WriteFile(
 		keypath+".pub",
 		ssh.MarshalAuthorizedKey(signer.PublicKey()),
 		0o600,
-	); err != nil {
-		return err
-	}
-
-	return nil
+	)
+	return err
 }
 
 func untar(tarball, targetDir string) error {

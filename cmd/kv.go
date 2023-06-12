@@ -8,7 +8,7 @@ import (
 
 	"github.com/charmbracelet/charm/kv"
 	"github.com/charmbracelet/charm/ui/common"
-	"github.com/dgraph-io/badger/v3"
+	badger "github.com/dgraph-io/badger/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -80,7 +80,7 @@ var (
 	}
 )
 
-func kvSet(cmd *cobra.Command, args []string) error {
+func kvSet(_ *cobra.Command, args []string) error {
 	k, n, err := keyParser(args[0])
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func kvSet(cmd *cobra.Command, args []string) error {
 	return db.SetReader(k, os.Stdin)
 }
 
-func kvGet(cmd *cobra.Command, args []string) error {
+func kvGet(_ *cobra.Command, args []string) error {
 	k, n, err := keyParser(args[0])
 	if err != nil {
 		return err
@@ -112,7 +112,7 @@ func kvGet(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func kvDelete(cmd *cobra.Command, args []string) error {
+func kvDelete(_ *cobra.Command, args []string) error {
 	k, n, err := keyParser(args[0])
 	if err != nil {
 		return err
@@ -124,7 +124,7 @@ func kvDelete(cmd *cobra.Command, args []string) error {
 	return db.Delete(k)
 }
 
-func kvList(cmd *cobra.Command, args []string) error {
+func kvList(_ *cobra.Command, args []string) error {
 	var k string
 	var pf string
 	if keysIterate || valuesIterate {
@@ -178,7 +178,7 @@ func kvList(cmd *cobra.Command, args []string) error {
 	})
 }
 
-func kvSync(cmd *cobra.Command, args []string) error {
+func kvSync(_ *cobra.Command, args []string) error {
 	n, err := nameFromArgs(args)
 	if err != nil {
 		return err
@@ -190,7 +190,7 @@ func kvSync(cmd *cobra.Command, args []string) error {
 	return db.Sync()
 }
 
-func kvReset(cmd *cobra.Command, args []string) error {
+func kvReset(_ *cobra.Command, args []string) error {
 	n, err := nameFromArgs(args)
 	if err != nil {
 		return err

@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"path/filepath"
 
-	"github.com/caarlos0/env/v6"
+	env "github.com/caarlos0/env/v6"
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/server/db"
 	"github.com/charmbracelet/charm/server/db/sqlite"

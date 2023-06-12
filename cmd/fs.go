@@ -222,7 +222,7 @@ func (lrfs *localRemoteFS) copy(srcName string, dstName string, recursive bool) 
 	return lrfs.write(dstName, src)
 }
 
-func fsCat(cmd *cobra.Command, args []string) error {
+func fsCat(_ *cobra.Command, args []string) error {
 	lsfs, err := cfs.NewFS()
 	if err != nil {
 		return err
@@ -254,7 +254,7 @@ func fsMove(cmd *cobra.Command, args []string) error {
 	return fsRemove(cmd, args[:1])
 }
 
-func fsRemove(cmd *cobra.Command, args []string) error {
+func fsRemove(_ *cobra.Command, args []string) error {
 	lsfs, err := cfs.NewFS()
 	if err != nil {
 		return err
@@ -262,7 +262,7 @@ func fsRemove(cmd *cobra.Command, args []string) error {
 	return lsfs.Remove(args[0])
 }
 
-func fsCopy(cmd *cobra.Command, args []string) error {
+func fsCopy(_ *cobra.Command, args []string) error {
 	lrfs, err := newLocalRemoteFS()
 	if err != nil {
 		return err
@@ -287,7 +287,7 @@ func fsCopy(cmd *cobra.Command, args []string) error {
 	return lrfs.copy(src, dst, isRecursive)
 }
 
-func fsList(cmd *cobra.Command, args []string) error {
+func fsList(_ *cobra.Command, args []string) error {
 	lsfs, err := cfs.NewFS()
 	if err != nil {
 		return err
@@ -312,7 +312,7 @@ func fsList(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func fsTree(cmd *cobra.Command, args []string) error {
+func fsTree(_ *cobra.Command, args []string) error {
 	lsfs, err := cfs.NewFS()
 	if err != nil {
 		return err

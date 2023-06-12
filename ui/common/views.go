@@ -52,7 +52,7 @@ var (
 
 // NewSpinner returns a spinner model.
 func NewSpinner() spinner.Model {
-	s := spinner.NewModel()
+	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = spinnerStyle
 	return s

@@ -30,7 +30,7 @@ func (cc *Client) AuthedJSONRequest(method string, path string, reqBody interfac
 		return err
 	}
 	headers := http.Header{
-		"Content-Type": {"application/json"},
+		"Content-Type": []string{"application/json"},
 	}
 	resp, err := cc.AuthedRequest(method, path, headers, buf)
 	if err != nil {
