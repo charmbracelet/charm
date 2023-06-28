@@ -89,7 +89,7 @@ func (m *Model) indexBackward() {
 }
 
 // NewModel returns a new username model in its initial state.
-func NewModel(cc *client.Client, username string) Model {
+func NewModel(cc *client.Client) Model {
 	st := common.DefaultStyles()
 
 	im := input.NewModel()
@@ -98,14 +98,9 @@ func NewModel(cc *client.Client, username string) Model {
 	im.CharLimit = 50
 	im.Focus()
 
-	im.Placeholder = username
-
-	if len(im.Placeholder) == 0 {
-		im.Placeholder = "divagurl2000"
-
-		if u, err := cc.Bio(); err == nil && u.Name != "" {
-			im.Placeholder = u.Name
-		}
+	im.Placeholder = "divagurl2000"
+	if u, err := cc.Bio(); err == nil && u.Name != "" {
+		im.Placeholder = u.Name
 	}
 
 	return Model{
@@ -125,7 +120,7 @@ func NewModel(cc *client.Client, username string) Model {
 // Init is the Bubble Tea initialization function.
 func Init(cc *client.Client) func() (Model, tea.Cmd) {
 	return func() (Model, tea.Cmd) {
-		m := NewModel(cc, "")
+		m := NewModel(cc)
 		return m, InitialCmd()
 	}
 }
