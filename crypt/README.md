@@ -1,9 +1,8 @@
 # Charm Crypt
 
-We take privacy seriously. All data stored in the Charm Cloud is encrypted (for
-instance, documents you’ve stashed with `glow`), decryptable only with your
-Charm account. That means even we don't have the ability to decrypt or view
-your data.
+We take privacy seriously. All data stored in the Charm Cloud is encrypted,
+decryptable only with your Charm account. That means even we don't have the
+ability to decrypt or view your data.
 
 ## Usage
 
@@ -28,4 +27,3 @@ that key is downloaded from our server and decrypted locally using the SSH
 private key. When you link accounts, the symmetric key is encrypted for each
 new public key. This happens on your machine and not our server, so we never
 see any unencrypted data from you.
-
