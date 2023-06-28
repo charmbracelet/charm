@@ -94,10 +94,14 @@ func NewModel(cc *client.Client) Model {
 
 	im := input.New()
 	im.CursorStyle = st.Cursor
-	im.Placeholder = "divagurl2000"
 	im.Prompt = st.FocusedPrompt.String()
 	im.CharLimit = 50
 	im.Focus()
+
+	im.Placeholder = "divagurl2000"
+	if u, err := cc.Bio(); err == nil && u.Name != "" {
+		im.Placeholder = u.Name
+	}
 
 	return Model{
 		Done:    false,
