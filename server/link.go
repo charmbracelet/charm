@@ -9,7 +9,7 @@ import (
 	"github.com/charmbracelet/log"
 
 	charm "github.com/charmbracelet/charm/proto"
-	"github.com/gliderlabs/ssh"
+	"github.com/charmbracelet/ssh"
 	"github.com/muesli/toktok"
 )
 

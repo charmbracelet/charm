@@ -26,11 +26,11 @@ var (
 				cfg.DataDir = serverDataDir
 			}
 			sp := filepath.Join(cfg.DataDir, ".ssh")
-			kp, err := keygen.NewWithWrite(filepath.Join(sp, "charm_server"), []byte(""), keygen.Ed25519)
+			kp, err := keygen.New(filepath.Join(sp, "charm_server_ed25519"), keygen.WithKeyType(keygen.Ed25519), keygen.WithWrite())
 			if err != nil {
 				return err
 			}
-			cfg = cfg.WithKeys(kp.PublicKey(), kp.PrivateKeyPEM())
+			cfg = cfg.WithKeys(kp.RawAuthorizedKey(), kp.RawPrivateKey())
 			s, err := server.NewServer(cfg)
 			if err != nil {
 				return err

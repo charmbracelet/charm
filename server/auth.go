@@ -6,8 +6,8 @@ import (
 	"github.com/charmbracelet/log"
 
 	charm "github.com/charmbracelet/charm/proto"
+	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
-	"github.com/gliderlabs/ssh"
 )
 
 func (me *SSHServer) sshMiddleware() wish.Middleware {
@@ -40,12 +40,12 @@ func (me *SSHServer) sshMiddleware() wish.Middleware {
 func (me *SSHServer) handleAPIAuth(s ssh.Session) {
 	key, err := keyText(s)
 	if err != nil {
-		me.errorLog.Println(err)
+		me.errorLog.Print(err)
 		return
 	}
 	u, err := me.db.UserForKey(key, true)
 	if err != nil {
-		me.errorLog.Println(err)
+		me.errorLog.Print(err)
 		return
 	}
 	log.Debug("JWT for user", "id", u.CharmID)
@@ -74,20 +74,20 @@ func (me *SSHServer) handleAPIAuth(s ssh.Session) {
 func (me *SSHServer) handleAPIKeys(s ssh.Session) {
 	key, err := keyText(s)
 	if err != nil {
-		me.errorLog.Println(err)
+		me.errorLog.Print(err)
 		_ = me.sendAPIMessage(s, "Missing key")
 		return
 	}
 	u, err := me.db.UserForKey(key, true)
 	if err != nil {
-		me.errorLog.Println(err)
+		me.errorLog.Print(err)
 		_ = me.sendAPIMessage(s, fmt.Sprintf("API keys error: %s", err))
 		return
 	}
 	log.Debug("API keys for user", "id", u.CharmID)
 	keys, err := me.db.KeysForUser(u)
 	if err != nil {
-		me.errorLog.Println(err)
+		me.errorLog.Print(err)
 		_ = me.sendAPIMessage(s, "There was a problem fetching your keys")
 		return
 	}
@@ -111,12 +111,12 @@ func (me *SSHServer) handleAPIKeys(s ssh.Session) {
 func (me *SSHServer) handleID(s ssh.Session) {
 	key, err := keyText(s)
 	if err != nil {
-		me.errorLog.Println(err)
+		me.errorLog.Print(err)
 		return
 	}
 	u, err := me.db.UserForKey(key, true)
 	if err != nil {
-		me.errorLog.Println(err)
+		me.errorLog.Print(err)
 		return
 	}
 	log.Debug("ID for user", "id", u.CharmID)

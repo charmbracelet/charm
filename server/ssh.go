@@ -14,9 +14,9 @@ import (
 
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/server/db"
+	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
 	rm "github.com/charmbracelet/wish/recover"
-	"github.com/gliderlabs/ssh"
 	jwt "github.com/golang-jwt/jwt/v4"
 )
 
@@ -46,8 +46,11 @@ func NewSSHServer(cfg *Config) (*SSHServer, error) {
 		errorLog:  cfg.errorLog,
 		linkQueue: cfg.linkQueue,
 	}
+
 	if s.errorLog == nil {
-		s.errorLog = log.StandardLog(log.StandardLogOption{ForceLevel: log.ErrorLevel})
+		s.errorLog = log.StandardLog(log.StandardLogOptions{
+			ForceLevel: log.ErrorLevel,
+		})
 	}
 	addr := fmt.Sprintf("%s:%d", cfg.BindAddr, cfg.SSHPort)
 	s.db = cfg.DB
@@ -63,7 +66,7 @@ func NewSSHServer(cfg *Config) (*SSHServer, error) {
 		wish.WithPublicKeyAuth(s.authHandler),
 		wish.WithMiddleware(
 			rm.MiddlewareWithLogger(
-				log.StandardLog(log.StandardLogOption{ForceLevel: log.ErrorLevel}),
+				log.NewWithOptions(os.Stderr, log.Options{Level: log.ErrorLevel}),
 				s.sshMiddleware(),
 			),
 		),

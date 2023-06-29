@@ -81,7 +81,8 @@ func NewClient(cfg *Config) (*Client, error) {
 			if err != nil {
 				return nil, err
 			}
-			_, err = keygen.NewWithWrite(filepath.Join(dp, "charm"), []byte(""), cfg.KeygenType())
+
+			_, err = keygen.New(filepath.Join(dp, "charm_"+cfg.KeygenType().String()), keygen.WithKeyType(cfg.KeygenType()), keygen.WithWrite())
 			if err != nil {
 				return nil, err
 			}
