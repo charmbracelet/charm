@@ -26,29 +26,31 @@ import (
 
 // Config is the configuration for the Charm server.
 type Config struct {
-	BindAddr       string `env:"CHARM_SERVER_BIND_ADDRESS" envDefault:""`
-	Host           string `env:"CHARM_SERVER_HOST" envDefault:"localhost"`
-	SSHPort        int    `env:"CHARM_SERVER_SSH_PORT" envDefault:"35353"`
-	HTTPPort       int    `env:"CHARM_SERVER_HTTP_PORT" envDefault:"35354"`
-	StatsPort      int    `env:"CHARM_SERVER_STATS_PORT" envDefault:"35355"`
-	HealthPort     int    `env:"CHARM_SERVER_HEALTH_PORT" envDefault:"35356"`
-	DataDir        string `env:"CHARM_SERVER_DATA_DIR" envDefault:"data"`
-	UseTLS         bool   `env:"CHARM_SERVER_USE_TLS" envDefault:"false"`
-	TLSKeyFile     string `env:"CHARM_SERVER_TLS_KEY_FILE"`
-	TLSCertFile    string `env:"CHARM_SERVER_TLS_CERT_FILE"`
-	PublicURL      string `env:"CHARM_SERVER_PUBLIC_URL"`
-	EnableMetrics  bool   `env:"CHARM_SERVER_ENABLE_METRICS" envDefault:"false"`
-	UserMaxStorage int64  `env:"CHARM_SERVER_USER_MAX_STORAGE" envDefault:"0"`
-	errorLog       *glog.Logger
-	PublicKey      []byte
-	PrivateKey     []byte
-	DB             db.DB
-	FileStore      storage.FileStore
-	Stats          stats.Stats
-	linkQueue      charm.LinkQueue
-	tlsConfig      *tls.Config
-	jwtKeyPair     JSONWebKeyPair
-	httpScheme     string
+	BindAddr         string `env:"CHARM_SERVER_BIND_ADDRESS" envDefault:""`
+	Host             string `env:"CHARM_SERVER_HOST" envDefault:"localhost"`
+	SSHPort          int    `env:"CHARM_SERVER_SSH_PORT" envDefault:"35353"`
+	HTTPPort         int    `env:"CHARM_SERVER_HTTP_PORT" envDefault:"35354"`
+	StatsPort        int    `env:"CHARM_SERVER_STATS_PORT" envDefault:"35355"`
+	HealthPort       int    `env:"CHARM_SERVER_HEALTH_PORT" envDefault:"35356"`
+	DataDir          string `env:"CHARM_SERVER_DATA_DIR" envDefault:"data"`
+	ConnectionString string `env:"CHARM_SERVER_CONNECTION_STRING" `
+	Driver           string `env:"CHARM_SERVER_DRIVER" envDefault:"sqlite"`
+	UseTLS           bool   `env:"CHARM_SERVER_USE_TLS" envDefault:"false"`
+	TLSKeyFile       string `env:"CHARM_SERVER_TLS_KEY_FILE"`
+	TLSCertFile      string `env:"CHARM_SERVER_TLS_CERT_FILE"`
+	PublicURL        string `env:"CHARM_SERVER_PUBLIC_URL"`
+	EnableMetrics    bool   `env:"CHARM_SERVER_ENABLE_METRICS" envDefault:"false"`
+	UserMaxStorage   int64  `env:"CHARM_SERVER_USER_MAX_STORAGE" envDefault:"0"`
+	errorLog         *glog.Logger
+	PublicKey        []byte
+	PrivateKey       []byte
+	DB               db.DB
+	FileStore        storage.FileStore
+	Stats            stats.Stats
+	linkQueue        charm.LinkQueue
+	tlsConfig        *tls.Config
+	jwtKeyPair       JSONWebKeyPair
+	httpScheme       string
 }
 
 // Server contains the SSH and HTTP servers required to host the Charm Cloud.
@@ -198,14 +200,22 @@ func (srv *Server) Close() error {
 	return nil
 }
 
+func GetValidatedDBPath(cfg *Config) string {
+	if cfg.ConnectionString != "" {
+		return cfg.ConnectionString
+	}
+	dp := filepath.Join(cfg.DataDir, "db")
+	err := storage.EnsureDir(dp, 0o700)
+	if err != nil {
+		log.Fatal("could not init sqlite path", "err", err)
+	}
+	return filepath.Join(dp, sqlite.DbName) + sqlite.DbOptions
+}
+
 func (srv *Server) init(cfg *Config) {
 	if cfg.DB == nil {
-		dp := filepath.Join(cfg.DataDir, "db")
-		err := storage.EnsureDir(dp, 0o700)
-		if err != nil {
-			log.Fatal("could not init sqlite path", "err", err)
-		}
-		db := sqlite.NewDB(filepath.Join(dp, sqlite.DbName))
+		validatedDbPath := GetValidatedDBPath(cfg)
+		db := sqlite.NewDB(cfg.Driver, validatedDbPath)
 		srv.Config = cfg.WithDB(db)
 	}
 	if cfg.FileStore == nil {
