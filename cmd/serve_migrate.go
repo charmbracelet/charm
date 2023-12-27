@@ -3,8 +3,6 @@ package cmd
 import (
 	"database/sql"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/charmbracelet/log"
 
@@ -26,12 +24,8 @@ var ServeMigrationCmd = &cobra.Command{
 	Args:    cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg := server.DefaultConfig()
-		dp := filepath.Join(cfg.DataDir, "db", sqlite.DbName)
-		_, err := os.Stat(dp)
-		if err != nil {
-			return fmt.Errorf("database does not exist: %s", err)
-		}
-		db := sqlite.NewDB(dp)
+		db := sqlite.NewDB(cfg.DbDriver, server.GetDBDataSource(cfg))
+		var err error
 		for _, m := range []migration.Migration{
 			migration.Migration0001,
 		} {

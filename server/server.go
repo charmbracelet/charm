@@ -33,6 +33,8 @@ type Config struct {
 	StatsPort      int    `env:"CHARM_SERVER_STATS_PORT" envDefault:"35355"`
 	HealthPort     int    `env:"CHARM_SERVER_HEALTH_PORT" envDefault:"35356"`
 	DataDir        string `env:"CHARM_SERVER_DATA_DIR" envDefault:"data"`
+	DbDataSource   string `env:"CHARM_SERVER_DB_DATA_SOURCE" `
+	DbDriver       string `env:"CHARM_SERVER_DB_DRIVER" envDefault:"sqlite"`
 	UseTLS         bool   `env:"CHARM_SERVER_USE_TLS" envDefault:"false"`
 	TLSKeyFile     string `env:"CHARM_SERVER_TLS_KEY_FILE"`
 	TLSCertFile    string `env:"CHARM_SERVER_TLS_CERT_FILE"`
@@ -198,15 +200,21 @@ func (srv *Server) Close() error {
 	return nil
 }
 
+func GetDBDataSource(cfg *Config) string {
+	if cfg.DbDataSource != "" {
+		return cfg.DbDataSource
+	}
+	dp := filepath.Join(cfg.DataDir, "db")
+	err := storage.EnsureDir(dp, 0o700)
+	if err != nil {
+		log.Fatal("could not init sqlite path", "err", err)
+	}
+	return filepath.Join(dp, sqlite.DbName) + sqlite.DbOptions
+}
+
 func (srv *Server) init(cfg *Config) {
 	if cfg.DB == nil {
-		dp := filepath.Join(cfg.DataDir, "db")
-		err := storage.EnsureDir(dp, 0o700)
-		if err != nil {
-			log.Fatal("could not init sqlite path", "err", err)
-		}
-		db := sqlite.NewDB(filepath.Join(dp, sqlite.DbName))
-		srv.Config = cfg.WithDB(db)
+		srv.Config = cfg.WithDB(sqlite.NewDB(cfg.DbDriver, GetDBDataSource(cfg)))
 	}
 	if cfg.FileStore == nil {
 		fs, err := lfs.NewLocalFileStore(filepath.Join(cfg.DataDir, "files"))

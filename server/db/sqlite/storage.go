@@ -11,6 +11,7 @@ import (
 
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/google/uuid"
+	_ "github.com/tursodatabase/libsql-client-go/libsql"
 	"modernc.org/sqlite"
 	sqlitelib "modernc.org/sqlite/lib"
 )
@@ -28,10 +29,10 @@ type DB struct {
 }
 
 // NewDB creates a new DB in the given path.
-func NewDB(path string) *DB {
+func NewDB(driver string, path string) *DB {
 	var err error
-	log.Debug("Opening SQLite db", "path", path)
-	db, err := sql.Open("sqlite", path+DbOptions)
+	log.Debug("Opening SQLite db", "path", path, "driver", driver)
+	db, err := sql.Open(driver, path)
 	if err != nil {
 		panic(err)
 	}
