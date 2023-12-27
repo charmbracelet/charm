@@ -24,8 +24,7 @@ var ServeMigrationCmd = &cobra.Command{
 	Args:    cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg := server.DefaultConfig()
-		validatedDbPath := server.GetValidatedDBPath(cfg)
-		db := sqlite.NewDB(cfg.Driver, validatedDbPath)
+		db := sqlite.NewDB(cfg.DbDriver, server.GetDBDataSource(cfg))
 		var err error
 		for _, m := range []migration.Migration{
 			migration.Migration0001,
