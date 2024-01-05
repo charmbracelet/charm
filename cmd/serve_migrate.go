@@ -1,16 +1,12 @@
 package cmd
 
 import (
-	"database/sql"
-	"fmt"
-	"os"
 	"path/filepath"
-
-	"github.com/charmbracelet/log"
 
 	"github.com/charmbracelet/charm/server"
 	"github.com/charmbracelet/charm/server/db/sqlite"
-	"github.com/charmbracelet/charm/server/db/sqlite/migration"
+	"github.com/charmbracelet/charm/server/storage"
+	"github.com/charmbracelet/log"
 	"github.com/spf13/cobra"
 
 	_ "modernc.org/sqlite" // sqlite driver
@@ -26,30 +22,11 @@ var ServeMigrationCmd = &cobra.Command{
 	Args:    cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg := server.DefaultConfig()
-		dp := filepath.Join(cfg.DataDir, "db", sqlite.DbName)
-		_, err := os.Stat(dp)
+		dp := filepath.Join(cfg.DataDir, "db")
+		err := storage.EnsureDir(dp, 0o700)
 		if err != nil {
-			return fmt.Errorf("database does not exist: %s", err)
+			log.Fatal("could not init sqlite path", "err", err)
 		}
-		db := sqlite.NewDB(dp)
-		for _, m := range []migration.Migration{
-			migration.Migration0001,
-		} {
-			log.Print("Running migration", "id", fmt.Sprintf("%04d", m.ID), "name", m.Name)
-			err = db.WrapTransaction(func(tx *sql.Tx) error {
-				_, err := tx.Exec(m.SQL)
-				if err != nil {
-					return err
-				}
-				return nil
-			})
-			if err != nil {
-				break
-			}
-		}
-		if err != nil {
-			return err
-		}
-		return nil
+		return sqlite.NewDB(filepath.Join(dp, sqlite.DbName)).Migrate()
 	},
 }
