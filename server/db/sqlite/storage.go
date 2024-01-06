@@ -91,8 +91,8 @@ func NewDB(path string) *DB {
 		}
 		log.Info("Latest version", "version", latest.Version, "name", *latest.Name, "completed_at", latest.CompletedAt, "error_at", latest.ErrorAt, "comment", latest.Comment, "created_at", latest.CreatedAt, "updated_at", latest.UpdatedAt)
 		if latest.Version != migration.Migrations[len(migration.Migrations)-1].Version {
-			log.Info("The database may be out of date.", "latest_db_version", latest.Version, "latest_code_version", migration.Migrations[len(migration.Migrations)-1].Version, "latest_db", latest)
-			log.Info("Latest Code version", "latest_code", migration.Migrations[len(migration.Migrations)-1])
+			log.Info("The database may be out of date.", "latest_code_version", migration.Migrations[len(migration.Migrations)-1].Version, "latest_code_version_name", migration.Migrations[len(migration.Migrations)-1].Name, "latest_db_version", latest.Version, "latest_db_version_name", *latest.Name, "latest_db_version_completed_at", latest.CompletedAt, "latest_db_version_error_at", latest.ErrorAt, "latest_db_version_comment", latest.Comment)
+			log.Debug("Latest Code version", "latest_code", migration.Migrations[len(migration.Migrations)-1])
 		}
 		incomplete, err := d.IncompleteVersionExists()
 		if err != nil {
