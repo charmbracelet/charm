@@ -142,7 +142,7 @@ func (me *DB) LatestVersion() (*migration.Version, error) {
 	log.Debug("Scanning latest version row")
 	err := r.Scan(&v.Version, &v.Name, &v.CompletedAt, &v.ErrorAt, &v.Comment, &v.CreatedAt, &v.UpdatedAt)
 	if err != nil {
-		log.Error("Error getting latest version", "err", err)
+		log.Debug("Error getting latest version", "err", err)
 		return nil, err
 	}
 	log.Debug("Got latest version", "version", v.Version, "name", *v.Name, "completed_at", v.CompletedAt, "error_at", v.ErrorAt, "comment", v.Comment, "created_at", v.CreatedAt, "updated_at", v.UpdatedAt)
@@ -164,7 +164,9 @@ func (me *DB) Migrate() error {
 		latest = &migration.Version{}
 		log.Info("No previous migrations found")
 	}
-	log.Info("Latest version", "version", latest.Version, "name", *latest.Name, "completed_at", latest.CompletedAt, "error_at", latest.ErrorAt, "comment", latest.Comment, "created_at", latest.CreatedAt, "updated_at", latest.UpdatedAt)
+	if err == nil {
+		log.Info("Latest version", "version", latest.Version, "name", *latest.Name, "completed_at", latest.CompletedAt, "error_at", latest.ErrorAt, "comment", latest.Comment, "created_at", latest.CreatedAt, "updated_at", latest.UpdatedAt)
+	}
 
 	executedMigrations := 0
 	skippedMigrations := 0
