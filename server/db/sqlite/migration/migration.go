@@ -7,6 +7,13 @@ import (
 	"github.com/charmbracelet/log"
 )
 
+// Migrations is a list of all migrations.
+// The migrations must be in sequence starting from 1.
+var Migrations = []Migration{
+	Migration0001,
+	Migration0002,
+}
+
 // Migration is a db migration script.
 type Migration struct {
 	Version int
@@ -49,17 +56,15 @@ func safeTime(t *time.Time) string {
 	return "nil"
 }
 
-var Migrations = []Migration{
-	Migration0001,
-	Migration0002,
-}
-
 // Validate validates the migration sequence.
 // It returns an error if the sequence is not valid.
 // Each migration must have a unique version number and
 // the version numbers must be in sequence starting from 1.
 func Validate() error {
 	log.Info("validating migrations")
+	// later, this could be changed to ensure all versions are sequential starting from the first item in the array
+	// this would remove the requirement to have all versions starting from 1.
+	// this would allow to 'prune' or 'compact' previous versions in some way while continuing the general version scheme.
 	for i, m := range Migrations {
 		if i+1 != m.Version {
 			log.Error("migration is not in sequence", "expected", i+1, "actual", m.Version, "migration", m)
