@@ -3,7 +3,7 @@ module github.com/charmbracelet/charm
 go 1.17
 
 require (
-	github.com/auth0/go-jwt-middleware/v2 v2.0.1
+	github.com/auth0/go-jwt-middleware/v2 v2.2.1
 	github.com/caarlos0/env/v6 v6.10.1
 	github.com/calmh/randomart v1.1.0
 	github.com/charmbracelet/bubbles v0.15.0
@@ -14,6 +14,7 @@ require (
 	github.com/charmbracelet/ssh v0.0.0-20221117183211-483d43d97103
 	github.com/charmbracelet/wish v1.1.1
 	github.com/dgraph-io/badger/v3 v3.2103.2
+	github.com/go-jose/go-jose v2.6.2+incompatible
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/uuid v1.3.0
 	github.com/jacobsa/crypto v0.0.0-20190317225127-9f44e2d11115
@@ -29,9 +30,8 @@ require (
 	github.com/prometheus/client_golang v1.15.1
 	github.com/spf13/cobra v1.6.1
 	goji.io v2.0.2+incompatible
-	golang.org/x/crypto v0.14.0
-	golang.org/x/sync v0.1.0
-	gopkg.in/square/go-jose.v2 v2.6.0
+	golang.org/x/crypto v0.17.0
+	golang.org/x/sync v0.6.0
 	modernc.org/sqlite v1.18.1
 )
 
@@ -79,11 +79,12 @@ require (
 	go.opencensus.io v0.22.5 // indirect
 	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
-	golang.org/x/sys v0.13.0 // indirect
-	golang.org/x/term v0.13.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/term v0.15.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.6.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
+	gopkg.in/go-jose/go-jose.v2 v2.6.2 // indirect
 	lukechampine.com/uint128 v1.1.1 // indirect
 	modernc.org/cc/v3 v3.36.0 // indirect
 	modernc.org/ccgo/v3 v3.16.8 // indirect

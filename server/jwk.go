@@ -5,7 +5,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	jose "gopkg.in/square/go-jose.v2"
+	jose "github.com/go-jose/go-jose"
 )
 
 // JSONWebKeyPair holds the ED25519 private key and JSON Web Key used in JWT
