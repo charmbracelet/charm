@@ -19,7 +19,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/jacobsa/crypto v0.0.0-20190317225127-9f44e2d11115
 	github.com/mattn/go-isatty v0.0.19
-	github.com/meowgorithm/babylogger v1.2.0
+	github.com/meowgorithm/babylogger v1.2.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/muesli/go-app-paths v0.2.2
 	github.com/muesli/mango-cobra v1.2.0
