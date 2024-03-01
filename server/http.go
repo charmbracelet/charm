@@ -97,15 +97,15 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 	mux.HandleFunc(pat.Get("/v1/bio/:name"), s.handleGetUser)
 	mux.HandleFunc(pat.Post("/v1/bio"), s.handlePostUser)
 	mux.HandleFunc(pat.Post("/v1/encrypt-key"), s.handlePostEncryptKey)
-	mux.HandleFunc(pat.Get("/ v1 / fs *"), s.handleGetFile)
+	mux.HandleFunc(pat.Get("/v1/fs*"), s.handleGetFile)
 	mux.HandleFunc(pat.Post("/v1/fs/*"), s.handlePostFile)
 	mux.HandleFunc(pat.Delete("/v1/fs/*"), s.handleDeleteFile)
 	mux.HandleFunc(pat.Get("/v1/seq/:name"), s.handleGetSeq)
 	mux.HandleFunc(pat.Post("/v1/seq/:name"), s.handlePostSeq)
-	mux.HandleFunc(pat.Get("/ v1 / news"), s.handleGetNewsList)
+	mux.HandleFunc(pat.Get("/v1/news"), s.handleGetNewsList)
 	mux.HandleFunc(pat.Get("/v1/news/:id"), s.handleGetNews)
-	mux.HandleFunc(pat.Get("/ v1 / public / jwks"), s.handleJWKS)
-	mux.HandleFunc(pat.Get("/.well - known / openid - configuration"), s.handleOpenIDConfig)
+	mux.HandleFunc(pat.Get("/v1/public/jwks"), s.handleJWKS)
+	mux.HandleFunc(pat.Get("/.well-known/openid-configuration"), s.handleOpenIDConfig)
 	s.db = cfg.DB
 	s.fstore = cfg.FileStore
 	return s, nil
