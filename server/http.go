@@ -97,7 +97,7 @@ func NewHTTPServer(cfg *Config) (*HTTPServer, error) {
 	mux.HandleFunc(pat.Get("/v1/bio/:name"), s.handleGetUser)
 	mux.HandleFunc(pat.Post("/v1/bio"), s.handlePostUser)
 	mux.HandleFunc(pat.Post("/v1/encrypt-key"), s.handlePostEncryptKey)
-	mux.HandleFunc(pat.Get("/v1/fs*"), s.handleGetFile)
+	mux.HandleFunc(pat.Get("/v1/fs/*"), s.handleGetFile)
 	mux.HandleFunc(pat.Post("/v1/fs/*"), s.handlePostFile)
 	mux.HandleFunc(pat.Delete("/v1/fs/*"), s.handleDeleteFile)
 	mux.HandleFunc(pat.Get("/v1/seq/:name"), s.handleGetSeq)
