@@ -16,7 +16,7 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/go-jose/go-jose v2.6.2+incompatible
 	github.com/golang-jwt/jwt/v4 v4.5.0
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.6.0
 	github.com/jacobsa/crypto v0.0.0-20190317225127-9f44e2d11115
 	github.com/mattn/go-isatty v0.0.19
 	github.com/meowgorithm/babylogger v1.2.1
