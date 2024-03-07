@@ -32,7 +32,7 @@ require (
 	goji.io v2.0.2+incompatible
 	golang.org/x/crypto v0.21.0
 	golang.org/x/sync v0.6.0
-	modernc.org/sqlite v1.29.2
+	modernc.org/sqlite v1.29.3
 )
 
 require (
