@@ -71,7 +71,7 @@ func (m Model) acceptRequest() (Model, tea.Cmd) { // nolint: unparam
 	return m, nil
 }
 
-// rejectRequset rejects the current linking request.
+// rejectRequest rejects the current linking request.
 func (m Model) rejectRequest() (Model, tea.Cmd) {
 	m.lh.response <- false
 	m.status = linkRequestDenied
