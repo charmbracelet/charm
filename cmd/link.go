@@ -17,7 +17,7 @@ func LinkCmd(parentName string) *cobra.Command {
 		Use:     "link [code]",
 		Short:   "Link multiple machines to your Charm account",
 		Long:    paragraph("It’s easy to " + keyword("link") + " multiple machines or keys to your Charm account. Just run " + code(parentName+" link") + " on a machine connected to the account to want to link to start the process."),
-		Example: indent.String(fmt.Sprintf("%s link\b%s link XXXXXX", parentName, parentName), 2),
+		Example: indent.String(fmt.Sprintf("%s link\n%s link XXXXXX", parentName, parentName), 2),
 		Args:    cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Log to file if specified in the environment
