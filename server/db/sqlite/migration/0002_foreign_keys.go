@@ -1,9 +1,9 @@
 package migration
 
-// Migration0001 is the initial migration.
-var Migration0001 = Migration{
-	ID:   1,
-	Name: "foreign keys",
+// Migration0002 is the initial inclusion of foreign keys.
+var Migration0002 = Migration{
+	Version: 2,
+	Name:    "foreign keys",
 	SQL: `
 PRAGMA foreign_keys=off;
 

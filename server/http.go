@@ -116,7 +116,7 @@ func (s *HTTPServer) Start() error {
 	scheme := strings.ToUpper(s.httpScheme)
 	errg, _ := errgroup.WithContext(context.Background())
 	errg.Go(func() error {
-		log.Print("Starting health server", "scheme", scheme, "addr", s.health.Addr)
+		log.Info("Starting health server", "scheme", scheme, "addr", s.health.Addr)
 		if s.cfg.UseTLS {
 			err := s.health.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile)
 			if err != http.ErrServerClosed {
@@ -131,7 +131,7 @@ func (s *HTTPServer) Start() error {
 		return nil
 	})
 	errg.Go(func() error {
-		log.Print("Starting server", "scheme", scheme, "addr", s.server.Addr)
+		log.Info("Starting server", "scheme", scheme, "addr", s.server.Addr)
 		if s.cfg.UseTLS {
 			err := s.server.ListenAndServeTLS(s.cfg.TLSCertFile, s.cfg.TLSKeyFile)
 			if err != http.ErrServerClosed {
@@ -151,8 +151,8 @@ func (s *HTTPServer) Start() error {
 // Shutdown gracefully shut down the HTTP and health servers.
 func (s *HTTPServer) Shutdown(ctx context.Context) error {
 	scheme := strings.ToUpper(s.httpScheme)
-	log.Print("Stopping server", "scheme", scheme, "addr", s.server.Addr)
-	log.Print("Stopping health server", "scheme", scheme, "addr", s.health.Addr)
+	log.Info("Stopping server", "scheme", scheme, "addr", s.server.Addr)
+	log.Info("Stopping health server", "scheme", scheme, "addr", s.health.Addr)
 	if err := s.health.Shutdown(ctx); err != nil {
 		return err
 	}

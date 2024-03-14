@@ -59,7 +59,7 @@ func (ps *Stats) Start() error {
 			time.Sleep(time.Minute)
 		}
 	}()
-	log.Print("Starting Stats HTTP server", "addr", ps.server.Addr)
+	log.Info("Starting Stats HTTP server", "addr", ps.server.Addr)
 	err := ps.server.ListenAndServe()
 	if err != http.ErrServerClosed {
 		return err
