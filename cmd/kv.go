@@ -25,10 +25,6 @@ var (
 		Hidden: false,
 		Short:  "Use the Charm key value store.",
 		Long:   paragraph("Commands to set, get and delete data from your Charm Cloud backed key value store."),
-		Args:   cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return nil
-		},
 	}
 
 	kvSetCmd = &cobra.Command{
