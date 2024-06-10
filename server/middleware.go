@@ -65,8 +65,8 @@ func PublicPrefixesMiddleware(prefixes []string) func(http.Handler) http.Handler
 
 // JWTMiddleware creates a new middleware function that will validate JWT
 // tokens based on the supplied public key.
-func JWTMiddleware(webkey jose.JSONWebKey, iss string, aud []string) (func(http.Handler) http.Handler, error) {
-	jm, err := jwtMiddlewareImpl(webkey, iss, aud)
+func JWTMiddleware(pk jose.JSONWebKey, iss string, aud []string) (func(http.Handler) http.Handler, error) {
+	jm, err := jwtMiddlewareImpl(pk, iss, aud)
 	if err != nil {
 		return nil, err
 	}
