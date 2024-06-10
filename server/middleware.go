@@ -2,12 +2,12 @@ package server
 
 import (
 	"context"
-	"crypto"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/charmbracelet/log"
+	"gopkg.in/go-jose/go-jose.v2"
 
 	jwtmiddleware "github.com/auth0/go-jwt-middleware/v2"
 	"github.com/auth0/go-jwt-middleware/v2/validator"
@@ -65,8 +65,8 @@ func PublicPrefixesMiddleware(prefixes []string) func(http.Handler) http.Handler
 
 // JWTMiddleware creates a new middleware function that will validate JWT
 // tokens based on the supplied public key.
-func JWTMiddleware(pk crypto.PublicKey, iss string, aud []string) (func(http.Handler) http.Handler, error) {
-	jm, err := jwtMiddlewareImpl(pk, iss, aud)
+func JWTMiddleware(webkey jose.JSONWebKey, iss string, aud []string) (func(http.Handler) http.Handler, error) {
+	jm, err := jwtMiddlewareImpl(webkey, iss, aud)
 	if err != nil {
 		return nil, err
 	}
@@ -134,9 +134,12 @@ func charmIDFromRequest(r *http.Request) (string, error) {
 	return sub, nil
 }
 
-func jwtMiddlewareImpl(pk crypto.PublicKey, iss string, aud []string) (func(http.Handler) http.Handler, error) {
-	kf := func(ctx context.Context) (interface{}, error) {
-		return pk, nil
+func jwtMiddlewareImpl(pk jose.JSONWebKey, iss string, aud []string) (func(http.Handler) http.Handler, error) {
+	kf := func(context.Context) (interface{}, error) {
+		jwks := jose.JSONWebKeySet{
+			Keys: []jose.JSONWebKey{pk},
+		}
+		return &jwks, nil
 	}
 	v, err := validator.New(
 		kf,
