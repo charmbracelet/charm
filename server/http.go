@@ -19,12 +19,12 @@ import (
 	charm "github.com/charmbracelet/charm/proto"
 	"github.com/charmbracelet/charm/server/db"
 	"github.com/charmbracelet/charm/server/storage"
-	"github.com/go-jose/go-jose"
 	"github.com/meowgorithm/babylogger"
 	"goji.io"
 	"goji.io/pat"
 	"goji.io/pattern"
 	"golang.org/x/sync/errgroup"
+	"gopkg.in/go-jose/go-jose.v2"
 )
 
 const resultsPerPage = 50
