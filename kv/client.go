@@ -9,9 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dgraph-io/badger/v4"
+
 	"github.com/charmbracelet/charm/client"
 	charm "github.com/charmbracelet/charm/proto"
-	badger "github.com/dgraph-io/badger/v3"
 )
 
 type kvFile struct {
