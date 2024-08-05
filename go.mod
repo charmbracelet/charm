@@ -1,6 +1,6 @@
 module github.com/charmbracelet/charm
 
-go 1.17
+go 1.22
 
 require (
 	github.com/auth0/go-jwt-middleware/v2 v2.2.1
