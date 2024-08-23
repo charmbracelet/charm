@@ -8,7 +8,7 @@ The code will continue to be open source and publicly available. If you love thi
 
 ## Impacted tools
 
-To configure both [Skate](https://github.com/charmbracelet/skate) and [Glow](https://github.com/charmbracelet/glow) to work with your own server, you'll need to update the Charm Cloud client environment variables. Glow historically integrated into the Charm Cloud via a stashing feature, but as of [Skate v2.0.0](https://github.com/charmbracelet/skate/releases/tag/v2.0.0) and [Glow v2.0.0](https://github.com/charmbracelet/glow/releases/tag/v2.0.0) the Charm Cloud integration in both applications has been removed (Skate now operates on a local database). For those using older versions, you can continue to use Charm Cloud features with your own server. Here are the relevant environment variables:
+To configure both [Skate](https://github.com/charmbracelet/skate) and [Glow](https://github.com/charmbracelet/glow) to work with your own server, you'll need to update the Charm Cloud client environment variables. Glow historically integrated into the Charm Cloud via a stashing feature, but as of [Skate v1.0.0][skatev1] and [Glow v2.0.0][glowv2] the Charm Cloud integration in both applications has been removed (Skate now operates on a local database: to migrate your data see the [Skate v1.0.0 Release Notes][skatev1]). For those using older versions, you can continue to use Charm Cloud features with your own server. Here are the relevant environment variables:
 
 ```go
 // Config contains the Charm client configuration.
@@ -26,6 +26,9 @@ type Config struct {
 Source: [https://github.com/charmbracelet/charm/blob/main/client/client.go](https://github.com/charmbracelet/charm/blob/main/client/client.go#L28-L37)
 
 Thanks for using the Charm Cloud and please chat us up in [Discord](https://charm.sh/chat) if you have any questions.
+
+[glowv2]: https://github.com/charmbracelet/glow/releases/tag/v2.0.0
+[skatev1]: https://github.com/charmbracelet/skate/releases/tag/v1.0.0
 
 ***
 
