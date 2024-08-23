@@ -1,3 +1,34 @@
+# Sunsetting Charm Cloud
+
+To continue innovating in this space and supporting our larger projects, we need to keep our small team focused on the most impactful work. On **29 November 2024**, we will be sunsetting Charm Cloud. At that time we will be removing the servers from production and archiving the project on GitHub. Charm Cloud is self-hostable, so you can back up your data before that time and continue using this project on your own server.
+
+The code will continue to be open source and publicly available. If you love this project and would like to maintain a fork, please do.
+
+[Learn more](https://github.com/charmbracelet/charm/blob/main/docs/self-hosting.md) about self-hosting Charm Cloud.
+
+## Impacted tools
+
+To configure both [Skate](https://github.com/charmbracelet/skate) and [Glow](https://github.com/charmbracelet/glow) to work with your own server, you'll need to update the Charm Cloud client environment variables. Glow historically integrated into the Charm Cloud via a stashing feature, but as of [Skate v2.0.0](https://github.com/charmbracelet/skate/releases/tag/v2.0.0) and [Glow v2.0.0](https://github.com/charmbracelet/glow/releases/tag/v2.0.0) the Charm Cloud integration in both applications has been removed (Skate now operates on a local database). For those using older versions, you can continue to use Charm Cloud features with your own server. Here are the relevant environment variables:
+
+```go
+// Config contains the Charm client configuration.
+type Config struct {
+  Host        string `env:"CHARM_HOST" envDefault:"cloud.charm.sh"`
+  SSHPort     int    `env:"CHARM_SSH_PORT" envDefault:"35353"`
+  HTTPPort    int    `env:"CHARM_HTTP_PORT" envDefault:"35354"`
+  Debug       bool   `env:"CHARM_DEBUG" envDefault:"false"`
+  Logfile     string `env:"CHARM_LOGFILE" envDefault:""`
+  KeyType     string `env:"CHARM_KEY_TYPE" envDefault:"ed25519"`
+  DataDir     string `env:"CHARM_DATA_DIR" envDefault:""`
+  IdentityKey string `env:"CHARM_IDENTITY_KEY" envDefault:""`
+}
+```
+Source: [https://github.com/charmbracelet/charm/blob/main/client/client.go](https://github.com/charmbracelet/charm/blob/main/client/client.go#L28-L37)
+
+Thanks for using the Charm Cloud and please chat us up in [Discord](https://charm.sh/chat) if you have any questions.
+
+***
+
 Charm
 =====
 
@@ -12,8 +43,6 @@ Charm
 Charm is a set of tools that makes adding a backend to your terminal-based
 applications fun and easy. Quickly build modern CLI applications without
 worrying about user accounts, data storage and encryption.
-
-Charm powers terminal apps like [Glow][glow] and [Skate][skate].
 
 ## Features
 
