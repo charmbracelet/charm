@@ -98,7 +98,7 @@ func (cr *Crypt) Keys() []*charm.EncryptKey {
 // encrypted value every time this string is encrypted with the same
 // EncryptKey. This is useful if you need to look up an encrypted value without
 // knowing the plaintext on the storage side. For writing encrypted data, use
-// EncrytpedWriter which is non-deterministic.
+// EncryptedWriter which is non-deterministic.
 func (cr *Crypt) EncryptLookupField(field string) (string, error) {
 	if field == "" {
 		return "", nil
