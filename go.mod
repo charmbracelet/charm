@@ -8,7 +8,7 @@ require (
 	github.com/calmh/randomart v1.1.0
 	github.com/charmbracelet/bubbles v0.18.0
 	github.com/charmbracelet/bubbletea v0.25.0
-	github.com/charmbracelet/keygen v0.5.0
+	github.com/charmbracelet/keygen v0.5.1
 	github.com/charmbracelet/lipgloss v0.9.1
 	github.com/charmbracelet/log v0.2.2
 	github.com/charmbracelet/ssh v0.0.0-20221117183211-483d43d97103
@@ -29,8 +29,8 @@ require (
 	github.com/prometheus/client_golang v1.15.1
 	github.com/spf13/cobra v1.6.1
 	goji.io v2.0.2+incompatible
-	golang.org/x/crypto v0.21.0
-	golang.org/x/sync v0.6.0
+	golang.org/x/crypto v0.26.0
+	golang.org/x/sync v0.8.0
 	gopkg.in/go-jose/go-jose.v2 v2.6.2
 	modernc.org/sqlite v1.29.2
 )
@@ -79,9 +79,9 @@ require (
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	go.opencensus.io v0.22.5 // indirect
 	golang.org/x/net v0.21.0 // indirect
-	golang.org/x/sys v0.18.0 // indirect
-	golang.org/x/term v0.18.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/sys v0.23.0 // indirect
+	golang.org/x/term v0.23.0 // indirect
+	golang.org/x/text v0.17.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	modernc.org/gc/v3 v3.0.0-20240107210532-573471604cb6 // indirect
 	modernc.org/libc v1.41.0 // indirect
