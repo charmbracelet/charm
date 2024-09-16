@@ -6,10 +6,11 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/dgraph-io/badger/v4"
+	"github.com/spf13/cobra"
+
 	"github.com/charmbracelet/charm/kv"
 	"github.com/charmbracelet/charm/ui/common"
-	badger "github.com/dgraph-io/badger/v3"
-	"github.com/spf13/cobra"
 )
 
 var (

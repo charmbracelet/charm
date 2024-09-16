@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 
 	"github.com/charmbracelet/log"
+	"github.com/dgraph-io/badger/v4"
 
 	"github.com/charmbracelet/charm/client"
 	"github.com/charmbracelet/charm/fs"
-	badger "github.com/dgraph-io/badger/v3"
 )
 
 // KV provides a Charm Cloud backed BadgerDB key-value store.
