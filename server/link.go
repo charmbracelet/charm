@@ -301,7 +301,7 @@ func (me *SSHServer) handleLinkRequestAPI(s ssh.Session) {
 		_ = me.sendAPIMessage(s, fmt.Sprintf("Missing public key %s", err))
 		return
 	}
-	log.Print("API link request")
+	log.Info("API link request")
 	linker := &SSHLinker{
 		session: s,
 		server:  me,
@@ -328,7 +328,7 @@ func (me *SSHServer) handleAPILink(s ssh.Session) {
 func (me *SSHServer) handleAPIUnlink(s ssh.Session) {
 	key, err := keyText(s)
 	if err != nil {
-		log.Print(err)
+		log.Info(err)
 		_ = me.sendAPIMessage(s, "Missing key")
 		return
 	}
