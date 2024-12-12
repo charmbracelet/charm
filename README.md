@@ -1,6 +1,6 @@
 # Sunsetting Charm Cloud
 
-To continue innovating in this space and supporting our larger projects, we need to keep our small team focused on the most impactful work. On **29 November 2024**, we will be sunsetting Charm Cloud. At that time we will be removing the servers from production and archiving the project on GitHub. Charm Cloud is self-hostable, so you can back up your data before that time and continue using this project on your own server.
+To continue innovating in this space and supporting our larger projects, we need to keep our team focused on the most impactful work. On **29 November 2024**, we sunset Charm Cloud.
 
 The code will continue to be open source and publicly available. If you love this project and would like to maintain a fork, please do.
 
