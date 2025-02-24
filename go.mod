@@ -3,7 +3,7 @@ module github.com/charmbracelet/charm
 go 1.17
 
 require (
-	github.com/auth0/go-jwt-middleware/v2 v2.2.1
+	github.com/auth0/go-jwt-middleware/v2 v2.2.2
 	github.com/caarlos0/env/v6 v6.10.1
 	github.com/calmh/randomart v1.1.0
 	github.com/charmbracelet/bubbles v0.20.0
@@ -31,7 +31,7 @@ require (
 	goji.io v2.0.2+incompatible
 	golang.org/x/crypto v0.31.0
 	golang.org/x/sync v0.11.0
-	gopkg.in/go-jose/go-jose.v2 v2.6.2
+	gopkg.in/go-jose/go-jose.v2 v2.6.3
 	modernc.org/sqlite v1.29.2
 )
 
